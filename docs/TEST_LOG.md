@@ -40,3 +40,15 @@ Kiểm tra tài liệu/skill (script read-only, 8 nhóm):
 
 ### Chưa kiểm / blocked
 - Toàn bộ S2 (VPS/domain riêng): chờ thông tin chủ sản phẩm.
+
+## AG-02 — Architecture & Domain Decisions — 20/10/2026
+
+**App tests: N/A.**
+
+| # | Kiểm tra | Kết quả |
+|---|---|---|
+| 1 | ARCH.md chốt 100% stack ứng dụng và hạ tầng (không còn unassigned) | PASS |
+| 2 | DATA_MODEL.md khóa các enum chuẩn và quy tắc bất biến theo Master Plan §5 | PASS |
+| 3 | API.md định nghĩa rõ chuẩn Next.js Server Actions và REST boundaries | PASS |
+| 4 | Secret scan trên docs | PASS |
+| 5 | DECISIONS.md ghi nhận đủ D19, D20, D21 | PASS |

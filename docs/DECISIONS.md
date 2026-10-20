@@ -35,13 +35,21 @@ Nguồn ưu tiên cao nhất khi có xung đột (master plan §0). Chỉ ghi `a
 | D17 | **VPS/domain riêng của chủ sản phẩm là nền chính** cho ĂN GÌ MOM. Chi tiết sẽ bổ sung sau (hiện `unknown`). Mắt Bão Cloud IDE là môi trường phát triển |
 | D18 | Chủ sản phẩm cho phép tiếp tục các bước không phụ thuộc hạ tầng trong khi chờ thông tin VPS/domain (“cứ xây dựng đi”) |
 
+## Quyết định trong AG-02 (`approved` ngày 20/10/2026)
+
+| ID | Nội dung |
+|---|---|
+| D19 | **Stack ứng dụng**: Next.js App Router (TypeScript) + Tailwind CSS & Radix UI (shadcn) + Lucide Icons + React Hook Form / Zod + PostgreSQL & Drizzle ORM + Vitest & Playwright |
+| D20 | **Chiến lược hạ tầng độc lập**: Container hóa toàn bộ qua Dockerfile multi-stage + Docker Compose; Caddy tự động quản lý HTTPS; lưu trữ ảnh và DB qua local volume trên VPS (không vendor lock-in) |
+| D21 | **Hợp đồng miền & Invariants**: Khóa cứng các enum cốt lõi (`RecipePublishStatus`, `MealRole`, `ScalePolicy`, `NutritionDataStatus`), nguyên liệu có cấu trúc, RecipeVersion bất biến, làm tròn chỉ ở tầng UI |
+
 ## Còn mở (`unknown`)
 
 | # | Vấn đề | Quyết định tại |
 |---|---|---|
-| O1 | Chi tiết VPS/domain riêng: nhà cung cấp, cấu hình, dịch vụ đang chạy, DB/storage/email, backup | Chủ sản phẩm bổ sung → cập nhật INFRA_INVENTORY trước khi AG-02 chốt lớp hạ tầng |
-| O2 | Có dùng Coolify/`mb-deploy` để xem thử nội bộ/staging không (nền chính đã là VPS riêng — D17) | AG-02 |
-| O3 | Ngân sách vận hành/tháng | AG-02 |
+| O1 | Chi tiết VPS/domain riêng: nhà cung cấp, cấu hình, dịch vụ đang chạy, DB/storage/email, backup | Chủ sản phẩm bổ sung khi deploy thực tế |
+| O2 | Tận dụng Coolify/`mb-deploy` trên Mắt Bão làm môi trường preview/staging nội bộ trong quá trình dev | Đã chốt hướng tích hợp qua Docker container (D20) |
+| O3 | Ngân sách vận hành/tháng | Tối thiểu hóa bằng giải pháp tự host trên VPS (D20), không phí subscription ban đầu |
 | O4 | Nhà cung cấp AI/model và budget | Trước P4 |
 | O5 | Người kiểm/nấu thử công thức | AG-03 |
 | O6 | Nghĩa của “ăn theo thì” | P7 |
