@@ -530,6 +530,30 @@ Kiểm tra tài liệu/skill (script read-only, 8 nhóm):
 | 27 | `tsc --noEmit` sạch lỗi; `npm run build` thành công với 35 routes (exit code 0) | PASS |
 | 28 | DECISIONS.md ghi nhận D46 — **GATE P3 ĐẠT TOÀN DIỆN** | PASS |
 
+## AG-27 — AI Provider Boundary & Budget — 20/10/2026
+
+**App tests: `test_ai_boundary_budget.ts` (20 test cases), regression checks (`test_p3_pilot_gate.ts`), TypeScript (`tsc --noEmit`), Next.js production build (`npm run build`).**
+
+| # | Kiểm tra | Kết quả |
+|---|---|---|
+| 1 | Invariants Gate P4: Không rò rỉ khóa API ra client-side (`NEXT_PUBLIC_` không tồn tại) | PASS |
+| 2 | Redaction: Tự động che giấu `apiKey` thành `[REDACTED]` khi ghi log | PASS |
+| 3 | Token Capping: Yêu cầu vượt trần (5000 tokens) tự động clamp an toàn về 1200 tokens | PASS |
+| 4 | Timeout Capping: Yêu cầu timeout 30s tự động clamp an toàn về tối đa 10s | PASS |
+| 5 | Rate Limiting: Cho phép các request hợp lệ trong ngưỡng (3 req/phút) | PASS |
+| 6 | Rate Limiting: Từ chối request thứ 4 vượt ngưỡng và kích hoạt fallback an toàn | PASS |
+| 7 | Automatic Fallback Chain: Provider chính lỗi (429 Quota) tự động chuyển sang Mock Heuristic | PASS |
+| 8 | Fallback Integrity: Kết quả fallback trả về JSON hợp lệ, có trường recommendation | PASS |
+| 9 | Provider Availability: Gemini Provider phát hiện chính xác khi có/không có API key | PASS |
+| 10 | Provider Availability: OpenAI Provider phát hiện chính xác khi có/không có API key | PASS |
+| 11 | Provider Availability: Mock Heuristic Provider luôn luôn khả dụng làm chốt chặn cuối | PASS |
+| 12 | Invariants Gate P4: AI output độc lập, không có quyền tự động publish công thức | PASS |
+| 13 | `test_ai_boundary_budget.ts`: 20 PASS, 0 FAIL (exit code 0) | PASS |
+| 14 | `test_p3_pilot_gate.ts`: 36 PASS, 0 FAIL (không hồi quy Gate P3) | PASS |
+| 15 | `tsc --noEmit` sạch lỗi; `npm run build` thành công với 35 routes (exit code 0) | PASS |
+| 16 | DECISIONS.md ghi nhận D47, giải quyết câu hỏi mở O4 | PASS |
+
+
 
 
 

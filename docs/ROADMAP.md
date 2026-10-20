@@ -56,7 +56,14 @@ Gate P2: tạo → kiểm → xuất bản → đọc lại chạy được. —
 Gate P3 = MVP đủ dùng thử (không cần P4–P8). — **GATE P3 ĐÃ ĐẠT (M3 MVP PILOT READY)**
 
 ## P4 — AI có kiểm soát
-AG-27 provider boundary & budget · AG-28 AI recipe suggestion · AG-29 AI authoring drafts · AG-30 AI evaluation & fallback — tất cả `not-started`, cần duyệt provider (O4).
+| ID | Capability | Dependency | Trạng thái |
+|---|---|---|---|
+| AG-27 | AI provider boundary & budget | AG-26 + duyệt provider | `closed` (20/10/2026) |
+| AG-28 | AI recipe suggestion | AG-27 | `not-started` |
+| AG-29 | AI authoring drafts | AG-27, 13, 15 | `not-started` |
+| AG-30 | AI evaluation & fallback | AG-28, 29 | `not-started` |
+
+Gate P4: AI không tạo đường tắt publish, không suy số dinh dưỡng và không gây chi phí không kiểm soát.
 
 ## P5 — Cộng đồng
 AG-31 contributor submission · AG-32 moderation · AG-33 dish variants & stories · AG-34 cooked-it feedback — `not-started`.

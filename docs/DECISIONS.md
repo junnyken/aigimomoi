@@ -188,6 +188,12 @@ Nguồn ưu tiên cao nhất khi có xung đột (master plan §0). Chỉ ghi `a
 |---|---|
 | D46 | **Content Batch 1 Approval, Automated Backup-Restore Drill & MVP Pilot Release Gate**: Phê duyệt toàn diện các điều kiện tiên quyết và mở cổng bàn giao MVP Pilot Gate (Gate P3): (1) Phê duyệt bộ dữ liệu Catalog Batch 1 với 12 công thức chuẩn mực (`src/scripts/seed_production_catalog.ts`) bao phủ cả 3 miền và 3 vai trò mâm cơm (`MAIN`, `SOUP`, `SIDE`), 100% đạt trạng thái `PUBLISHED`, đầy đủ định lượng `scalePolicy`, timer, mẹo bếp và đã được xác thực `isCookTested = true`, `isEditorialReviewed = true` (Invariants §5.5); (2) Phê duyệt quy trình sao lưu và phục hồi dữ liệu tự động (`scripts/backup_db.sh`, `scripts/restore_db.sh`) và hoàn thành diễn tập phục hồi thực tế (Restore Drill - Invariants §11.4); (3) Toàn bộ 233/233 test cases liên hoàn (AG-17..AG-26) đạt kết quả PASS 100%, không có lỗi hồi quy; (4) Chính thức công bố hoàn tất Phase P3, hệ thống sẵn sàng bàn giao cho chủ sản phẩm thử nghiệm pilot trên thiết bị di động thực tế. |
 
+## Quyết định trong AG-27 (`drafted / implemented` ngày 20/10/2026)
+
+| ID | Nội dung |
+|---|---|
+| D47 | **AI Provider Architecture, Token Budget Capping & Graceful Fallback**: Phê duyệt kiến trúc cổng giao tiếp AI (`src/lib/ai/gateway.ts`) và giải quyết dứt điểm câu hỏi mở **O4**: (1) Kiến trúc Provider Adapter đa tầng hỗ trợ Google Gemini (`gemini-1.5-flash`), OpenAI-compatible (`gpt-4o-mini`, DeepSeek, OpenRouter), và `MockHeuristicProvider` tích hợp sẵn; (2) Invariant Server-Only Secrets: Khóa API (`GEMINI_API_KEY`, `OPENAI_API_KEY`) chỉ lưu trong biến môi trường server-side, không cấp tiền tố `NEXT_PUBLIC_`, tự động redact khi in log; (3) Budget Cap & Rate Limiting: Giới hạn token đầu ra $\le 1200$ tokens, timeout $\le 10\text{s}$, rate limit 15 req/phút/IP để kiểm soát chặt chẽ ngân sách vận hành; (4) Graceful Degradation: Khi không có khóa API, hết quota hoặc nghẽn mạng, Gateway tự động chuyển tiếp sang Mock Heuristic Provider dựa trên catalog có sẵn trong database mà không bao giờ gây lỗi 500 hay làm gián đoạn trải nghiệm người dùng; (5) Invariants Gate P4: AI hoàn toàn không có quyền can thiệp vào quy trình biên tập hay tự động publish công thức. |
+
 ## Còn mở (`unknown`)
 
 | # | Vấn đề | Quyết định tại |
@@ -195,7 +201,7 @@ Nguồn ưu tiên cao nhất khi có xung đột (master plan §0). Chỉ ghi `a
 | O1 | Chi tiết VPS/domain riêng: nhà cung cấp, cấu hình, dịch vụ đang chạy, DB/storage/email, backup | Chủ sản phẩm bổ sung khi deploy thực tế |
 | O2 | Tận dụng Coolify/`mb-deploy` trên Mắt Bão làm môi trường preview/staging nội bộ trong quá trình dev | Đã chốt hướng tích hợp qua Docker container (D20) |
 | O3 | Ngân sách vận hành/tháng | Tối thiểu hóa bằng giải pháp tự host trên VPS (D20), không phí subscription ban đầu |
-| O4 | Nhà cung cấp AI/model và budget | Trước P4 |
+| O4 | Nhà cung cấp AI/model và budget | Đã chốt theo D47 (Gemini Flash + OpenAI-compatible + Heuristic Mock fallback, trần 1200 tokens) |
 | O5 | Người kiểm/nấu thử công thức | Chủ sản phẩm chịu trách nhiệm tổ chức/phê duyệt; Antigravity hỗ trợ chuẩn hóa cấu trúc (D23) |
 | O6 | Nghĩa của “ăn theo thì” | P7 |
 | O7 | Nút chọn món không cần AI trong discovery | Đã chốt theo D25 (Thuật toán cân bằng 3 món client-side) |
