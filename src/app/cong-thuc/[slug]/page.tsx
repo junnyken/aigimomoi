@@ -21,6 +21,7 @@ import { KitchenStorySection } from '@/components/recipe/KitchenStorySection';
 import { RegionalVariants } from '@/components/recipe/RegionalVariants';
 import { CookedItSection } from '@/components/recipe/CookedItSection';
 import { RecipeJsonLd } from '@/components/seo/RecipeJsonLd';
+import { PantryCheckWidget } from '@/components/pantry/PantryCheckWidget';
 
 interface PageParams {
   params: Promise<{ slug: string }>;
@@ -157,6 +158,7 @@ export default async function PublicRecipePage({ params }: PageParams) {
       {/* Body */}
       <div className="grid gap-8 lg:grid-cols-[minmax(0,360px)_1fr] lg:items-start">
         <aside className="flex flex-col gap-4 lg:sticky lg:top-24">
+          <PantryCheckWidget recipeId={recipe.id} />
           <IngredientList ingredients={recipe.ingredients} baseServings={recipe.baseServings} />
           <NutritionNotice
             nutritionStatus={recipe.nutritionStatus}

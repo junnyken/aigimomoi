@@ -85,8 +85,14 @@ Gate P5: nội dung cộng đồng có queue duyệt, quyền sở hữu và x�
 
 Gate P6: nguồn truy vết, lượng đã ăn khác lượng đã nấu, dữ liệu thiếu không thành 0, nhật ký riêng tư và không hồi tố theo revision mới. — **GATE P6 ĐÃ ĐẠT (M6 DINH DƯỠNG & NHẬT KÝ BẾP NHÀ)**
 
-## P7 — Mở rộng catalog
-Món nước, đồ uống, bánh/ngọt, món chay, kế hoạch tuần/pantry, “ăn theo thì” (chờ O6). Mỗi nhánh cần ID mới khi duyệt.
+## P7 — Mở rộng catalog và thực đơn
+| ID | Capability | Dependency | Trạng thái |
+|---|---|---|---|
+| AG-39 | Expanded catalog: Món nước trọn bữa, món chay, đồ uống & tráng miệng | AG-16, 21 | `closed` (21/10/2026) |
+| AG-40 | Pantry inventory: Quản lý kho thực phẩm, đối chiếu công thức & đồng bộ giỏ chợ | AG-23, 39 | `closed` (21/10/2026) |
+| AG-41 | Weekly meal planner: Kế hoạch 7 ngày, xuất giỏ chợ & ghi nhật ký dinh dưỡng | AG-37, 40 | `closed` (21/10/2026) |
+
+Gate P7: Mở rộng thể loại món ăn không làm vỡ taxonomy và engine; kho tủ lạnh phân quyền chặt chẽ; kế hoạch tuần tích hợp thông suốt với giỏ đi chợ và nhật ký dinh dưỡng. — **GATE P7 ĐÃ ĐẠT (M7 MỞ RỘNG CATALOG, TỦ LẠNH VÀ KẾ HOẠCH TUẦN)**
 
 ## P8 — Kinh doanh và scale
 Chỉ sau dữ liệu sử dụng thật. Payment/subscription là phạm vi riêng.

@@ -16,6 +16,8 @@ import {
   recipeCookedFeedbacks,
   ingredientNutrition,
   mealDiaryEntries,
+  pantryItems,
+  mealPlans,
 } from './schema';
 
 export const usersRelations = relations(users, ({ many }) => ({
@@ -23,6 +25,8 @@ export const usersRelations = relations(users, ({ many }) => ({
   meals: many(meals),
   savedRecipes: many(savedRecipes),
   diaryEntries: many(mealDiaryEntries),
+  pantryItems: many(pantryItems),
+  mealPlans: many(mealPlans),
   reportsSubmitted: many(recipeReports, { relationName: 'reporterUser' }),
   reportsResolved: many(recipeReports, { relationName: 'moderatorUser' }),
 }));
@@ -55,6 +59,7 @@ export const recipesRelations = relations(recipes, ({ one, many }) => ({
   savedByUsers: many(savedRecipes),
   reports: many(recipeReports),
   cookedFeedbacks: many(recipeCookedFeedbacks),
+  mealPlans: many(mealPlans),
   variantOf: one(recipes, {
     fields: [recipes.variantOfId],
     references: [recipes.id],
@@ -68,6 +73,7 @@ export const recipesRelations = relations(recipes, ({ one, many }) => ({
 export const ingredientsRelations = relations(ingredients, ({ one, many }) => ({
   recipeIngredients: many(recipeIngredients),
   nutrition: one(ingredientNutrition),
+  pantryItems: many(pantryItems),
 }));
 
 export const ingredientNutritionRelations = relations(ingredientNutrition, ({ one }) => ({
@@ -182,5 +188,28 @@ export const mealDiaryEntriesRelations = relations(mealDiaryEntries, ({ one }) =
     references: [recipes.id],
   }),
 }));
+
+export const pantryItemsRelations = relations(pantryItems, ({ one }) => ({
+  user: one(users, {
+    fields: [pantryItems.userId],
+    references: [users.id],
+  }),
+  ingredient: one(ingredients, {
+    fields: [pantryItems.ingredientId],
+    references: [ingredients.id],
+  }),
+}));
+
+export const mealPlansRelations = relations(mealPlans, ({ one }) => ({
+  user: one(users, {
+    fields: [mealPlans.userId],
+    references: [users.id],
+  }),
+  recipe: one(recipes, {
+    fields: [mealPlans.recipeId],
+    references: [recipes.id],
+  }),
+}));
+
 
 

@@ -364,3 +364,49 @@ export const mealDiaryEntries = pgTable('meal_diary_entries', {
   index('meal_diary_entries_recipe_idx').on(table.recipeId),
 ]);
 
+// Storage Location Enum (Vị trí bảo quản thực phẩm - AG-40)
+export const storageLocationEnum = pgEnum('storage_location', [
+  'FRIDGE',
+  'FREEZER',
+  'DRY_PANTRY'
+]);
+
+// Pantry Items (Kho thực phẩm / Tủ lạnh gia đình - AG-40)
+export const pantryItems = pgTable('pantry_items', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  ingredientId: integer('ingredient_id').references(() => ingredients.id, { onDelete: 'set null' }),
+  customName: text('custom_name').notNull(),
+  quantity: doublePrecision('quantity').notNull().default(1.0),
+  unit: text('unit').notNull().default('gam'),
+  location: storageLocationEnum('location').notNull().default('FRIDGE'),
+  expiresAt: timestamp('expires_at', { withTimezone: true }),
+  notes: text('notes'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index('pantry_items_user_idx').on(table.userId),
+  index('pantry_items_ingredient_idx').on(table.ingredientId),
+  index('pantry_items_expires_idx').on(table.expiresAt),
+]);
+
+// Weekly Meal Plans (Kế hoạch thực đơn mâm cơm tuần - AG-41)
+export const mealPlans = pgTable('meal_plans', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  planDate: text('plan_date').notNull(), // 'YYYY-MM-DD'
+  dayOfWeek: integer('day_of_week').notNull(), // 1 = T2, 7 = CN
+  mealType: diaryMealTypeEnum('meal_type').notNull().default('LUNCH'),
+  recipeId: integer('recipe_id').references(() => recipes.id, { onDelete: 'set null' }),
+  customDishName: text('custom_dish_name'),
+  servings: integer('servings').notNull().default(4),
+  notes: text('notes'),
+  isCompleted: boolean('is_completed').notNull().default(false),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index('meal_plans_user_date_idx').on(table.userId, table.planDate),
+  index('meal_plans_recipe_idx').on(table.recipeId),
+]);
+
+

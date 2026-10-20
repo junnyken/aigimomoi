@@ -71,6 +71,18 @@ export default function RootLayout({
                 <span>Đi chợ</span>
               </Link>
               <Link
+                href="/tu-lanh"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-brand-primary)] hover:bg-[var(--color-surface-raised)] transition-colors"
+              >
+                <span>Tủ lạnh</span>
+              </Link>
+              <Link
+                href="/ke-hoach-tuan"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-brand-primary)] hover:bg-[var(--color-surface-raised)] transition-colors"
+              >
+                <span>Kế hoạch tuần</span>
+              </Link>
+              <Link
                 href="/nhat-ky"
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-brand-primary)] hover:bg-[var(--color-surface-raised)] transition-colors"
               >
