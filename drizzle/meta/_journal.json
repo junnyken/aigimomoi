@@ -15,6 +15,13 @@
       "when": 1792489193239,
       "tag": "0001_happy_talon",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792504391738,
+      "tag": "0002_ag15_publishing_revision",
+      "breakpoints": true
     }
   ]
 }

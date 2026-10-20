@@ -15,6 +15,7 @@ import {
   FileEdit,
   Trash2,
   Tag,
+  ShieldCheck,
 } from 'lucide-react';
 
 interface Recipe {
@@ -33,6 +34,8 @@ interface Recipe {
   author?: { displayName: string; email: string };
   tags?: Array<{ taxonomy: { id: number; name: string; type: string } }>;
   createdAt: string;
+  versionNumber?: number;
+  revisionOfId?: number | null;
 }
 
 const ROLE_LABELS: Record<string, { label: string; color: string }> = {
@@ -146,6 +149,14 @@ export default function EditorRecipesPage() {
               Hệ phân loại
             </Link>
             <Link
+              id="review-queue-link"
+              href="/editor/recipes/review"
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-xl transition-colors"
+            >
+              <ShieldCheck className="w-4 h-4" />
+              Hàng chờ duyệt
+            </Link>
+            <Link
               href="/editor/recipes/new"
               className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#3F6240] text-white text-xs font-semibold rounded-xl hover:bg-[#324f33] transition-all shadow-xs"
             >
@@ -213,6 +224,8 @@ export default function EditorRecipesPage() {
                 <option value="DRAFT">Bản nháp</option>
                 <option value="SUBMITTED">Chờ duyệt</option>
                 <option value="PUBLISHED">Đã xuất bản</option>
+                <option value="NEEDS_CHANGES">Cần sửa đổi</option>
+                <option value="ARCHIVED">Phiên bản lưu trữ</option>
               </select>
             </div>
           </div>
@@ -267,6 +280,11 @@ export default function EditorRecipesPage() {
                         </span>
                         <h2 className="text-base font-bold text-[#2D2A26] line-clamp-1 hover:text-[#3F6240] transition-colors">
                           {recipe.name}
+                          {recipe.versionNumber && recipe.versionNumber > 1 && (
+                            <span className="ml-2 align-middle text-[10px] font-bold px-1.5 py-0.5 rounded bg-[#3F6240]/10 text-[#3F6240]">
+                              v{recipe.versionNumber}
+                            </span>
+                          )}
                         </h2>
                       </div>
                       <span

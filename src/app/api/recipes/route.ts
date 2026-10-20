@@ -8,9 +8,11 @@ import {
   recipeTags,
   ingredients,
   taxonomies,
+  mealRoleEnum,
+  recipePublishStatusEnum,
 } from '@/lib/db/schema';
 import { getSessionUser } from '@/lib/auth/session';
-import { ilike, eq, and, desc } from 'drizzle-orm';
+import { ilike, eq, ne, and, desc } from 'drizzle-orm';
 
 function slugify(text: string): string {
   return text
@@ -30,16 +32,32 @@ export async function GET(request: NextRequest) {
     const roleParam = searchParams.get('role');
     const statusParam = searchParams.get('status');
 
+    const user = await getSessionUser();
+    const staff = user?.role === 'ADMIN' || user?.role === 'EDITOR';
+
     const conditions = [];
 
     if (query) {
-      conditions.push(ilike(recipes.name, `%${query.trim()}%`));
+      conditions.push(ilike(recipes.name, `%${query.trim().slice(0, 100)}%`));
     }
     if (roleParam) {
-      conditions.push(eq(recipes.role, roleParam as any));
+      if (!(mealRoleEnum.enumValues as readonly string[]).includes(roleParam)) {
+        return NextResponse.json({ error: 'Vai trò không hợp lệ' }, { status: 400 });
+      }
+      conditions.push(eq(recipes.role, roleParam as (typeof mealRoleEnum.enumValues)[number]));
     }
-    if (statusParam) {
-      conditions.push(eq(recipes.status, statusParam as any));
+
+    if (!staff) {
+      // AG-15: Draft không công khai
+      conditions.push(eq(recipes.status, 'PUBLISHED'));
+    } else if (statusParam) {
+      if (!(recipePublishStatusEnum.enumValues as readonly string[]).includes(statusParam)) {
+        return NextResponse.json({ error: 'Trạng thái không hợp lệ' }, { status: 400 });
+      }
+      conditions.push(eq(recipes.status, statusParam as (typeof recipePublishStatusEnum.enumValues)[number]));
+    } else {
+      // Phiên bản cũ đã lưu trữ chỉ hiện khi lọc tường minh
+      conditions.push(ne(recipes.status, 'ARCHIVED'));
     }
 
     const items = await db.query.recipes.findMany({
@@ -48,12 +66,9 @@ export async function GET(request: NextRequest) {
       with: {
         dish: true,
         author: {
-          columns: {
-            id: true,
-            displayName: true,
-            email: true,
-            role: true,
-          },
+          columns: staff
+            ? { id: true, displayName: true, email: true, role: true }
+            : { id: true, displayName: true },
         },
         tags: {
           with: {
@@ -62,6 +77,12 @@ export async function GET(request: NextRequest) {
         },
       },
     });
+
+    if (!staff) {
+      return NextResponse.json({
+        recipes: items.map(({ reviewNotes: _n, reviewedById: _r, ...rest }) => rest),
+      });
+    }
 
     return NextResponse.json({ recipes: items });
   } catch (error) {

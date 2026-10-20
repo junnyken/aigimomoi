@@ -108,11 +108,16 @@ function LoginForm() {
         </button>
       </form>
 
-      <div className="mt-8 pt-6 border-t border-[var(--color-border-subtle)] text-xs text-[var(--color-text-muted)] space-y-1.5">
-        <p className="font-semibold text-[var(--color-text-secondary)]">Thông tin mẫu môi trường dev/staging:</p>
-        <p>• Quản trị viên: <code>admin@angimom.vn</code> / <code>Admin@123456</code></p>
-        <p>• Biên tập viên: <code>editor@angimom.vn</code> / <code>Editor@123456</code></p>
-      </div>
+      {process.env.NODE_ENV !== 'production' && (
+        <div className="mt-8 pt-6 border-t border-[var(--color-border-subtle)] text-xs text-[var(--color-text-muted)] space-y-1.5">
+          <p className="font-semibold text-[var(--color-text-secondary)]">Môi trường dev:</p>
+          <p>
+            Tài khoản <code>admin@angimom.vn</code> / <code>editor@angimom.vn</code> được tạo bởi{' '}
+            <code>seed_catalog.ts</code> với mật khẩu từ <code>SEED_ADMIN_PASSWORD</code> /{' '}
+            <code>SEED_EDITOR_PASSWORD</code>.
+          </p>
+        </div>
+      )}
     </div>
   );
 }

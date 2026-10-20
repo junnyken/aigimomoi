@@ -236,3 +236,25 @@ Kiểm tra tài liệu/skill (script read-only, 8 nhóm):
 | 11 | Secret scan: không có secret | PASS |
 | 12 | DECISIONS.md ghi nhận D34 | PASS |
 
+
+## AG-15 — Publishing & Revision Gate — 20/10/2026
+
+**App tests: Lifecycle test (`test_publishing_gate.ts`), TypeScript (`tsc --noEmit`), Next.js production build (`npm run build`).**
+
+| # | Kiểm tra | Kết quả |
+|---|---|---|
+| 1 | Gate Check chặn xuất bản khi thiếu ảnh bìa (HTTP 422) | PASS |
+| 2 | Không xuất bản thẳng từ `DRAFT`, chỉ từ `SUBMITTED` (HTTP 409) | PASS |
+| 3 | Luật nhãn kiểm chứng D23: bắt buộc Đã biên tập; không bật Nutrition Verified khi chưa có calo (HTTP 422) | PASS |
+| 4 | Reject: ghi chú quá ngắn bị chặn (400); chuyển `NEEDS_CHANGES` + lưu góp ý; không reject lại khi không còn `SUBMITTED` (409) | PASS |
+| 5 | Publish v1: ghi nhận `publishedAt`/`reviewedBy`, cờ kiểm chứng theo ADMIN, xoá ghi chú cũ | PASS |
+| 6 | Revision v2: `DRAFT`, `revisionOf = v1`, reset nhãn kiểm chứng, nhân bản nguyên liệu/bước nấu/tag | PASS |
+| 7 | Chặn revision thứ hai khi đã có bản mở; chặn revision từ bản chưa `PUBLISHED` (409) | PASS |
+| 8 | v1 vẫn phục vụ người đọc trong khi v2 đang soạn | PASS |
+| 9 | Publish v2: tiếp quản slug công khai; v1 `ARCHIVED` (slug `--v1`), nội dung bất biến | PASS |
+| 10 | `test_publishing_gate.ts`: 22 PASS, 0 FAIL | PASS |
+| 11 | API publish/reject chỉ `ADMIN`; revisions `EDITOR`/`ADMIN`; Same-Origin check trên endpoint đổi trạng thái | PASS |
+| 12 | `seed_catalog.ts` tự thoát (đóng pool), exit 1 khi lỗi DB, không hardcode mật khẩu | PASS |
+| 13 | `tsc --noEmit` sạch; `npm run build` thành công với 18 routes (exit code 0) | PASS |
+| 14 | Secret scan: không có secret | PASS |
+| 15 | DECISIONS.md ghi nhận D35 | PASS |

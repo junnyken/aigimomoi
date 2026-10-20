@@ -116,6 +116,12 @@ Nguồn ưu tiên cao nhất khi có xung đột (master plan §0). Chỉ ghi `a
 |---|---|
 | D34 | **Local Persistent Storage & Media Pipeline Architecture**: Quyết định sử dụng kiến trúc lưu trữ tệp cục bộ có gắn kết Docker Volume bền vững (`uploads_data:/app/public/uploads`) trên VPS riêng của chủ sản phẩm (D17, D20), loại bỏ chi phí dịch vụ SaaS đám mây. Bảo vệ an ninh tệp tin qua việc xác thực quyền `EDITOR`/`ADMIN`, giới hạn dung lượng 5MB, lọc nghiêm ngặt MIME type (JPG/PNG/WebP/AVIF), sinh tên tệp UUID chống trùng lặp/ghi đè, và làm sạch tham số thư mục chống Directory Traversal. Thiết kế theo mẫu Adapter để sẵn sàng cắm S3/R2 khi mở rộng quy mô. |
 
+## Quyết định trong AG-15 (`drafted / implemented` ngày 20/10/2026)
+
+| ID | Nội dung |
+|---|---|
+| D35 | **Publishing Gate & Revision Lineage**: Mỗi phiên bản công thức là một bản ghi `recipes` riêng (`versionNumber`, `revisionOfId`); chỉ `ADMIN` được chuyển `SUBMITTED → PUBLISHED` (sau Gate Check dùng chung server/UI trong `src/lib/recipes/gate.ts`) hoặc `SUBMITTED → NEEDS_CHANGES` (bắt buộc ghi chú góp ý). Bản sửa đổi được nhân bản từ bản `PUBLISHED` (nguyên liệu, bước nấu, tag) với nhãn kiểm chứng reset (D23); tối đa một bản sửa đổi mở trên mỗi công thức. Khi bản sửa đổi được xuất bản, bản cũ chuyển `ARCHIVED` (nội dung bất biến, slug `--vN`) và bản mới tiếp quản slug công khai trong cùng transaction có khóa dòng. `PUT` không còn đặt được `PUBLISHED`; mọi endpoint đổi trạng thái kiểm tra Same-Origin (CSRF). Seed tài khoản dev đọc mật khẩu từ `SEED_ADMIN_PASSWORD` / `SEED_EDITOR_PASSWORD`, không hardcode. |
+
 ## Còn mở (`unknown`)
 
 | # | Vấn đề | Quyết định tại |

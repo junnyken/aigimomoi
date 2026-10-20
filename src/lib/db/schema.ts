@@ -8,7 +8,8 @@ import {
   boolean, 
   pgEnum, 
   primaryKey,
-  index
+  index,
+  type AnyPgColumn,
 } from 'drizzle-orm/pg-core';
 
 // ============================================================================
@@ -118,6 +119,15 @@ export const recipes = pgTable('recipes', {
   isEditorialReviewed: boolean('is_editorial_reviewed').notNull().default(false),
   isCookTested: boolean('is_cook_tested').notNull().default(false),
   isNutritionVerified: boolean('is_nutrition_verified').notNull().default(false),
+
+  // AG-15: Publishing & Revision Gate (Invariants §5.1 — RecipeVersion bất biến)
+  versionNumber: integer('version_number').notNull().default(1),
+  // Bản PUBLISHED gốc mà bản sửa đổi này được nhân bản từ đó (null với bản v1)
+  revisionOfId: integer('revision_of_id').references((): AnyPgColumn => recipes.id, { onDelete: 'set null' }),
+  reviewNotes: text('review_notes'),
+  reviewedById: integer('reviewed_by_id').references(() => users.id, { onDelete: 'set null' }),
+  reviewedAt: timestamp('reviewed_at', { withTimezone: true }),
+  publishedAt: timestamp('published_at', { withTimezone: true }),
   
   authorId: integer('author_id').references(() => users.id, { onDelete: 'set null' }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
@@ -127,6 +137,7 @@ export const recipes = pgTable('recipes', {
   index('recipes_role_idx').on(table.role),
   index('recipes_status_idx').on(table.status),
   index('recipes_author_idx').on(table.authorId),
+  index('recipes_revision_of_idx').on(table.revisionOfId),
 ]);
 
 // Ingredients (Từ điển nguyên liệu chuẩn hóa)

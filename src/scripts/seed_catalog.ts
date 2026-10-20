@@ -1,7 +1,9 @@
-import { db } from '../lib/db';
+import { db, closeDb } from '../lib/db';
 import { users, ingredients, taxonomies } from '../lib/db/schema';
 import { hashPassword } from '../lib/auth/password';
 import { eq } from 'drizzle-orm';
+
+const MIN_SEED_PASSWORD_LENGTH = 12;
 
 const INITIAL_INGREDIENTS = [
   // Thực phẩm tươi sống
@@ -69,33 +71,40 @@ export async function seedCatalog() {
   console.log('=== SEEDING CORE CATALOG ===');
 
   // 1. Seed Users (Admin & Editor)
+  // Mật khẩu lấy từ biến môi trường — KHÔNG hardcode thông tin đăng nhập trong mã nguồn.
   console.log('1. Checking & seeding users...');
-  const adminPasswordHash = await hashPassword('Admin@123456');
-  const editorPasswordHash = await hashPassword('Editor@123456');
-
   const defaultUsers = [
     {
       email: 'admin@angimom.vn',
       displayName: 'Quản trị viên ĂN GÌ MOM',
       role: 'ADMIN' as const,
-      passwordHash: adminPasswordHash,
+      passwordEnv: 'SEED_ADMIN_PASSWORD',
     },
     {
       email: 'editor@angimom.vn',
       displayName: 'Biên tập viên Bếp Nhà',
       role: 'EDITOR' as const,
-      passwordHash: editorPasswordHash,
+      passwordEnv: 'SEED_EDITOR_PASSWORD',
     },
   ];
 
-  for (const u of defaultUsers) {
+  for (const { passwordEnv, ...u } of defaultUsers) {
     const [existing] = await db.select({ id: users.id }).from(users).where(eq(users.email, u.email)).limit(1);
-    if (!existing) {
-      await db.insert(users).values(u);
-      console.log(`   + Created user: ${u.email} (${u.role})`);
-    } else {
+    if (existing) {
       console.log(`   * User already exists: ${u.email}`);
+      continue;
     }
+
+    const password = process.env[passwordEnv];
+    if (!password || password.length < MIN_SEED_PASSWORD_LENGTH) {
+      console.warn(
+        `   ! Skipped ${u.email}: set ${passwordEnv} (>= ${MIN_SEED_PASSWORD_LENGTH} ký tự) để tạo tài khoản này`
+      );
+      continue;
+    }
+
+    await db.insert(users).values({ ...u, passwordHash: await hashPassword(password) });
+    console.log(`   + Created user: ${u.email} (${u.role})`);
   }
 
   // 2. Seed Ingredients
@@ -127,8 +136,14 @@ export async function seedCatalog() {
 
 // Allow standalone execution
 if (process.argv[1]?.endsWith('seed_catalog.ts') || process.argv[1]?.endsWith('seed_catalog.js')) {
-  seedCatalog().catch((err) => {
-    console.error('Seeding error (Note: If DB is not running, this is expected in CI):', err.message);
-    process.exit(0);
-  });
+  seedCatalog()
+    .then(() => {
+      process.exitCode = 0;
+    })
+    .catch((err) => {
+      console.error('Seeding error:', err instanceof Error ? err.message : err);
+      process.exitCode = 1;
+    })
+    // Đóng pool postgres, nếu không process sẽ treo sau khi seed xong
+    .finally(() => closeDb());
 }
