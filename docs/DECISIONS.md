@@ -110,6 +110,12 @@ Nguồn ưu tiên cao nhất khi có xung đột (master plan §0). Chỉ ghi `a
 |---|---|
 | D33 | **Structured Recipe Editor & Invariants Protection**: Triển khai trình biên tập công thức có cấu trúc trực quan (`/editor/recipes/new`, `/editor/recipes/[id]`) và bộ API (`/api/recipes`, `/api/recipes/[id]`) tuân thủ nghiêm ngặt Invariants §5: tách bạch Dish và Recipe, 100% nguyên liệu liên kết từ điển với chính sách co giãn (`scalePolicy`: LINEAR/FIXED/MANUAL_ADJUST), bước nấu phân giai đoạn kèm hẹn giờ an toàn không tự nhảy bước, và cấm sửa đổi trực tiếp (in-place mutation) đối với công thức đã ở trạng thái `PUBLISHED`. |
 
+## Quyết định trong AG-14 (`drafted / implemented` ngày 20/10/2026)
+
+| ID | Nội dung |
+|---|---|
+| D34 | **Local Persistent Storage & Media Pipeline Architecture**: Quyết định sử dụng kiến trúc lưu trữ tệp cục bộ có gắn kết Docker Volume bền vững (`uploads_data:/app/public/uploads`) trên VPS riêng của chủ sản phẩm (D17, D20), loại bỏ chi phí dịch vụ SaaS đám mây. Bảo vệ an ninh tệp tin qua việc xác thực quyền `EDITOR`/`ADMIN`, giới hạn dung lượng 5MB, lọc nghiêm ngặt MIME type (JPG/PNG/WebP/AVIF), sinh tên tệp UUID chống trùng lặp/ghi đè, và làm sạch tham số thư mục chống Directory Traversal. Thiết kế theo mẫu Adapter để sẵn sàng cắm S3/R2 khi mở rộng quy mô. |
+
 ## Còn mở (`unknown`)
 
 | # | Vấn đề | Quyết định tại |

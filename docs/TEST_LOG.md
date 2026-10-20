@@ -216,3 +216,23 @@ Kiểm tra tài liệu/skill (script read-only, 8 nhóm):
 | 10 | `npm run build` biên dịch thành công ứng dụng với 14 routes sạch lỗi (exit code 0) | PASS |
 | 11 | Secret scan: không có secret | PASS |
 | 12 | DECISIONS.md ghi nhận D33 | PASS |
+
+## AG-14 — Media Pipeline & Image Storage — 20/10/2026
+
+**App tests: Storage unit tests (`test_upload_pipeline.ts`), Docker persistent volume config, & Next.js production build (`npm run build`).**
+
+| # | Kiểm tra | Kết quả |
+|---|---|---|
+| 1 | Module `saveUploadedFile` lưu tệp nhị phân an toàn vào thư mục `public/uploads/` | PASS |
+| 2 | Hàm `deleteUploadedFile` xóa tệp sạch sẽ khi người dùng gỡ ảnh | PASS |
+| 3 | Chặn tệp vượt quá giới hạn 5MB với thông báo lỗi tiếng Việt thân thiện | PASS |
+| 4 | Chặn các tệp MIME type không phải ảnh (HTML, scripts, executable) | PASS |
+| 5 | Chống tấn công Directory Traversal, làm sạch đường dẫn thư mục lưu trữ | PASS |
+| 6 | API `/api/upload` (POST nhận multipart/form-data, DELETE xóa tệp, bảo vệ bởi session EDITOR/ADMIN) | PASS |
+| 7 | Component UI `ImageUpload`: Preview hình ảnh, spinner loading khi tải, nút đổi ảnh/gỡ ảnh, responsive | PASS |
+| 8 | Tích hợp tải ảnh bìa món ăn (`heroImage`) và ảnh từng bước nấu (`step.image`) trong `/editor/recipes/new` và `[id]` | PASS |
+| 9 | Cấu hình volume lưu trữ bền vững `uploads_data:/app/public/uploads` trong `docker-compose.yml` | PASS |
+| 10 | `npm run build` biên dịch thành công ứng dụng với 15 routes sạch lỗi (exit code 0) | PASS |
+| 11 | Secret scan: không có secret | PASS |
+| 12 | DECISIONS.md ghi nhận D34 | PASS |
+

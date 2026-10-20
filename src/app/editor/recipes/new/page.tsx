@@ -17,6 +17,7 @@ import {
   Tag,
   Sparkles,
 } from 'lucide-react';
+import { ImageUpload } from '@/components/ui/ImageUpload';
 
 interface IngredientOption {
   id: number;
@@ -46,6 +47,7 @@ interface StepRow {
   instruction: string;
   timerMinutes: number | '';
   tipText: string;
+  image?: string;
 }
 
 const PHASES = ['Sơ chế', 'Chế biến', 'Hoàn thành'];
@@ -253,6 +255,7 @@ export default function NewRecipePage() {
           instruction: s.instruction.trim(),
           timerSeconds: s.timerMinutes ? Number(s.timerMinutes) * 60 : null,
           tipText: s.tipText ? s.tipText.trim() : null,
+          image: s.image || null,
         })),
         taxonomyIds: selectedTaxonomyIds,
       };
@@ -480,15 +483,13 @@ export default function NewRecipePage() {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-[#5C4A3A] mb-1">
-                Link ảnh đại diện món
-              </label>
-              <input
-                type="text"
-                placeholder="https://... hoặc đường dẫn ảnh"
+              <ImageUpload
+                label="Ảnh đại diện món ăn (Hero image)"
                 value={heroImage}
-                onChange={(e) => setHeroImage(e.target.value)}
-                className="w-full px-3 py-2 bg-[#FAF7F0] border border-[#EADBC8] rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#3F6240]"
+                onChange={setHeroImage}
+                onRemove={() => setHeroImage('')}
+                hint="Tải ảnh món cơm nhà hấp dẫn (JPG/PNG/WebP, tối đa 5MB)"
+                aspectRatio="video"
               />
             </div>
           </div>
@@ -711,15 +712,24 @@ export default function NewRecipePage() {
                   />
                 </div>
 
-                <div>
-                  <div className="relative">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-center">
+                  <div className="md:col-span-2 relative">
                     <Sparkles className="w-3.5 h-3.5 text-[#B75B35] absolute left-2.5 top-1/2 -translate-y-1/2" />
                     <input
                       type="text"
-                      placeholder="Mẹo nhỏ của mẹ (VD: thắng đường vừa ngả màu cánh gián cho nước dừa vào ngay để không bị đắng)"
+                      placeholder="Mẹo nhỏ của mẹ (VD: thắng đường vừa ngả màu cánh gián cho nước dừa vào ngay...)"
                       value={step.tipText}
                       onChange={(e) => updateStepRow(idx, { tipText: e.target.value })}
-                      className="w-full pl-8 pr-3 py-1.5 bg-[#FAF7F0] border border-[#EADBC8] rounded-lg text-xs text-[#5C4A3A] italic placeholder:not-italic focus:outline-none focus:ring-2 focus:ring-[#3F6240]"
+                      className="w-full pl-8 pr-3 py-2 bg-[#FAF7F0] border border-[#EADBC8] rounded-lg text-xs text-[#5C4A3A] italic placeholder:not-italic focus:outline-none focus:ring-2 focus:ring-[#3F6240]"
+                    />
+                  </div>
+                  <div className="md:col-span-1">
+                    <ImageUpload
+                      value={step.image}
+                      onChange={(url) => updateStepRow(idx, { image: url })}
+                      onRemove={() => updateStepRow(idx, { image: '' })}
+                      hint="Ảnh bước nấu (tùy chọn)"
+                      aspectRatio="wide"
                     />
                   </div>
                 </div>

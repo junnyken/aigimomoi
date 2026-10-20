@@ -34,6 +34,8 @@ services:
       PORT: 3000
     ports:
       - "3000:3000"
+    volumes:
+      - uploads_data:/app/public/uploads
     networks:
       - angimom_net
 
@@ -55,6 +57,7 @@ services:
 
 volumes:
   pgdata:
+  uploads_data:
   caddy_data:
   caddy_config:
 

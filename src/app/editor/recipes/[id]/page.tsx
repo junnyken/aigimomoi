@@ -17,6 +17,7 @@ import {
   Sparkles,
   Lock,
 } from 'lucide-react';
+import { ImageUpload } from '@/components/ui/ImageUpload';
 
 interface IngredientOption {
   id: number;
@@ -46,6 +47,7 @@ interface StepRow {
   instruction: string;
   timerMinutes: number | '';
   tipText: string;
+  image?: string;
 }
 
 const PHASES = ['Sơ chế', 'Chế biến', 'Hoàn thành'];
@@ -150,6 +152,7 @@ function EditRecipeContent() {
                 instruction: st.instruction,
                 timerMinutes: st.timerSeconds ? Math.round(st.timerSeconds / 60) : '',
                 tipText: st.tipText || '',
+                image: st.image || '',
               }))
             );
           }
@@ -278,6 +281,7 @@ function EditRecipeContent() {
           instruction: s.instruction.trim(),
           timerSeconds: s.timerMinutes ? Number(s.timerMinutes) * 60 : null,
           tipText: s.tipText ? s.tipText.trim() : null,
+          image: s.image || null,
         })),
         taxonomyIds: selectedTaxonomyIds,
       };
@@ -481,6 +485,18 @@ function EditRecipeContent() {
               />
             </div>
           </div>
+
+          <div>
+            <ImageUpload
+              label="Ảnh đại diện món ăn (Hero image)"
+              value={heroImage}
+              onChange={setHeroImage}
+              onRemove={() => setHeroImage('')}
+              hint="Tải ảnh món cơm nhà hấp dẫn (JPG/PNG/WebP, tối đa 5MB)"
+              aspectRatio="video"
+              disabled={isPublished}
+            />
+          </div>
         </section>
 
         {/* Section 2: Nguyên liệu có cấu trúc */}
@@ -676,16 +692,28 @@ function EditRecipeContent() {
                   className="w-full px-3 py-2 bg-white border border-[#EADBC8] rounded-xl text-xs text-[#2D2A26] disabled:opacity-70 leading-relaxed"
                 />
 
-                <div className="relative">
-                  <Sparkles className="w-3.5 h-3.5 text-[#B75B35] absolute left-2.5 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="text"
-                    disabled={isPublished}
-                    placeholder="Mẹo nhỏ..."
-                    value={step.tipText}
-                    onChange={(e) => updateStepRow(idx, { tipText: e.target.value })}
-                    className="w-full pl-8 pr-3 py-1.5 bg-[#FAF7F0] border border-[#EADBC8] rounded-lg text-xs text-[#5C4A3A] italic disabled:opacity-70"
-                  />
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-center">
+                  <div className="md:col-span-2 relative">
+                    <Sparkles className="w-3.5 h-3.5 text-[#B75B35] absolute left-2.5 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      disabled={isPublished}
+                      placeholder="Mẹo nhỏ..."
+                      value={step.tipText}
+                      onChange={(e) => updateStepRow(idx, { tipText: e.target.value })}
+                      className="w-full pl-8 pr-3 py-2 bg-[#FAF7F0] border border-[#EADBC8] rounded-lg text-xs text-[#5C4A3A] italic disabled:opacity-70"
+                    />
+                  </div>
+                  <div className="md:col-span-1">
+                    <ImageUpload
+                      value={step.image}
+                      onChange={(url) => updateStepRow(idx, { image: url })}
+                      onRemove={() => updateStepRow(idx, { image: '' })}
+                      hint="Ảnh bước nấu (tùy chọn)"
+                      aspectRatio="wide"
+                      disabled={isPublished}
+                    />
+                  </div>
                 </div>
               </div>
             ))}
