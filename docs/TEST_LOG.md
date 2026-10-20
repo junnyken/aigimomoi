@@ -64,3 +64,15 @@ Kiểm tra tài liệu/skill (script read-only, 8 nhóm):
 | 3 | Checklist 9 tiêu chí bao hàm toàn bộ Master Plan §8.4 | PASS |
 | 4 | Secret scan trên docs: không có secret | PASS |
 | 5 | DECISIONS.md ghi nhận D22, D23; giải quyết O5, O10 | PASS |
+
+## AG-04 — Design Tokens & Primitives — 20/10/2026
+
+**App tests: N/A.**
+
+| # | Kiểm tra | Kết quả |
+|---|---|---|
+| 1 | docs/tokens.css khai báo đầy đủ 7 nhóm biến CSS chuẩn | PASS |
+| 2 | Ma trận tương phản màu toán học đạt chuẩn WCAG 2.2 AA (chữ thường >= 4.5:1, chữ lớn >= 3:1) | PASS |
+| 3 | DESIGN_SYSTEM.md quy định đầy đủ phông Be Vietnam Pro, kích thước, spacing và component primitives | PASS |
+| 4 | Secret scan trên docs: không có secret | PASS |
+| 5 | DECISIONS.md ghi nhận D24, giải quyết O9 | PASS |

@@ -17,7 +17,7 @@ Gate P0: scope, thuật ngữ, kiến trúc, người duyệt và khoản chưa 
 ## P1 — UX/UI và prototype
 | ID | Capability | Dependency | Trạng thái |
 |---|---|---|---|
-| AG-04 | Design tokens & primitives | AG-02 | `spec-drafted` |
+| AG-04 | Design tokens & primitives | AG-02 | `awaiting-close` |
 | AG-05 | Discovery prototype | AG-04 | `not-started` |
 | AG-06 | Recipe & cooking prototype | AG-04 | `not-started` |
 | AG-07 | Meal & shopping prototype | AG-06 | `not-started` |

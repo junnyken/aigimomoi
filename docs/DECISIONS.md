@@ -50,6 +50,12 @@ Nguồn ưu tiên cao nhất khi có xung đột (master plan §0). Chỉ ghi `a
 | D22 | **Kế hoạch các đợt nội dung**: Batch 0 (6-8 món kinh điển cơm nhà Việt để thử nghiệm prototype P1); Batch 1 (30 món: 15 mặn, 8 canh, 7 rau/phụ cho phát hành MVP P3); Batch 2 (50+ món mở rộng sau MVP) |
 | D23 | **Quy trình thẩm định & minh bạch dữ liệu**: Chủ sản phẩm duyệt cuối; chỉ bật nhãn `COOK_TESTED` / `NUTRITION_VERIFIED` khi có kiểm chứng thực tế; không cào dữ liệu lậu hay dùng AI bịa công thức; dữ liệu thử nghiệm phải gắn cờ `[DEMO_FIXTURE]` |
 
+## Quyết định trong AG-04 (`approved` ngày 20/10/2026)
+
+| ID | Nội dung |
+|---|---|
+| D24 | **Design Tokens & Chuẩn Trợ năng**: Phê duyệt bảng màu kem ấm (`#FAF7F0`), xanh lá bếp (`#3F6240`), cam đất (`#B75B35`) đạt 100% chuẩn WCAG 2.2 Level AA; phông chữ Be Vietnam Pro; bộ icon Lucide; định hình wordmark "ĂN GÌ MOM" và tagline "Bữa cơm nhà, bớt nghĩ hôm nay ăn gì." (O9) |
+
 ## Còn mở (`unknown`)
 
 | # | Vấn đề | Quyết định tại |
@@ -62,5 +68,5 @@ Nguồn ưu tiên cao nhất khi có xung đột (master plan §0). Chỉ ghi `a
 | O6 | Nghĩa của “ăn theo thì” | P7 |
 | O7 | Nút chọn món không cần AI trong discovery | AG-05 |
 | O8 | Xác nhận diễn giải D12 | Duyệt phạm vi MVP |
-| O9 | Tagline “Bữa cơm nhà, bớt nghĩ hôm nay ăn gì.” và wordmark tạm | AG-04 |
+| O9 | Tagline “Bữa cơm nhà, bớt nghĩ hôm nay ăn gì.” và wordmark tạm | Đã chốt theo D24 (Approved) |
 | O10 | Số lượng công thức Batch 0/1/2 | Đã chốt theo D22 (Batch 0: 6-8 món, Batch 1: 30 món) |
