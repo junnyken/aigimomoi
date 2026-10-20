@@ -1,0 +1,74 @@
+# ROADMAP
+
+Nguồn: master plan §7. Đây là backlog định hướng — **không** có nghĩa các spec đã được duyệt. Không cam kết ngày/tuần trước audit.
+
+Trạng thái spec: `not-started` · `spec-drafted` · `approved-for-build` · `in-build` · `awaiting-close` · `closed` · `blocked`.
+
+## P0 — Nền móng
+| ID | Capability | Dependency | Trạng thái |
+|---|---|---|---|
+| AG-00 | Workspace audit & skill setup | Tài liệu gốc | `awaiting-close` |
+| AG-01 | Existing infrastructure inventory | AG-00 | `not-started` |
+| AG-02 | Architecture & domain decisions | AG-01 | `not-started` |
+| AG-03 | Content operations plan | AG-00 | `not-started` |
+
+Gate P0: scope, thuật ngữ, kiến trúc, người duyệt và khoản chưa biết được ghi rõ.
+
+## P1 — UX/UI và prototype
+| ID | Capability | Dependency | Trạng thái |
+|---|---|---|---|
+| AG-04 | Design tokens & primitives | AG-02 | `not-started` |
+| AG-05 | Discovery prototype | AG-04 | `not-started` |
+| AG-06 | Recipe & cooking prototype | AG-04 | `not-started` |
+| AG-07 | Meal & shopping prototype | AG-06 | `not-started` |
+| AG-08 | Responsive & usability review | AG-05..07 | `not-started` |
+
+Gate P1: chủ sản phẩm duyệt luồng/thiết kế trước wiring dữ liệu thật.
+
+## P2 — Core catalog và biên tập
+| ID | Capability | Dependency | Trạng thái |
+|---|---|---|---|
+| AG-09 | App foundation & environment | AG-02, AG-08 | `not-started` |
+| AG-10 | Schema & migrations | AG-09 | `not-started` |
+| AG-11 | Identity & authorization | AG-10 | `not-started` |
+| AG-12 | Ingredient & taxonomy CRUD | AG-11 | `not-started` |
+| AG-13 | Structured recipe editor | AG-12 | `not-started` |
+| AG-14 | Media pipeline | AG-11 | `not-started` |
+| AG-15 | Publishing & revision gate | AG-13, 14 | `not-started` |
+| AG-16 | Public recipe rendering | AG-15 | `not-started` |
+
+Gate P2: tạo → kiểm → xuất bản → đọc lại chạy được.
+
+## P3 — MVP bữa cơm và đi chợ
+| ID | Capability | Dependency | Trạng thái |
+|---|---|---|---|
+| AG-17 | Search & filters | AG-16 | `not-started` |
+| AG-18 | Serving adjustment | AG-16 | `not-started` |
+| AG-19 | Cooking mode | AG-18 | `not-started` |
+| AG-20 | Saved recipes | AG-11, 16 | `not-started` |
+| AG-21 | Meal composition & replacement | AG-17, 18 | `not-started` |
+| AG-22 | Ingredient aggregation | AG-21 | `not-started` |
+| AG-23 | Shopping checklist persistence | AG-22 | `not-started` |
+| AG-24 | SEO & index boundaries | AG-16, 17 | `not-started` |
+| AG-25 | Staging deploy & observability | Core tests pass | `not-started` |
+| AG-26 | Content batch review & MVP pilot gate | AG-03, 15, 23, 25 | `not-started` |
+
+Gate P3 = MVP đủ dùng thử (không cần P4–P8).
+
+## P4 — AI có kiểm soát
+AG-27 provider boundary & budget · AG-28 AI recipe suggestion · AG-29 AI authoring drafts · AG-30 AI evaluation & fallback — tất cả `not-started`, cần duyệt provider (O4).
+
+## P5 — Cộng đồng
+AG-31 contributor submission · AG-32 moderation · AG-33 dish variants & stories · AG-34 cooked-it feedback — `not-started`.
+
+## P6 — Dinh dưỡng và nhật ký
+AG-35 nutrition source audit · AG-36 recipe nutrition calc · AG-37 consumed portions & snapshots · AG-38 daily summaries & privacy — `not-started`.
+
+## P7 — Mở rộng catalog
+Món nước, đồ uống, bánh/ngọt, món chay, kế hoạch tuần/pantry, “ăn theo thì” (chờ O6). Mỗi nhánh cần ID mới khi duyệt.
+
+## P8 — Kinh doanh và scale
+Chỉ sau dữ liệu sử dụng thật. Payment/subscription là phạm vi riêng.
+
+## Mốc
+M1 scope/kiến trúc/prototype duyệt · M2 catalog + nội dung thật · M3 MVP pilot · M4 AI an toàn · M5+ mở rộng theo evidence.
