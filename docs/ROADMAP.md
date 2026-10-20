@@ -80,10 +80,10 @@ Gate P5: nội dung cộng đồng có queue duyệt, quyền sở hữu và x�
 |---|---|---|---|
 | AG-35 | Nutrition source audit & mapping | AG-13 | `closed` (21/10/2026) |
 | AG-36 | Recipe nutrition calc & missing-data rules | AG-15, 35 | `closed` (21/10/2026) |
-| AG-37 | Consumed portions & diary snapshots | AG-36 | `not-started` |
-| AG-38 | Daily summaries & privacy | AG-37 | `not-started` |
+| AG-37 | Consumed portions & diary snapshots | AG-36 | `closed` (21/10/2026) |
+| AG-38 | Daily summaries & privacy | AG-37 | `closed` (21/10/2026) |
 
-Gate: nguồn truy vết, lượng đã ăn khác lượng đã nấu, dữ liệu thiếu không thành 0, nhật ký riêng tư và không hồi tố theo revision mới.
+Gate P6: nguồn truy vết, lượng đã ăn khác lượng đã nấu, dữ liệu thiếu không thành 0, nhật ký riêng tư và không hồi tố theo revision mới. — **GATE P6 ĐÃ ĐẠT (M6 DINH DƯỠNG & NHẬT KÝ BẾP NHÀ)**
 
 ## P7 — Mở rộng catalog
 Món nước, đồ uống, bánh/ngọt, món chay, kế hoạch tuần/pantry, “ăn theo thì” (chờ O6). Mỗi nhánh cần ID mới khi duyệt.

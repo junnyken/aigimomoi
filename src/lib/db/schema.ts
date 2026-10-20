@@ -81,6 +81,13 @@ export const feedbackStatusEnum = pgEnum('feedback_status', [
   'REJECTED'
 ]);
 
+export const diaryMealTypeEnum = pgEnum('diary_meal_type', [
+  'BREAKFAST',
+  'LUNCH',
+  'DINNER',
+  'SNACK'
+]);
+
 // ============================================================================
 // 2. CORE ENTITIES
 // ============================================================================
@@ -332,5 +339,28 @@ export const ingredientNutrition = pgTable('ingredient_nutrition', {
 }, (table) => [
   index('ingredient_nutrition_ingredient_idx').on(table.ingredientId),
   index('ingredient_nutrition_verified_idx').on(table.isVerified),
+]);
+
+// Meal Diary Entries (Nhật ký bữa ăn gia đình & Khẩu phần ăn thực tế - AG-37 & AG-38)
+export const mealDiaryEntries = pgTable('meal_diary_entries', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  recipeId: integer('recipe_id').references(() => recipes.id, { onDelete: 'set null' }),
+  recipeName: text('recipe_name').notNull(),
+  diaryDate: text('diary_date').notNull(),
+  mealType: diaryMealTypeEnum('meal_type').notNull().default('LUNCH'),
+  memberName: text('member_name').notNull().default('Cả nhà'),
+  consumedPortion: doublePrecision('consumed_portion').notNull().default(1.0),
+  calories: integer('calories').notNull(),
+  protein: doublePrecision('protein').notNull(),
+  fat: doublePrecision('fat').notNull(),
+  carbs: doublePrecision('carbs').notNull(),
+  sodium: integer('sodium'),
+  fiber: doublePrecision('fiber'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index('meal_diary_entries_user_idx').on(table.userId),
+  index('meal_diary_entries_user_date_idx').on(table.userId, table.diaryDate),
+  index('meal_diary_entries_recipe_idx').on(table.recipeId),
 ]);
 

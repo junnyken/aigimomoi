@@ -242,6 +242,12 @@ Nguồn ưu tiên cao nhất khi có xung đột (master plan §0). Chỉ ghi `a
 |---|---|
 | D55 | **Nutrition Engine & Vietnamese Standard Calculator**: Phê duyệt hệ thống tính toán dinh dưỡng dữ liệu chuẩn Việt Nam (Invariants §5.5, Gate P6): (1) Nguồn dữ liệu kiểm định: Thiết lập bảng `ingredient_nutrition` đối chiếu theo Bảng thành phần thực phẩm Việt Nam (Viện Dinh Dưỡng Quốc Gia - Bộ Y Tế, `VIETNAM_FCT_2007`), có tính đến tỷ lệ phần ăn được (`edibleRate`); (2) Invariant Tối thượng Gate P6: Dữ liệu thiếu không được ép thành 0 (`Missing is NOT zero`), bảo toàn giá trị `null` và hiển thị cảnh báo minh bạch; (3) Bộ chuyển đổi đơn vị dân gian: Hỗ trợ quy đổi `gam`, `kg`, `lạng` (100g), `thìa canh` (15g), `thìa cà phê` (5g), `bát con`, `quả/củ` sang khối lượng thực phẩm ăn được; (4) Snapshot bất biến: Tính toán chi tiết Kcal, Đạm, Béo, Đường bột, Natri và Chất xơ trên 1 khẩu phần (`perServing`), toàn nồi (`totalBatch`) và 100g thành phẩm, lưu trữ dưới dạng snapshot `nutritionSnapshot` trong `recipes` để chống hồi tố khi sửa từ điển sau này; (5) Tỷ lệ bao phủ & Bật nhãn kiểm định: Chỉ bật `isNutritionVerified = true` khi độ bao phủ dinh dưỡng đạt từ 80% trở lên; (6) Giao diện: Hiển thị Bảng Dinh Dưỡng Chuẩn Việt Nam minh bạch trên trang món ăn `/cong-thuc/[slug]`. |
 
+## Quyết định trong AG-37 & AG-38 (`implemented` ngày 21/10/2026)
+
+| ID | Nội dung |
+|---|---|
+| D56 | **Family Meal Diary, Consumed Portions & Daily Summaries**: Phê duyệt hệ thống nhật ký bữa ăn gia đình và nghiệm thu Gate P6 (Invariants §5.5, Gate P6): (1) Lượng ăn thực tế: Cho phép ghi nhận khẩu phần ăn riêng biệt của từng thành viên gia đình (`0.5`, `1.0`, `1.5`, `2.0` phần cho `Bố`, `Mẹ`, `Bé Bo`), tách biệt lượng thực tế tiêu thụ với định lượng nấu của công thức; (2) Snapshot bất biến chống hồi tố: Dữ liệu Kcal và Macro được chụp snapshot cố định vào bản ghi nhật ký `meal_diary_entries`, không bị thay đổi nếu sau này công thức gốc được chỉnh sửa; (3) Tổng hợp ngày & Cảnh báo Vi chất: Tính toán tổng Calo, tỷ lệ phân bổ P/F/C % theo ngày, đối chiếu chuẩn RDA Viện Dinh Dưỡng và tự động hiển thị cảnh báo sức khỏe nếu lượng Natri vượt ngưỡng 2000mg/ngày; (4) Quyền riêng tư gia đình: Dữ liệu nhật ký được cô lập hoàn toàn giữa các tài khoản người dùng; (5) Quyền xuất dữ liệu và được lãng quên: Cung cấp API tải file JSON toàn bộ lịch sử ăn uống (`/api/diary/export`) và API xóa nhật ký (`/api/diary/clear`); (6) Nghiệm thu toàn diện Gate P6: Hoàn tất 100% 4 capability của Phase P6 (AG-35, AG-36, AG-37, AG-38). |
+
 ## Còn mở (`unknown`)
 
 | # | Vấn đề | Quyết định tại |
