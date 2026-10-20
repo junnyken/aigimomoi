@@ -176,6 +176,12 @@ Nguồn ưu tiên cao nhất khi có xung đột (master plan §0). Chỉ ghi `a
 |---|---|
 | D44 | **SEO & Index Boundaries, Dynamic Sitemap & Schema.org Recipe JSON-LD**: Phê duyệt thiết lập SEO toàn diện và ranh giới chỉ mục cho dự án Ăn Gì Mom: (1) `robots.txt` (`src/app/robots.ts`) mở cửa cho toàn bộ công cụ tìm kiếm cào dữ liệu các trang công khai (`/`, `/mon-an`, `/cong-thuc/*`, `/meal`, `/da-luu`, `/shopping`), đồng thời chặn triệt để khu vực quản trị/biên tập (`/editor/*`), API nội bộ (`/api/*`), và trang đăng nhập (`/login`); (2) Sitemap động (`src/app/sitemap.ts`) tự động truy vấn cơ sở dữ liệu thời gian thực và tuyệt đối chỉ đưa vào các công thức có trạng thái `PUBLISHED` (tuân thủ nghiêm ngặt Invariants §5.1), loại bỏ 100% bản `DRAFT` và `ARCHIVED`; (3) Dữ liệu có cấu trúc Schema.org Recipe JSON-LD (`RecipeJsonLd.tsx`) chuẩn mực được nhúng vào trang chi tiết công thức (`/cong-thuc/[slug]`), chuẩn hóa thời gian chuẩn ISO 8601 (`PT...`), danh sách nguyên liệu định lượng và các bước hướng dẫn `HowToStep`; (4) Bảo mật chuỗi JSON chống tấn công XSS qua cơ chế sanitize escape ký tự `<` thành `\u003c`. |
 
+## Quyết định trong AG-25 (`drafted / implemented` ngày 20/10/2026)
+
+| ID | Nội dung |
+|---|---|
+| D45 | **Staging Deploy, Observability & Structured Logger with Secret Redaction**: Phê duyệt tiêu chuẩn triển khai độc lập và giám sát hệ thống cho Ăn Gì Mom: (1) Endpoint giám sát sức khỏe `/api/health` trả về trạng thái liveness/readiness probe, kiểm tra trực tiếp kết nối DB (`SELECT 1`), uptime, version, phản hồi HTTP 200 khi kết nối tốt và HTTP 503 khi mất kết nối; (2) Invariant "Log không lộ secrets": Module `src/lib/logger.ts` tự động làm sạch (redact) các trường nhạy cảm (`password`, `token`, `secret`, `jwt`, `cookie`, `database_url`), che giấu mật khẩu PostgreSQL connection string và Bearer authorization trước khi ghi log ra container/stdout; (3) Tối ưu hóa điều phối container `docker-compose.yml`: Bổ sung healthcheck định kỳ cho service `web` (`/api/health`) và điều kiện `caddy` phụ thuộc `web: condition: service_healthy`, đảm bảo luồng traffic chỉ được chuyển tiếp khi ứng dụng và DB đã hoàn toàn sẵn sàng. |
+
 ## Còn mở (`unknown`)
 
 | # | Vấn đề | Quyết định tại |

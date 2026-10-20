@@ -50,7 +50,7 @@ Gate P2: tạo → kiểm → xuất bản → đọc lại chạy được. —
 | AG-22 | Ingredient aggregation | AG-21 | `closed` (20/10/2026) |
 | AG-23 | Shopping checklist persistence | AG-22 | `closed` (20/10/2026) |
 | AG-24 | SEO & index boundaries | AG-16, 17 | `closed` (20/10/2026) |
-| AG-25 | Staging deploy & observability | Core tests pass | `not-started` |
+| AG-25 | Staging deploy & observability | Core tests pass | `closed` (20/10/2026) |
 | AG-26 | Content batch review & MVP pilot gate | AG-03, 15, 23, 25 | `not-started` |
 
 Gate P3 = MVP đủ dùng thử (không cần P4–P8).

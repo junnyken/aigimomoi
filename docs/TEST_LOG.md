@@ -464,6 +464,38 @@ Kiểm tra tài liệu/skill (script read-only, 8 nhóm):
 | 16 | `tsc --noEmit` sạch lỗi; `npm run build` thành công với 34 routes (exit code 0) | PASS |
 | 17 | DECISIONS.md ghi nhận D44 | PASS |
 
+## AG-25 — Staging Deploy & Observability — 20/10/2026
+
+**App tests: `test_staging_observability.ts` (39 test cases), regression checks (`test_seo_boundaries.ts`, `test_shopping_checklist.ts`, `test_ingredient_aggregation.ts`, `test_meal_composition.ts`, `test_saved_recipes.ts`), TypeScript (`tsc --noEmit`), Next.js production build (`npm run build`), Docker compose configuration validation (`docker compose config`).**
+
+| # | Kiểm tra | Kết quả |
+|---|---|---|
+| 1 | Invariant "Log không lộ secrets": Redaction khử sạch `password`, `token`, `secret`, `jwt` trong JSON meta | PASS |
+| 2 | Invariant "Log không lộ secrets": Che giấu mật khẩu trong PostgreSQL connection strings | PASS |
+| 3 | Invariant "Log không lộ secrets": Che giấu Bearer header và JWT signature | PASS |
+| 4 | Invariant "Log không lộ secrets": Khử dữ liệu nhạy cảm lồng nhau trong mảng và đối tượng phức tạp | PASS |
+| 5 | Logger utility: Cung cấp `debug`, `info`, `warn`, `error` xuất JSON trong production và text sạch trong dev | PASS |
+| 6 | Endpoint `/api/health`: Trả về HTTP 200 khi kết nối DB hoạt động bình thường | PASS |
+| 7 | Endpoint `/api/health`: Header `Cache-Control: no-store, no-cache, must-revalidate` chống lưu đệm | PASS |
+| 8 | Endpoint `/api/health`: Payload chuẩn xác (`status: healthy`, `database: connected`, `uptimeSeconds`, `version: 0.1.0`) | PASS |
+| 9 | Endpoint `/api/health`: Bảo mật phản hồi, tuyệt đối không để lộ mật khẩu hay cổng DB nội bộ | PASS |
+| 10 | Endpoint `/api/health`: Khả năng phục hồi khi lỗi DB, trả về HTTP 503 và thông báo lỗi an toàn không rò rỉ credential | PASS |
+| 11 | `Dockerfile`: Base image alpine, non-root user `nextjs:nodejs`, tối ưu standalone output | PASS |
+| 12 | `docker-compose.yml`: Đầy đủ 3 services (`db`, `web`, `caddy`), healthcheck probe định kỳ cho `db` và `web` | PASS |
+| 13 | `docker-compose.yml`: Ràng buộc `caddy` phụ thuộc `web: condition: service_healthy` | PASS |
+| 14 | `docker-compose.yml`: Lưu trữ bền vững dữ liệu DB (`pgdata`) và ảnh media (`uploads_data`) | PASS |
+| 15 | `Caddyfile`: Reverse proxy tới `web:3000`, nén gzip/zstd | PASS |
+| 16 | `docker compose config`: Kiểm tra cấu hình hợp lệ (exit code 0) | PASS |
+| 17 | `test_staging_observability.ts`: 39 PASS, 0 FAIL (exit code 0) | PASS |
+| 18 | `test_seo_boundaries.ts`: 37 PASS, 0 FAIL (không hồi quy AG-24) | PASS |
+| 19 | `test_shopping_checklist.ts`: 22 PASS, 0 FAIL (không hồi quy AG-23) | PASS |
+| 20 | `test_ingredient_aggregation.ts`: 37 PASS, 0 FAIL (không hồi quy AG-22) | PASS |
+| 21 | `test_meal_composition.ts`: 37 PASS, 0 FAIL (không hồi quy AG-21) | PASS |
+| 22 | `test_saved_recipes.ts`: 25 PASS, 0 FAIL (không hồi quy AG-20) | PASS |
+| 23 | `tsc --noEmit` sạch lỗi; `npm run build` thành công với 35 routes (exit code 0) | PASS |
+| 24 | DECISIONS.md ghi nhận D45 | PASS |
+
+
 
 
 
