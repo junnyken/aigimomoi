@@ -1422,3 +1422,116 @@ body {
   border-radius: var(--radius-full);
 }
 
+.meal-container,
+.meal-page-container {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: var(--space-6) var(--space-4) var(--space-16);
+  flex: 1;
+  width: 100%;
+}
+
+.meal-banner-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.meal-summary-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+}
+
+.shopping-checkbox {
+  width: 22px;
+  height: 22px;
+  accent-color: var(--color-brand-primary);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+/* ==========================================================================
+   AG-08: Responsive Polish & WCAG 2.2 AA Touch Targets (Criterion 2.5.8)
+   ========================================================================== */
+.btn {
+  min-height: 40px;
+}
+
+.serving-btn {
+  min-width: 40px;
+  min-height: 40px;
+}
+
+.chip {
+  min-height: 40px;
+}
+
+@media (max-width: 640px) {
+  .header-container {
+    padding: var(--space-1) 0;
+    gap: var(--space-2);
+  }
+
+  .brand-tagline {
+    display: none;
+  }
+
+  .header-nav {
+    gap: 4px;
+  }
+
+  .nav-link {
+    padding: 6px 10px;
+    font-size: var(--font-size-xs);
+  }
+
+  .nav-link svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .meal-banner {
+    padding: var(--space-4);
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .meal-banner-controls {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .meal-summary-bar {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+  }
+
+  .meal-summary-bar .btn {
+    width: 100%;
+  }
+
+  .cooking-nav {
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+
+  .cooking-nav .btn {
+    width: 100%;
+    min-height: 48px;
+  }
+
+  .recipe-hero-img-wrapper {
+    height: 240px;
+  }
+
+  .recipe-quick-specs {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+

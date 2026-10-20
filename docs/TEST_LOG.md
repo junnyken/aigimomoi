@@ -120,3 +120,19 @@ Kiểm tra tài liệu/skill (script read-only, 8 nhóm):
 | 7 | Secret scan: không có secret | PASS |
 | 8 | DECISIONS.md ghi nhận D27 | PASS |
 
+## AG-08 — Responsive & Usability Review — 20/10/2026
+
+**App tests: N/A.**
+
+| # | Kiểm tra | Kết quả |
+|---|---|---|
+| 1 | Automated audit `verify_ag08.py`: Kiểm tra viewport, semantic HTML, title, meta description trên toàn bộ 4 trang | PASS |
+| 2 | CSS mobile breakpoint (`@media (max-width: 640px)`) tối ưu header, banner mâm cơm, lưới thẻ món và Cooking Mode | PASS |
+| 3 | Tiêu chuẩn vùng chạm cảm ứng (Touch Target Size $\ge 40-44\text{px}$) chuẩn WCAG 2.2 Criterion 2.5.8 trên nút bấm, chips, serving selectors | PASS |
+| 4 | Trợ năng bàn phím và chỉ báo focus (`:focus-visible` với `--focus-ring`) hoạt động trên mọi phần tử tương tác | PASS |
+| 5 | HTTP server phản hồi 200 OK trên toàn bộ 4 màn hình | PASS |
+| 6 | CSS Lint: Không có cảnh báo lỗi cú pháp | PASS |
+| 7 | Secret scan: không có secret | PASS |
+| 8 | DECISIONS.md ghi nhận D28, hoàn tất toàn bộ tiêu chí Gate P1 | PASS |
+
+
