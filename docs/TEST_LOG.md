@@ -151,5 +151,20 @@ Kiểm tra tài liệu/skill (script read-only, 8 nhóm):
 | 8 | Secret scan: không có secret | PASS |
 | 9 | DECISIONS.md ghi nhận D29 | PASS |
 
+## AG-10 — Schema & Migrations — 20/10/2026
+
+**App tests: Drizzle generate & Next.js production build (`npm run build`).**
+
+| # | Kiểm tra | Kết quả |
+|---|---|---|
+| 1 | Định nghĩa 6 enums miền và 11 bảng dữ liệu theo DATA_MODEL.md trong `src/lib/db/schema.ts` | PASS |
+| 2 | Thiết lập quan hệ typesafe (Drizzle Relations) cho 11 bảng trong `src/lib/db/relations.ts` | PASS |
+| 3 | Khởi tạo client kết nối cơ sở dữ liệu `db` tích hợp schema và relations trong `src/lib/db/index.ts` | PASS |
+| 4 | Chạy `npm run db:generate` sinh thành công tập tin migration `drizzle/0000_dry_orphan.sql` (11 tables, 6 enums, 18 indexes, 11 foreign keys) | PASS |
+| 5 | Chạy `npm run build` biên dịch thành công ứng dụng Next.js với đầy đủ schema và relations (exit code 0) | PASS |
+| 6 | Secret scan: không có secret | PASS |
+| 7 | DECISIONS.md ghi nhận D30 | PASS |
+
+
 
 

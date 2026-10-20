@@ -29,7 +29,7 @@ Gate P1: chủ sản phẩm duyệt luồng/thiết kế trước wiring dữ li
 | ID | Capability | Dependency | Trạng thái |
 |---|---|---|---|
 | AG-09 | App foundation & environment | AG-02, AG-08 | `closed` (20/10/2026) |
-| AG-10 | Schema & migrations | AG-09 | `spec-drafted` |
+| AG-10 | Schema & migrations | AG-09 | `awaiting-close` |
 | AG-11 | Identity & authorization | AG-10 | `not-started` |
 | AG-12 | Ingredient & taxonomy CRUD | AG-11 | `not-started` |
 | AG-13 | Structured recipe editor | AG-12 | `not-started` |

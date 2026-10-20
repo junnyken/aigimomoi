@@ -80,11 +80,17 @@ Nguồn ưu tiên cao nhất khi có xung đột (master plan §0). Chỉ ghi `a
 |---|---|
 | D28 | **Responsive & Usability Standards for Gate P1**: Phê duyệt tiêu chuẩn hiển thị đáp ứng (Responsive Breakpoints: Mobile <640px, Tablet 640-1024px, Desktop >1024px), kích thước vùng chạm cảm ứng (Touch Target $\ge 40-44\text{px}$ chuẩn WCAG 2.2 Criterion 2.5.8), khả năng điều hướng bàn phím với focus ring rõ ràng, cấu trúc ngữ nghĩa HTML đầy đủ (viewport, semantic tags, alt, meta description) và xác nhận thông suốt hành trình người dùng toàn diện trên 4 màn hình prototype để nghiệm thu Gate P1 |
 
-## Quyết định trong AG-09 (`drafted / implemented` ngày 20/10/2026)
+## Quyết định trong AG-09 (`approved` ngày 20/10/2026)
 
 | ID | Nội dung |
 |---|---|
 | D29 | **Next.js Foundation, Tailwind Tokens, Drizzle ORM & Docker Architecture**: Phê duyệt cấu trúc khởi tạo ứng dụng production Next.js 16 (App Router, TypeScript) tích hợp trọn vẹn bộ Design Tokens từ `docs/tokens.css` (Kem ấm `#FAF7F0`, Xanh lá `#3F6240`, Cam đất `#B75B35`), cấu hình Drizzle ORM với PostgreSQL dialect theo các enums Invariants §5.1, §5.2, §5.3, và hạ tầng container hóa độc lập (Dockerfile multi-stage, docker-compose với PostgreSQL 16 + Caddy tự động HTTPS SSL) đảm bảo sẵn sàng triển khai trên VPS cá nhân (D17, D18, D20) |
+
+## Quyết định trong AG-10 (`drafted / implemented` ngày 20/10/2026)
+
+| ID | Nội dung |
+|---|---|
+| D30 | **Culinary Data Model Drizzle Schema & Initial Migration**: Phê duyệt toàn bộ lược đồ cơ sở dữ liệu PostgreSQL cho nghiệp vụ bữa cơm gia đình (`src/lib/db/schema.ts`, `relations.ts`), bao gồm 6 enums miền, 11 bảng dữ liệu (`users`, `dishes`, `dish_aliases`, `recipes`, `ingredients`, `recipe_ingredients`, `cooking_steps`, `taxonomies`, `recipe_tags`, `meals`, `meal_items`), hệ thống khóa ngoại và chỉ mục (indexes) tối ưu hóa truy vấn tìm kiếm, và tập tin migration SQL đầu tiên (`drizzle/0000_dry_orphan.sql`) đảm bảo tuân thủ 100% Invariants §5 (tách biệt Dish/Recipe, định lượng nguyên liệu có cấu trúc, 3 cờ kiểm chứng độc lập) |
 
 ## Còn mở (`unknown`)
 
