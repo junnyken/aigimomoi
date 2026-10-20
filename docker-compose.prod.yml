@@ -1,0 +1,72 @@
+# Docker Compose Production Stack — Ăn Gì Mom
+# Dịch vụ: Next.js Standalone (app) + PostgreSQL 16 (postgres) + Caddy HTTPS (caddy)
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: angimom_prod_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-angimom}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-angimom_secure_password_2026}
+      POSTGRES_DB: ${POSTGRES_DB:-angimom_prod}
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+      - ./backups:/backups
+    networks:
+      - angimom_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-angimom} -d ${POSTGRES_DB:-angimom_prod}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
+    container_name: angimom_prod_app
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://${POSTGRES_USER:-angimom}:${POSTGRES_PASSWORD:-angimom_secure_password_2026}@postgres:5432/${POSTGRES_DB:-angimom_prod}
+      JWT_SECRET: ${JWT_SECRET:-angimom_super_secret_jwt_key_production_2026}
+      # Cloudflare R2 Object Storage
+      CLOUDFLARE_R2_ACCOUNT_ID: ${CLOUDFLARE_R2_ACCOUNT_ID}
+      CLOUDFLARE_R2_ACCESS_KEY_ID: ${CLOUDFLARE_R2_ACCESS_KEY_ID}
+      CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${CLOUDFLARE_R2_SECRET_ACCESS_KEY}
+      CLOUDFLARE_R2_BUCKET_NAME: ${CLOUDFLARE_R2_BUCKET_NAME:-angimom-media}
+      CLOUDFLARE_R2_PUBLIC_DOMAIN: ${CLOUDFLARE_R2_PUBLIC_DOMAIN}
+      # Transactional Email (Resend / SMTP)
+      RESEND_API_KEY: ${RESEND_API_KEY}
+      EMAIL_FROM: ${EMAIL_FROM:-no-reply@angimom.vn}
+    volumes:
+      - ./public/uploads:/app/public/uploads
+    networks:
+      - angimom_network
+    expose:
+      - "3000"
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: angimom_prod_caddy
+    restart: unless-stopped
+    depends_on:
+      - app
+    environment:
+      DOMAIN_NAME: ${DOMAIN_NAME:-localhost}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - ./data/caddy_data:/data
+      - ./data/caddy_config:/config
+    networks:
+      - angimom_network
+
+networks:
+  angimom_network:
+    driver: bridge

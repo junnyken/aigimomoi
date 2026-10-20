@@ -8,6 +8,8 @@ import path from 'path';
 import crypto from 'crypto';
 import { logger } from '@/lib/logger';
 
+import { getR2Config, uploadBufferToR2 } from './r2Client';
+
 export interface UploadResult {
   url: string;
   filename: string;
@@ -41,25 +43,23 @@ export async function saveUploadedFile(file: File, subfolder: string = 'recipes'
   const ext = path.extname(file.name).toLowerCase() || '.jpg';
   const hash = crypto.randomBytes(16).toString('hex');
   const filename = `${Date.now()}-${hash}${ext}`;
+  const key = `${subfolder}/${filename}`;
 
-  const s3Endpoint = process.env.S3_ENDPOINT || (process.env.R2_ACCOUNT_ID ? `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com` : null);
-  const s3Bucket = process.env.S3_BUCKET_NAME || 'angimom-media';
-  const s3PublicUrl = process.env.S3_PUBLIC_DOMAIN;
-
-  // 1. Nếu có cấu hình Cloudflare R2 / S3
-  if (s3Endpoint && process.env.S3_ACCESS_KEY_ID && process.env.S3_SECRET_ACCESS_KEY) {
+  // 1. Kiểm tra cấu hình Cloudflare R2
+  const r2Config = getR2Config();
+  if (r2Config) {
     try {
-      if (s3PublicUrl) {
-        return {
-          url: `${s3PublicUrl.replace(/\/$/, '')}/${subfolder}/${filename}`,
-          filename,
-          size: file.size,
-          mimeType: file.type,
-          provider: 'S3_R2',
-        };
-      }
+      const publicUrl = await uploadBufferToR2(buffer, key, file.type, r2Config);
+      logger.info('File successfully uploaded to Cloudflare R2', { key, publicUrl });
+      return {
+        url: publicUrl,
+        filename,
+        size: file.size,
+        mimeType: file.type,
+        provider: 'S3_R2',
+      };
     } catch (err) {
-      logger.warn('S3 upload failed, falling back to local disk storage', { err });
+      logger.warn('Cloudflare R2 upload failed, falling back to local disk storage', { err });
     }
   }
 

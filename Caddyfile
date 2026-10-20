@@ -1,6 +1,32 @@
-# Caddyfile for ĂN GÌ MOM Production
-# Replace :80 with your domain (e.g., angimom.vn) for automatic Let's Encrypt SSL
-:80 {
-    reverse_proxy web:3000
-    encode gzip zstd
+# Caddy Production Reverse Proxy — Tự động cấp SSL HTTPS miễn phí và nén Zstandard/Gzip
+{
+    email admin@angimom.vn
+    admin off
+}
+
+{$DOMAIN_NAME:localhost} {
+    # Nén dữ liệu truyền tải
+    encode zstd gzip
+
+    # Reverse proxy tới Next.js container trên cổng 3000
+    reverse_proxy app:3000 {
+        header_up Host {host}
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+    }
+
+    # Cache tiêu chuẩn cho tài nguyên tĩnh Next.js
+    @static {
+        path /_next/static/* /images/* /favicon.ico /manifest.json
+    }
+    header @static Cache-Control "public, max-age=31536000, immutable"
+
+    # Security Headers
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "SAMEORIGIN"
+        Referrer-Policy "strict-origin-when-cross-origin"
+    }
 }
