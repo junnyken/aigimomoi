@@ -304,3 +304,28 @@ Kiểm tra tài liệu/skill (script read-only, 8 nhóm):
 | 15 | `tsc --noEmit` sạch lỗi; `npm run build` thành công với 21 routes PPR (exit code 0) | PASS |
 | 16 | DECISIONS.md ghi nhận D37 | PASS |
 
+## AG-18 — Serving Adjustment — 20/10/2026
+
+**App tests: `test_serving_adjustment.ts` (40 test cases), regression checks (`test_search_filters.ts`, `test_public_rendering.ts`), TypeScript (`tsc --noEmit`), Next.js production build (`npm run build`).**
+
+| # | Kiểm tra | Kết quả |
+|---|---|---|
+| 1 | Invariants §5.4: Giữ nguyên số lượng nguyên liệu khi $R = 1.0$ (base=4, target=4) | PASS |
+| 2 | Scale Up gấp đôi ($4 \to 8$, $R = 2.0$): Dòng `LINEAR` nhân đôi định lượng chính xác | PASS |
+| 3 | Invariants §5.4: Dòng `FIXED` (hương liệu) giữ nguyên định lượng khi scale, không bị nhân | PASS |
+| 4 | Invariants §5.4: Dòng `MANUAL_ADJUST` (gia vị nêm nếm) giữ nguyên kèm nhãn hướng dẫn | PASS |
+| 5 | Scale Down giảm nửa ($4 \to 2$, $R = 0.5$): Tính toán chính xác định lượng nhỏ | PASS |
+| 6 | Scale lẻ ($4 \to 6$, $R = 1.5$): Co giãn chính xác số thập phân | PASS |
+| 7 | Scale cho 1 người ($4 \to 1$, $R = 0.25$): Định lượng cho cá nhân chính xác | PASS |
+| 8 | Giới hạn biên an toàn (`clampServings`): Chặn số âm, 0, số lớn hơn 20 | PASS |
+| 9 | Làm tròn hiển thị UI (D21): `formatScaledAmount` tối đa 2 chữ số thập phân, không sai số lũy tiến | PASS |
+| 10 | Bất biến thời gian: Thời gian nấu và sơ chế không bị nhân theo $R$ | PASS |
+| 11 | `test_serving_adjustment.ts`: 40 PASS, 0 FAIL (exit code 0) | PASS |
+| 12 | `test_search_filters.ts`: 36 PASS, 0 FAIL (không hồi quy AG-17) | PASS |
+| 13 | `test_public_rendering.ts`: 31 PASS, 0 FAIL (không hồi quy AG-16) | PASS |
+| 14 | Component `ServingSelector`: Nút [-], [+], badge $R$, nút đặt lại về khẩu phần gốc | PASS |
+| 15 | Đồng bộ URL `?servings=X` phía client qua `window.history.replaceState` không reload trang | PASS |
+| 16 | `tsc --noEmit` sạch lỗi; `npm run build` thành công 21/21 routes (exit code 0) | PASS |
+| 17 | DECISIONS.md ghi nhận D38 | PASS |
+
+

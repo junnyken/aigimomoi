@@ -134,6 +134,12 @@ Nguồn ưu tiên cao nhất khi có xung đột (master plan §0). Chỉ ghi `a
 |---|---|
 | D37 | **Search & Filters Architecture & URL Reflection**: Triển khai trang tìm kiếm tập trung `/mon-an` với bộ lọc đa trục (vai trò món, thời gian nấu, độ khó, nhãn kiểm chứng bếp thực tế, cách chế biến, vùng miền, sắp xếp). Toàn bộ trạng thái tìm kiếm và bộ lọc được đồng bộ trung thực 100% lên URL search parameters (`?q=...&role=...&maxTime=...&difficulty=...&tested=...&sort=...`) phục vụ deep linking và browser history (§6.7). Áp dụng kiến trúc Partial Prerendering (PPR) của Next.js 16: prerender tĩnh Header/Shell và stream nội dung động qua `<Suspense>` xung quanh dữ liệu `searchParams`. Truy vấn dữ liệu an toàn qua Drizzle ORM với parameterized queries chống SQL Injection và chặn 100% các công thức chưa xuất bản (DRAFT/SUBMITTED/ARCHIVED). |
 
+## Quyết định trong AG-18 (`drafted / implemented` ngày 20/10/2026)
+
+| ID | Nội dung |
+|---|---|
+| D38 | **Serving Adjustment & Client-side Realtime Scaling**: Phê duyệt triển khai bộ điều khiển khẩu phần `ServingSelector` trên trang công thức công khai `/cong-thuc/[slug]`, hỗ trợ tăng giảm từ 1 đến 20 người ăn. Tuân thủ nghiêm ngặt Invariants §5.4 (D21): chỉ co giãn các nguyên liệu có `scalePolicy === 'LINEAR'` theo tỷ lệ $R = \text{target} / \text{base}$; các dòng `FIXED` (hương liệu thảo mộc) và `MANUAL_ADJUST` (gia vị nêm nếm theo khẩu vị) giữ nguyên định lượng gốc. Làm tròn chỉ ở tầng hiển thị UI (tối đa 2 chữ số thập phân), tuyệt đối không lưu đè giá trị làm tròn vào state tính toán. Giữ nguyên vẹn thời gian nấu (không nhân theo $R$). Đồng bộ khẩu phần lên URL parameter `?servings=X` phía client qua `window.history.replaceState` mà không reload trang. |
+
 ## Còn mở (`unknown`)
 
 | # | Vấn đề | Quyết định tại |

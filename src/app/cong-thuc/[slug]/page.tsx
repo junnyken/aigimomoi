@@ -123,7 +123,7 @@ export default async function PublicRecipePage({ params }: PageParams) {
             <Stat icon={Clock} label="Sơ chế" value={formatDuration(recipe.prepTimeMinutes)} />
             <Stat icon={Flame} label="Nấu" value={formatDuration(recipe.cookTimeMinutes)} />
             <Stat icon={Gauge} label="Độ khó" value={recipe.difficulty} />
-            <Stat icon={Users} label="Khẩu phần" value={`${recipe.baseServings} người`} />
+            <Stat icon={Users} label="Khẩu phần gốc" value={`${recipe.baseServings} người`} />
           </dl>
 
           <p className="text-xs text-[var(--color-text-muted)]">
