@@ -21,14 +21,14 @@ Gate P0: scope, thuật ngữ, kiến trúc, người duyệt và khoản chưa 
 | AG-05 | Discovery prototype | AG-04 | `closed` (20/10/2026) |
 | AG-06 | Recipe & cooking prototype | AG-04 | `closed` (20/10/2026) |
 | AG-07 | Meal & shopping prototype | AG-06 | `closed` (20/10/2026) |
-| AG-08 | Responsive & usability review | AG-05..07 | `awaiting-close` |
+| AG-08 | Responsive & usability review | AG-05..07 | `closed` (20/10/2026) |
 
-Gate P1: chủ sản phẩm duyệt luồng/thiết kế trước wiring dữ liệu thật.
+Gate P1: chủ sản phẩm duyệt luồng/thiết kế trước wiring dữ liệu thật. — **GATE P1 ĐÃ ĐẠT**
 
 ## P2 — Core catalog và biên tập
 | ID | Capability | Dependency | Trạng thái |
 |---|---|---|---|
-| AG-09 | App foundation & environment | AG-02, AG-08 | `not-started` |
+| AG-09 | App foundation & environment | AG-02, AG-08 | `spec-drafted` |
 | AG-10 | Schema & migrations | AG-09 | `not-started` |
 | AG-11 | Identity & authorization | AG-10 | `not-started` |
 | AG-12 | Ingredient & taxonomy CRUD | AG-11 | `not-started` |
