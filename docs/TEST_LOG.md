@@ -76,3 +76,17 @@ Kiểm tra tài liệu/skill (script read-only, 8 nhóm):
 | 3 | DESIGN_SYSTEM.md quy định đầy đủ phông Be Vietnam Pro, kích thước, spacing và component primitives | PASS |
 | 4 | Secret scan trên docs: không có secret | PASS |
 | 5 | DECISIONS.md ghi nhận D24, giải quyết O9 | PASS |
+
+## AG-05 — Discovery Prototype — 20/10/2026
+
+**App tests: N/A.**
+
+| # | Kiểm tra | Kết quả |
+|---|---|---|
+| 1 | HTTP server port 8090 phản hồi mã 200 OK trên index.html, main.css, batch0_fixtures.js | PASS |
+| 2 | Tìm kiếm tức thời theo từ khóa tên món, alias, nguyên liệu hoạt động chính xác | PASS |
+| 3 | Bộ lọc vai trò món (`ALL`, `MAIN`, `SOUP`, `SIDE`) lọc chính xác danh sách thẻ | PASS |
+| 4 | Nút "Hôm nay ăn gì?" (O7) sinh mâm cơm 3 món ngẫu nhiên đủ 3 vai trò (1 Mặn + 1 Canh + 1 Rau) | PASS |
+| 5 | Trạng thái rỗng (Empty State) xuất hiện khi tìm từ khóa không có thật | PASS |
+| 6 | Secret scan: không có secret | PASS |
+| 7 | DECISIONS.md ghi nhận D25, giải quyết O7 | PASS |

@@ -56,6 +56,12 @@ Nguồn ưu tiên cao nhất khi có xung đột (master plan §0). Chỉ ghi `a
 |---|---|
 | D24 | **Design Tokens & Chuẩn Trợ năng**: Phê duyệt bảng màu kem ấm (`#FAF7F0`), xanh lá bếp (`#3F6240`), cam đất (`#B75B35`) đạt 100% chuẩn WCAG 2.2 Level AA; phông chữ Be Vietnam Pro; bộ icon Lucide; định hình wordmark "ĂN GÌ MOM" và tagline "Bữa cơm nhà, bớt nghĩ hôm nay ăn gì." (O9) |
 
+## Quyết định trong AG-05 (`approved` ngày 20/10/2026)
+
+| ID | Nội dung |
+|---|---|
+| D25 | **Discovery Prototype**: Triển khai bản mẫu tương tác web thuần chuẩn SEO, tích hợp 7 món Batch 0 (`[DEMO_FIXTURE]`), bộ lọc vai trò (`MAIN`, `SOUP`, `SIDE`), tìm kiếm tức thời và thuật toán chọn mâm cơm ngẫu nhiên 3 món cân bằng ("Hôm nay ăn gì?" - O7) không cần AI |
+
 ## Còn mở (`unknown`)
 
 | # | Vấn đề | Quyết định tại |
@@ -66,7 +72,7 @@ Nguồn ưu tiên cao nhất khi có xung đột (master plan §0). Chỉ ghi `a
 | O4 | Nhà cung cấp AI/model và budget | Trước P4 |
 | O5 | Người kiểm/nấu thử công thức | Chủ sản phẩm chịu trách nhiệm tổ chức/phê duyệt; Antigravity hỗ trợ chuẩn hóa cấu trúc (D23) |
 | O6 | Nghĩa của “ăn theo thì” | P7 |
-| O7 | Nút chọn món không cần AI trong discovery | AG-05 |
+| O7 | Nút chọn món không cần AI trong discovery | Đã chốt theo D25 (Thuật toán cân bằng 3 món client-side) |
 | O8 | Xác nhận diễn giải D12 | Duyệt phạm vi MVP |
 | O9 | Tagline “Bữa cơm nhà, bớt nghĩ hôm nay ăn gì.” và wordmark tạm | Đã chốt theo D24 (Approved) |
 | O10 | Số lượng công thức Batch 0/1/2 | Đã chốt theo D22 (Batch 0: 6-8 món, Batch 1: 30 món) |

@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ĂN GÌ MOM — Bữa cơm nhà, bớt nghĩ hôm nay ăn gì</title>
+  <meta name="description" content="Website giúp người nấu cơm gia đình tìm món, chuẩn bị nguyên liệu đúng khẩu phần, ghép một bữa cơm và làm theo từng bước.">
+  <link rel="stylesheet" href="styles/main.css">
+</head>
+<body>
+
+  <!-- Sticky Header -->
+  <header class="header">
+    <div class="header-container">
+      <a href="index.html" class="brand-logo" aria-label="Trang chủ ĂN GÌ MOM">
+        <div class="wordmark">
+          <span class="wordmark-an-gi">ĂN GÌ</span>
+          <span class="wordmark-mom">MOM</span>
+        </div>
+        <span class="brand-tagline">Bữa cơm nhà, bớt nghĩ hôm nay ăn gì.</span>
+      </a>
+
+      <div class="header-actions">
+        <a href="#search" class="btn btn-outline" id="headerSearchBtn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          <span>Tìm món</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Section with Search -->
+  <section class="hero" id="search">
+    <div class="hero-container">
+      <h1 class="hero-title">Hôm nay nhà mình ăn gì?</h1>
+      <p class="hero-subtitle">Tìm kiếm công thức nấu ăn chuẩn vị gia đình, định lượng rõ ràng, nấu ngon mỗi ngày.</p>
+      
+      <!-- Instant Search Bar -->
+      <div class="search-wrapper">
+        <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input 
+          type="text" 
+          id="searchInput" 
+          class="search-input" 
+          placeholder="Nhập tên món hoặc nguyên liệu (thịt gà, cá basa, rau muống...)"
+          autocomplete="off"
+        >
+        <button id="searchClear" class="search-clear" aria-label="Xóa từ khóa tìm kiếm">✕</button>
+      </div>
+
+      <!-- Quick Action: Random Balanced Meal (O7) -->
+      <div class="random-generator-bar">
+        <button id="randomMealBtn" class="btn btn-accent" type="button">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="23 4 23 10 17 10"></polyline>
+            <polyline points="1 20 1 14 7 14"></polyline>
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+          </svg>
+          <span>Gợi ý mâm cơm 3 món (Hôm nay ăn gì?)</span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Random Meal Suggestion Card (O7) -->
+  <section class="meal-suggestion-card" id="mealSuggestionCard" aria-label="Gợi ý mâm cơm hôm nay">
+    <div class="meal-header">
+      <div class="meal-title-group">
+        <span style="font-size:24px;">🍱</span>
+        <h2 class="meal-title">Mâm cơm gợi ý hôm nay (3 món chuẩn vị)</h2>
+      </div>
+      <div style="display:flex; gap:8px;">
+        <button id="reRandomMealBtn" class="btn btn-outline" style="padding:4px 10px; font-size:12px;">Đổi mâm khác ↻</button>
+        <button id="closeMealBtn" class="btn btn-outline" style="padding:4px 8px; font-size:12px;" aria-label="Đóng gợi ý">✕</button>
+      </div>
+    </div>
+    
+    <div class="meal-dishes-grid">
+      <div class="meal-dish-item" id="mealMain"></div>
+      <div class="meal-dish-item" id="mealSoup"></div>
+      <div class="meal-dish-item" id="mealSide"></div>
+    </div>
+  </section>
+
+  <!-- Filter Chips Bar -->
+  <section class="filters-section">
+    <div class="chips-group" role="tablist" aria-label="Lọc theo vai trò món ăn">
+      <button class="chip active" data-role="ALL" role="tab">Tất cả món</button>
+      <button class="chip" data-role="MAIN" role="tab">Món mặn</button>
+      <button class="chip" data-role="SOUP" role="tab">Món canh</button>
+      <button class="chip" data-role="SIDE" role="tab">Rau / Món phụ</button>
+    </div>
+    <div class="filter-stats" id="filterStats">Hiển thị 7 món ăn</div>
+  </section>
+
+  <!-- Main Content Grid -->
+  <main class="main-content">
+    <div class="recipe-grid" id="recipeGrid" aria-live="polite">
+      <!-- Recipe cards will be injected by JavaScript -->
+    </div>
+
+    <!-- Empty State -->
+    <div class="empty-state" id="emptyState" role="status">
+      <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="8" y1="12" x2="16" y2="12"></line>
+      </svg>
+      <h3 class="empty-title">Không tìm thấy món ăn nào</h3>
+      <p class="empty-desc">Rất tiếc, không có món nào phù hợp với từ khóa hoặc bộ lọc bạn chọn. Thử tìm từ khóa ngắn hơn nhé!</p>
+      <button id="resetFilterBtn" class="btn btn-primary">Xóa bộ lọc & Xem lại tất cả</button>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <p class="footer-text">
+      <strong>ĂN GÌ MOM</strong> — Bữa cơm nhà, bớt nghĩ hôm nay ăn gì.
+      <br>
+      <span style="opacity: 0.8; font-size: 11px;">Prototype P1 (AG-05) · Sử dụng dữ liệu [DEMO_FIXTURE] Batch 0</span>
+    </p>
+  </footer>
+
+  <script type="module" src="scripts/app.js"></script>
+</body>
+</html>
