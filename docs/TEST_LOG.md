@@ -280,3 +280,27 @@ Kiểm tra tài liệu/skill (script read-only, 8 nhóm):
 | 13 | `tsc --noEmit` sạch; `npm run build` thành công (exit code 0) | PASS |
 | 14 | Kiểm tra giao diện bằng mắt (desktop/mobile) | Chủ sản phẩm kiểm tra thủ công |
 | 15 | DECISIONS.md ghi nhận D36 | PASS |
+
+## AG-17 — Search & Filters — 20/10/2026
+
+**App tests: `test_search_filters.ts` (36 test cases), `test_public_rendering.ts` regression check (31 test cases), TypeScript (`tsc --noEmit`), Next.js production build (`npm run build`).**
+
+| # | Kiểm tra | Kết quả |
+|---|---|---|
+| 1 | Invariants §5.1: Chỉ trả công thức `PUBLISHED`; loại bỏ 100% `DRAFT`, `SUBMITTED`, `ARCHIVED` | PASS |
+| 2 | Tìm kiếm từ khóa `q`: Tìm đúng tên món, tên nguyên liệu, mô tả ngắn | PASS |
+| 3 | Parameterized query an toàn tuyệt đối với ký tự đặc biệt (`%`, `_`, `'`, `\`), không crash DB | PASS |
+| 4 | Bộ lọc vai trò bữa ăn (`role`): Lọc chuẩn xác `MAIN`, `SOUP`, `SIDE`, `ONE_DISH_MEAL`, `DESSERT`, `BEVERAGE` | PASS |
+| 5 | Bộ lọc thời gian tối đa (`maxTime`): Tổng thời gian prep + cook trong ngưỡng chỉ định | PASS |
+| 6 | Bộ lọc độ khó (`difficulty`): Lọc chuẩn xác Dễ, Vừa, Khó | PASS |
+| 7 | Bộ lọc nhãn kiểm chứng (`testedOnly`, `nutritionOnly`): Chỉ trả món có cờ tương ứng `true` | PASS |
+| 8 | Lọc kết hợp đa tiêu chí (Composite Filter: `q` + `role` + `maxTime` + `testedOnly`) | PASS |
+| 9 | Sắp xếp (`sort`): Nhanh nhất (`quickest`), Mới nhất (`newest`), Calo thấp nhất (`calories_asc`) | PASS |
+| 10 | Phân trang và siêu dữ liệu: `totalCount`, `page`, `totalPages`, đếm số lượng món theo từng vai trò | PASS |
+| 11 | `test_search_filters.ts`: 36 PASS, 0 FAIL (exit code 0) | PASS |
+| 12 | `test_public_rendering.ts`: 31 PASS, 0 FAIL (không hồi quy AG-16) | PASS |
+| 13 | URL phản ánh trung thực toàn bộ bộ lọc (§6.7); hỗ trợ deep linking, bookmark và back/forward | PASS |
+| 14 | Responsive UI: Desktop filter sidebar dính; Mobile drawer sheet; Active filter chips xóa từng mục / xóa tất cả | PASS |
+| 15 | `tsc --noEmit` sạch lỗi; `npm run build` thành công với 21 routes PPR (exit code 0) | PASS |
+| 16 | DECISIONS.md ghi nhận D37 | PASS |
+

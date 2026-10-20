@@ -128,6 +128,12 @@ Nguồn ưu tiên cao nhất khi có xung đột (master plan §0). Chỉ ghi `a
 |---|---|
 | D36 | **Public Recipe Rendering & HTTP Status Boundary**: Route công khai `/cong-thuc/[slug]` (A1) chỉ đọc bản `PUBLISHED` qua allow-list cột (không email, không ghi chú duyệt); dữ liệu cache bằng `use cache` + tag `public-recipes`, invalidate ngay (`expire: 0`) khi duyệt xuất bản. Quyết định 404/308 đặt trong `src/proxy.ts` (Node runtime — thay `middleware.ts` vốn chạy Edge) trước khi stream để trả mã HTTP thật dưới Partial Prefetching; bản không công khai không phân biệt với slug không tồn tại; link phiên bản `ARCHIVED` chuyển vĩnh viễn (308) sang bản hiện hành theo lineage. Build không phụ thuộc DB (placeholder param). |
 
+## Quyết định trong AG-17 (`drafted / implemented` ngày 20/10/2026)
+
+| ID | Nội dung |
+|---|---|
+| D37 | **Search & Filters Architecture & URL Reflection**: Triển khai trang tìm kiếm tập trung `/mon-an` với bộ lọc đa trục (vai trò món, thời gian nấu, độ khó, nhãn kiểm chứng bếp thực tế, cách chế biến, vùng miền, sắp xếp). Toàn bộ trạng thái tìm kiếm và bộ lọc được đồng bộ trung thực 100% lên URL search parameters (`?q=...&role=...&maxTime=...&difficulty=...&tested=...&sort=...`) phục vụ deep linking và browser history (§6.7). Áp dụng kiến trúc Partial Prerendering (PPR) của Next.js 16: prerender tĩnh Header/Shell và stream nội dung động qua `<Suspense>` xung quanh dữ liệu `searchParams`. Truy vấn dữ liệu an toàn qua Drizzle ORM với parameterized queries chống SQL Injection và chặn 100% các công thức chưa xuất bản (DRAFT/SUBMITTED/ARCHIVED). |
+
 ## Còn mở (`unknown`)
 
 | # | Vấn đề | Quyết định tại |

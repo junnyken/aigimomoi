@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { connection } from "next/server";
+import Link from "next/link";
 import { Sparkles, Utensils, ShoppingBag, ChefHat } from "lucide-react";
 import { listPublishedRecipes } from "@/lib/recipes/public";
 import { RecipeCard } from "@/components/recipe/RecipeCard";
@@ -21,6 +22,24 @@ export default function HomePage() {
           <p className="text-base text-[var(--color-text-secondary)] mb-6 max-w-lg">
             Tìm kiếm công thức nấu ăn chuẩn vị gia đình, định lượng rõ ràng theo số người, tự động gộp danh sách đi chợ.
           </p>
+
+          {/* Quick search input leading to /mon-an */}
+          <form action="/mon-an" method="GET" className="w-full max-w-md mb-6">
+            <div className="relative flex items-center">
+              <input
+                type="text"
+                name="q"
+                placeholder="Tìm món: thịt kho, canh chua, cá rán..."
+                className="w-full pl-4 pr-24 py-3 bg-[var(--color-surface-white)] border border-[var(--color-border-base)] rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-primary)] shadow-sm"
+              />
+              <button
+                type="submit"
+                className="absolute right-2 px-4 py-1.5 bg-[var(--color-brand-primary)] text-white text-xs font-semibold rounded-xl hover:opacity-95 transition-opacity"
+              >
+                Tìm món
+              </button>
+            </div>
+          </form>
 
           <div className="flex flex-wrap items-center justify-center gap-3">
             <a
@@ -52,6 +71,13 @@ export default function HomePage() {
               Công thức cơm nhà đã qua biên tập và duyệt xuất bản.
             </p>
           </div>
+          <Link
+            href="/mon-an"
+            className="text-xs sm:text-sm font-semibold text-[var(--color-brand-primary)] hover:underline inline-flex items-center gap-1"
+          >
+            <span>Khám phá tất cả món</span>
+            <span aria-hidden="true">&rarr;</span>
+          </Link>
         </div>
 
         <Suspense fallback={<PublishedShowcaseSkeleton />}>

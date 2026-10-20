@@ -42,7 +42,7 @@ Gate P2: tạo → kiểm → xuất bản → đọc lại chạy được. —
 ## P3 — MVP bữa cơm và đi chợ
 | ID | Capability | Dependency | Trạng thái |
 |---|---|---|---|
-| AG-17 | Search & filters | AG-16 | `spec-drafted` |
+| AG-17 | Search & filters | AG-16 | `closed` (20/10/2026) |
 | AG-18 | Serving adjustment | AG-16 | `not-started` |
 | AG-19 | Cooking mode | AG-18 | `not-started` |
 | AG-20 | Saved recipes | AG-11, 16 | `not-started` |

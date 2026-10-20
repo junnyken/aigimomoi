@@ -39,9 +39,15 @@ export default function RootLayout({
             <nav className="flex items-center gap-1 sm:gap-2" aria-label="Điều hướng chính">
               <Link
                 href="/"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-brand-primary)] hover:bg-[var(--color-surface-raised)] transition-colors"
+              >
+                <span>Trang chủ</span>
+              </Link>
+              <Link
+                href="/mon-an"
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold bg-[var(--color-brand-light)] text-[var(--color-brand-primary)]"
               >
-                <span>Khám phá</span>
+                <span>Tìm món</span>
               </Link>
               <Link
                 href="/meal"
@@ -67,7 +73,7 @@ export default function RootLayout({
         {/* Footer */}
         <footer className="bg-[var(--color-surface-white)] border-t border-[var(--color-border-base)] py-6 text-center mt-auto">
           <p className="text-xs text-[var(--color-text-muted)]">
-            ĂN GÌ MOM — Bữa cơm nhà, bớt nghĩ hôm nay ăn gì. Nền tảng Next.js Production (Phase P2).
+            ĂN GÌ MOM — Bữa cơm nhà, bớt nghĩ hôm nay ăn gì. Nền tảng Next.js Production (Phase P3).
           </p>
         </footer>
       </body>

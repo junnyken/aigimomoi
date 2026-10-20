@@ -16,6 +16,19 @@ export const TAXONOMY_TYPE_LABELS: Record<string, string> = {
   OCCASION: 'Dịp',
 };
 
+export const SORT_LABELS: Record<string, string> = {
+  newest: 'Mới nhất',
+  quickest: 'Nấu nhanh nhất',
+  calories_asc: 'Calo thấp nhất',
+};
+
+export const TIME_PRESETS = [
+  { label: 'Tất cả thời gian', value: undefined },
+  { label: '≤ 20 phút (Nhanh gọn)', value: 20 },
+  { label: '≤ 45 phút (Bữa cơm thường)', value: 45 },
+  { label: '≤ 60 phút', value: 60 },
+] as const;
+
 const amountFormatter = new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 2 });
 
 /** Làm tròn chỉ ở tầng hiển thị (D21) — giá trị gốc không bị thay đổi. */
