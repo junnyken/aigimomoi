@@ -8,8 +8,8 @@ Trạng thái spec: `not-started` · `spec-drafted` · `approved-for-build` · `
 | ID | Capability | Dependency | Trạng thái |
 |---|---|---|---|
 | AG-00 | Workspace audit & skill setup | Tài liệu gốc | `closed` (20/10/2026) |
-| AG-01 | Existing infrastructure inventory | AG-00 | `awaiting-close` (S2 `blocked` chờ thông tin VPS/domain) |
-| AG-02 | Architecture & domain decisions | AG-01 | `not-started` |
+| AG-01 | Existing infrastructure inventory | AG-00 | `closed` (20/10/2026 - S2 pending details) |
+| AG-02 | Architecture & domain decisions | AG-01 | `spec-drafted` |
 | AG-03 | Content operations plan | AG-00 | `not-started` |
 
 Gate P0: scope, thuật ngữ, kiến trúc, người duyệt và khoản chưa biết được ghi rõ.
