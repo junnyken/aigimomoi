@@ -371,5 +371,29 @@ Kiểm tra tài liệu/skill (script read-only, 8 nhóm):
 | 15 | `tsc --noEmit` sạch lỗi; `npm run build` thành công với 27 routes (exit code 0) | PASS |
 | 16 | DECISIONS.md ghi nhận D40 | PASS |
 
+## AG-21 — Meal Composition & Replacement — 20/10/2026
+
+**App tests: `test_meal_composition.ts` (37 test cases), regression checks (`test_saved_recipes.ts`, `test_cooking_mode.ts`, `test_serving_adjustment.ts`, `test_search_filters.ts`), TypeScript (`tsc --noEmit`), Next.js production build (`npm run build`).**
+
+| # | Kiểm tra | Kết quả |
+|---|---|---|
+| 1 | Invariants §5.3: Cấu trúc 3 món chuẩn (MAIN/SOUP/SIDE), mỗi slot chỉ nhận đúng vai trò | PASS |
+| 2 | Invariants §5.1: Tuyệt đối chỉ hiển thị công thức `PUBLISHED` trong danh sách gợi ý và thay thế | PASS |
+| 3 | Invariants §5.1: Món `DRAFT` và `ARCHIVED` bị loại bỏ 100%, tự động fallback về món PUBLISHED | PASS |
+| 4 | Phân giải mâm cơm (`resolveMealSelection`): Xử lý đúng khi đủ 3 slugs, khi thiếu param, và khi gặp injection/XSS | PASS |
+| 5 | Thuật toán đổi món (Slot Replacement): Đổi 1 slot giữ nguyên vẹn 2 slots còn lại | PASS |
+| 6 | Thuật toán gợi ý ngẫu nhiên (`getRandomMealSlugs`): Trả về đủ 3 món 3 vai trò khác nhau hợp lệ | PASS |
+| 7 | Invariants §5.4: Đồng bộ khẩu phần toàn mâm (`servings: 1..20`), thời gian nấu không bị nhân theo $R$ | PASS |
+| 8 | `test_meal_composition.ts`: 37 PASS, 0 FAIL (exit code 0) | PASS |
+| 9 | `test_saved_recipes.ts`: 25 PASS, 0 FAIL (không hồi quy AG-20) | PASS |
+| 10 | `test_cooking_mode.ts`: 19 PASS, 0 FAIL (không hồi quy AG-19) | PASS |
+| 11 | `test_serving_adjustment.ts`: 40 PASS, 0 FAIL (không hồi quy AG-18) | PASS |
+| 12 | `test_search_filters.ts`: 36 PASS, 0 FAIL (không hồi quy AG-17) | PASS |
+| 13 | Component `MealView`, `MealSlotCard`, `SwapDishModal`, `MealServingsSelector`, `MealSummaryBar` | PASS |
+| 14 | Trang `/meal`: Server Component với Partial Prerendering và metadata SEO | PASS |
+| 15 | `tsc --noEmit` sạch lỗi; `npm run build` thành công với 30 routes (exit code 0) | PASS |
+| 16 | DECISIONS.md ghi nhận D41 | PASS |
+
+
 
 

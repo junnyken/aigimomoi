@@ -152,6 +152,12 @@ Nguồn ưu tiên cao nhất khi có xung đột (master plan §0). Chỉ ghi `a
 |---|---|
 | D40 | **Saved Recipes & Guest-first Synchronization**: Triển khai tính năng Lưu món ăn yêu thích (`Saved Recipes`) hỗ trợ trải nghiệm không rào cản cho khách vãng lai (Guest-first, Invariants §6.7). Khách vãng lai lưu/bỏ lưu trực tiếp vào `localStorage` (`angimom_saved_recipes`) mà không bao giờ bị gián đoạn hay ép buộc đăng nhập. Khi đăng nhập vào tài khoản, hệ thống tự động đồng bộ (`/api/saved-recipes/sync`) và gộp an toàn vào bảng `saved_recipes` trong Postgres với Unique Index `(user_id, recipe_id)` và `ON CONFLICT DO NOTHING`. Bảng `saved_recipes` áp dụng `ON DELETE CASCADE`. API truy vấn và trang danh sách `/da-luu` luôn tuân thủ nghiêm ngặt Invariants §5.1: chỉ hiển thị công thức có trạng thái `PUBLISHED`, tự động ẩn các bản `DRAFT`/`ARCHIVED` và loại bỏ toàn bộ dữ liệu nội bộ/nhạy cảm của tác giả. |
 
+## Quyết định trong AG-21 (`drafted / implemented` ngày 20/10/2026)
+
+| ID | Nội dung |
+|---|---|
+| D41 | **Meal Composition, Slot Replacement & Shared Servings Scaling**: Phê duyệt triển khai trang Mâm cơm gia đình tại `/meal` với cấu trúc chuẩn 3 vai trò: Món Mặn (`MAIN`), Món Canh (`SOUP`), Món Rau/Xào (`SIDE`). Thuật toán đổi món cục bộ (Slot Replacement) cho phép thay thế độc lập từng vị trí mà không làm xáo trộn các vị trí còn lại. Khẩu phần ăn được đồng bộ chung toàn mâm (`servings: 1..20`), tự động co giãn từng món theo đúng Invariants §5.4 (`LINEAR` nhân $R$, `FIXED` và `MANUAL_ADJUST` giữ nguyên định lượng gốc, thời gian nấu không nhân). Thuật toán phân giải mâm cơm `resolveMealSelection()` và modal đổi món tuyệt đối chỉ truy vấn các bản ghi `PUBLISHED` (Invariants §5.1), tự động fallback an toàn nếu slug trên URL là bản nháp/lưu trữ/không tồn tại. Trạng thái mâm cơm được phản ánh trung thực lên URL (`?main=...&soup=...&side=...&servings=...`) và lưu bền vững vào `localStorage` cho khách vãng lai (§6.7). |
+
 ## Còn mở (`unknown`)
 
 | # | Vấn đề | Quyết định tại |
