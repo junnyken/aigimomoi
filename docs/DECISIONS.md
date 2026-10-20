@@ -158,6 +158,12 @@ Nguồn ưu tiên cao nhất khi có xung đột (master plan §0). Chỉ ghi `a
 |---|---|
 | D41 | **Meal Composition, Slot Replacement & Shared Servings Scaling**: Phê duyệt triển khai trang Mâm cơm gia đình tại `/meal` với cấu trúc chuẩn 3 vai trò: Món Mặn (`MAIN`), Món Canh (`SOUP`), Món Rau/Xào (`SIDE`). Thuật toán đổi món cục bộ (Slot Replacement) cho phép thay thế độc lập từng vị trí mà không làm xáo trộn các vị trí còn lại. Khẩu phần ăn được đồng bộ chung toàn mâm (`servings: 1..20`), tự động co giãn từng món theo đúng Invariants §5.4 (`LINEAR` nhân $R$, `FIXED` và `MANUAL_ADJUST` giữ nguyên định lượng gốc, thời gian nấu không nhân). Thuật toán phân giải mâm cơm `resolveMealSelection()` và modal đổi món tuyệt đối chỉ truy vấn các bản ghi `PUBLISHED` (Invariants §5.1), tự động fallback an toàn nếu slug trên URL là bản nháp/lưu trữ/không tồn tại. Trạng thái mâm cơm được phản ánh trung thực lên URL (`?main=...&soup=...&side=...&servings=...`) và lưu bền vững vào `localStorage` cho khách vãng lai (§6.7). |
 
+## Quyết định trong AG-22 (`drafted / implemented` ngày 20/10/2026)
+
+| ID | Nội dung |
+|---|---|
+| D42 | **Ingredient Aggregation Engine & Traceability Invariants**: Triển khai Bộ máy Gộp nguyên liệu tự động (`Ingredient Aggregation Engine`) cho mâm cơm nhiều món ăn, tuân thủ nghiêm ngặt Invariants §5.4: (1) Chỉ cộng dồn `totalAmount` khi nguyên liệu có cùng tên và cùng đơn vị tính (`unit`), nếu khác đơn vị đo lường thì bắt buộc tách thành 2 dòng riêng biệt; (2) Truy vết nguồn gốc (Ingredient Traceability): mỗi mục gộp lưu trữ mảng `traces` ghi nhận rõ định lượng phân bổ cho từng món ăn và cách sơ chế; (3) Tách riêng gia vị nêm nếm `MANUAL_ADJUST` vào danh mục `pantrySeasonings` để người dùng kiểm tra nhanh kệ bếp nhà thay vì gộp thô thiển vào danh mục đồ tươi sống cần mua sắm; (4) Phân nhóm trực quan theo quầy chợ (`MEAT_SEAFOOD`, `PRODUCE`, `PANTRY`, `OTHER`) và format tầng hiển thị an toàn bằng dấu phẩy tiếng Việt mà không làm biến dạng giá trị tính toán nội bộ (D21). |
+
 ## Còn mở (`unknown`)
 
 | # | Vấn đề | Quyết định tại |

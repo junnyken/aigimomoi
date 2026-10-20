@@ -166,3 +166,57 @@ export async function getRandomMealSlugs(): Promise<{ mainSlug: string; soupSlug
     sideSlug: randomSide.slug,
   };
 }
+
+/**
+ * Lấy danh sách các công thức PUBLISHED kèm bảng nguyên liệu đầy đủ để gộp nguyên liệu (AG-22).
+ */
+export async function queryMealRecipesForAggregation(slugs: string[]) {
+  const validSlugs = slugs.filter(isValidPublicSlug).slice(0, 10);
+  if (validSlugs.length === 0) return [];
+
+  const rows = await db.query.recipes.findMany({
+    where: and(inArray(recipes.slug, validSlugs), eq(recipes.status, 'PUBLISHED')),
+    columns: {
+      slug: true,
+      name: true,
+      baseServings: true,
+    },
+    with: {
+      ingredients: {
+        columns: {
+          id: true,
+          amount: true,
+          unit: true,
+          scalePolicy: true,
+          preparation: true,
+          isOptional: true,
+        },
+        with: {
+          ingredient: {
+            columns: {
+              name: true,
+              category: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  return rows.map((r) => ({
+    slug: r.slug,
+    name: r.name,
+    baseServings: r.baseServings,
+    ingredients: r.ingredients.map((ri) => ({
+      id: ri.id,
+      name: ri.ingredient?.name || 'Nguyên liệu',
+      category: ri.ingredient?.category || 'OTHER',
+      amount: ri.amount,
+      unit: ri.unit,
+      scalePolicy: ri.scalePolicy as 'LINEAR' | 'FIXED' | 'MANUAL_ADJUST',
+      preparation: ri.preparation,
+      isOptional: ri.isOptional,
+    })),
+  }));
+}
+

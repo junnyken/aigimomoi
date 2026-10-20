@@ -394,6 +394,31 @@ Kiểm tra tài liệu/skill (script read-only, 8 nhóm):
 | 15 | `tsc --noEmit` sạch lỗi; `npm run build` thành công với 30 routes (exit code 0) | PASS |
 | 16 | DECISIONS.md ghi nhận D41 | PASS |
 
+## AG-22 — Ingredient Aggregation — 20/10/2026
+
+**App tests: `test_ingredient_aggregation.ts` (37 test cases), regression checks (`test_meal_composition.ts`, `test_saved_recipes.ts`, `test_cooking_mode.ts`, `test_serving_adjustment.ts`, `test_search_filters.ts`), TypeScript (`tsc --noEmit`), Next.js production build (`npm run build`).**
+
+| # | Kiểm tra | Kết quả |
+|---|---|---|
+| 1 | Invariants §5.4: Gộp chính xác nguyên liệu trùng tên và cùng đơn vị (400g + 150g = 550g) | PASS |
+| 2 | Truy vết nguồn gốc (Traceability): Mục gộp lưu đủ mảng traces ghi nhận chi tiết từng món | PASS |
+| 3 | Invariants §5.4: Tách riêng biệt gia vị `MANUAL_ADJUST`, không cộng dồn thô thiển vào `freshItems` | PASS |
+| 4 | Invariants §5.4: Dòng `LINEAR` co giãn theo tỷ lệ $R$, dòng `FIXED` giữ nguyên số lượng gốc | PASS |
+| 5 | Invariants §5.4: Cùng tên khác đơn vị đo (ví dụ: "trái" vs "muỗng") tách riêng biệt an toàn | PASS |
+| 6 | Phân loại theo quầy chợ: `meatSeafood`, `produce`, `pantry`, `other` chuẩn xác | PASS |
+| 7 | Làm tròn hiển thị (D21): `formatScaledAmount` định dạng chuẩn dấu phẩy tiếng Việt | PASS |
+| 8 | Tích hợp DB Query (`queryMealRecipesForAggregation`): Chỉ lấy recipes `PUBLISHED`, loại bỏ DRAFT | PASS |
+| 9 | `test_ingredient_aggregation.ts`: 37 PASS, 0 FAIL (exit code 0) | PASS |
+| 10 | `test_meal_composition.ts`: 37 PASS, 0 FAIL (không hồi quy AG-21) | PASS |
+| 11 | `test_saved_recipes.ts`: 25 PASS, 0 FAIL (không hồi quy AG-20) | PASS |
+| 12 | `test_cooking_mode.ts`: 19 PASS, 0 FAIL (không hồi quy AG-19) | PASS |
+| 13 | `test_serving_adjustment.ts`: 40 PASS, 0 FAIL (không hồi quy AG-18) | PASS |
+| 14 | `test_search_filters.ts`: 36 PASS, 0 FAIL (không hồi quy AG-17) | PASS |
+| 15 | API Endpoint `POST /api/meal/aggregate`: Trả về JSON `AggregationResult` chuẩn hóa | PASS |
+| 16 | `tsc --noEmit` sạch lỗi; `npm run build` thành công với 31 routes (exit code 0) | PASS |
+| 17 | DECISIONS.md ghi nhận D42 | PASS |
+
+
 
 
 
