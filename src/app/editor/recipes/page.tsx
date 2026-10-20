@@ -16,7 +16,9 @@ import {
   Trash2,
   Tag,
   ShieldCheck,
+  Sparkles,
 } from 'lucide-react';
+import { AiDraftModal } from '@/components/editor/AiDraftModal';
 
 interface Recipe {
   id: number;
@@ -36,6 +38,7 @@ interface Recipe {
   createdAt: string;
   versionNumber?: number;
   revisionOfId?: number | null;
+  provenance?: string;
 }
 
 const ROLE_LABELS: Record<string, { label: string; color: string }> = {
@@ -58,6 +61,7 @@ const STATUS_LABELS: Record<string, { label: string; badge: string }> = {
 export default function EditorRecipesPage() {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isAiModalOpen, setIsAiModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRole, setSelectedRole] = useState('ALL');
   const [selectedStatus, setSelectedStatus] = useState('ALL');
@@ -156,6 +160,15 @@ export default function EditorRecipesPage() {
               <ShieldCheck className="w-4 h-4" />
               Hàng chờ duyệt
             </Link>
+            <button
+              type="button"
+              onClick={() => setIsAiModalOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-amber-500 to-orange-600 text-white text-xs font-semibold rounded-xl hover:from-amber-600 hover:to-orange-700 transition-all shadow-xs"
+              title="Tự động tạo khung công thức bằng AI"
+            >
+              <Sparkles className="w-4 h-4 text-amber-200" />
+              <span>Soạn bằng AI</span>
+            </button>
             <Link
               href="/editor/recipes/new"
               className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#3F6240] text-white text-xs font-semibold rounded-xl hover:bg-[#324f33] transition-all shadow-xs"
@@ -273,11 +286,19 @@ export default function EditorRecipesPage() {
                   <div className="space-y-3">
                     <div className="flex items-start justify-between gap-2">
                       <div className="space-y-1">
-                        <span
-                          className={`inline-block text-[11px] font-semibold px-2 py-0.5 rounded-md border ${roleMeta.color}`}
-                        >
-                          {roleMeta.label}
-                        </span>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span
+                            className={`inline-block text-[11px] font-semibold px-2 py-0.5 rounded-md border ${roleMeta.color}`}
+                          >
+                            {roleMeta.label}
+                          </span>
+                          {recipe.provenance === 'AI_ASSISTED' && (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200">
+                              <Sparkles className="w-3 h-3 text-amber-600" />
+                              <span>AI Assistant</span>
+                            </span>
+                          )}
+                        </div>
                         <h2 className="text-base font-bold text-[#2D2A26] line-clamp-1 hover:text-[#3F6240] transition-colors">
                           {recipe.name}
                           {recipe.versionNumber && recipe.versionNumber > 1 && (
@@ -365,6 +386,12 @@ export default function EditorRecipesPage() {
           </div>
         )}
       </main>
+
+      {/* AI Authoring Draft Modal */}
+      <AiDraftModal
+        isOpen={isAiModalOpen}
+        onClose={() => setIsAiModalOpen(false)}
+      />
     </div>
   );
 }

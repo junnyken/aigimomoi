@@ -574,3 +574,28 @@ Kiểm tra tài liệu/skill (script read-only, 8 nhóm):
 | 13 | `test_p3_pilot_gate.ts`: 36 PASS, 0 FAIL (không hồi quy Gate P3) | PASS |
 | 14 | `tsc --noEmit` sạch lỗi; `npm run build` thành công với 36 routes (exit code 0) | PASS |
 | 15 | DECISIONS.md ghi nhận D48 | PASS |
+
+## AG-29 — AI Authoring Drafts & Recipe Schema Generation — 20/10/2026
+
+**App tests: `test_ai_authoring_drafts.ts` (52 test cases), regression checks (`test_ai_meal_suggestion.ts`, `test_ai_boundary_budget.ts`, `test_p3_pilot_gate.ts`), TypeScript (`tsc --noEmit`), Next.js production build (`npm run build`).**
+
+| # | Kiểm tra | Kết quả |
+|---|---|---|
+| 1 | Invariants Gate P4: Bản nháp AI luôn có `status = 'DRAFT'` | PASS |
+| 2 | Invariants Gate P4: Bản nháp AI luôn có `provenance = 'AI_ASSISTED'` | PASS |
+| 3 | Master Plan §8.2: Tuyệt đối không bật cờ kiểm chứng (`isCookTested = false`, `isEditorialReviewed = false`) | PASS |
+| 4 | Schema Validity: Định lượng nguyên liệu hợp lệ (`ingredientId > 0`, `amount > 0`, `scalePolicy` chuẩn) | PASS |
+| 5 | Schema Validity: Bước nấu đầy đủ `stepNumber`, `phaseName` và `instruction` chi tiết | PASS |
+| 6 | Database Persistence: Lưu trực tiếp bản nháp vào PostgreSQL bảo toàn 100% invariants và quan hệ khóa ngoại | PASS |
+| 7 | Role Variation: Tạo bản thảo chuẩn mực cho cả 3 vai trò `MAIN`, `SOUP`, `SIDE` | PASS |
+| 8 | Ingredient Linking: Tự động tra cứu và liên kết với từ điển `ingredients` trong database | PASS |
+| 9 | API `/api/ai/recipe-draft`: Bảo vệ phân quyền, bắt buộc session EDITOR hoặc ADMIN (chặn HTTP 403 nếu không đủ quyền) | PASS |
+| 10 | Anti-Bypass: Endpoint `/api/recipes` chặn triệt để hành vi cố tình xuất bản trực tiếp bản nháp AI | PASS |
+| 11 | UI Integration: Nút `✨ Soạn bằng AI` và modal `AiDraftModal` tại `/editor/recipes/new` và `/editor/recipes` | PASS |
+| 12 | UI Provenance Badge: Huy hiệu `🤖 AI Assistant` hiển thị rõ ràng trên danh sách và chi tiết công thức | PASS |
+| 13 | `test_ai_authoring_drafts.ts`: 52 PASS, 0 FAIL (exit code 0) | PASS |
+| 14 | `test_ai_meal_suggestion.ts`: 30 PASS, 0 FAIL (không hồi quy AG-28) | PASS |
+| 15 | `test_ai_boundary_budget.ts`: 20 PASS, 0 FAIL (không hồi quy AG-27) | PASS |
+| 16 | `test_p3_pilot_gate.ts`: 36 PASS, 0 FAIL (không hồi quy Gate P3) | PASS |
+| 17 | `tsc --noEmit` sạch lỗi; `npm run build` thành công với 37 routes (exit code 0) | PASS |
+| 18 | DECISIONS.md ghi nhận D49 | PASS |

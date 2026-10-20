@@ -20,9 +20,49 @@ export class MockHeuristicProvider implements AiProvider {
     let responseText = '';
 
     if (options.jsonMode) {
-      if (promptLower.includes('gợi ý mâm cơm') || promptLower.includes('meal') || promptLower.includes('món ăn')) {
+      if (promptLower.includes('soạn thảo') || promptLower.includes('công thức') || promptLower.includes('recipe')) {
+        // Trích xuất tên món nếu có
+        let matchedName = 'Món ăn gia đình gợi ý';
+        const titleMatch = options.prompt.match(/(?:tên món|dish|món ăn|công thức)(?:\s*:\s*|\s+cho\s+)?([^\n,.]+)/i);
+        if (titleMatch && titleMatch[1]) {
+          matchedName = titleMatch[1].trim();
+        }
+
+        let detectedRole: 'MAIN' | 'SOUP' | 'SIDE' = 'MAIN';
+        if (matchedName.toLowerCase().includes('canh')) {
+          detectedRole = 'SOUP';
+        } else if (matchedName.toLowerCase().includes('rau') || matchedName.toLowerCase().includes('xào') || matchedName.toLowerCase().includes('gỏi')) {
+          detectedRole = 'SIDE';
+        }
+
+        responseText = JSON.stringify({
+          name: matchedName,
+          dishName: matchedName,
+          role: detectedRole,
+          baseServings: 4,
+          prepTimeMinutes: 15,
+          cookTimeMinutes: 25,
+          difficulty: 'Dễ',
+          shortDescription: `Món ${matchedName} chuẩn vị cơm nhà truyền thống, thơm ngon, đậm đà và giàu dinh dưỡng.`,
+          ingredients: [
+            { name: 'Nguyên liệu chính', amount: 400, unit: 'g', scalePolicy: 'LINEAR', preparation: 'Rửa sạch, cắt miếng vừa ăn', isOptional: false },
+            { name: 'Hành tím', amount: 3, unit: 'củ', scalePolicy: 'LINEAR', preparation: 'Bóc vỏ, băm nhỏ', isOptional: false },
+            { name: 'Hành lá', amount: 2, unit: 'nhánh', scalePolicy: 'FIXED', preparation: 'Rửa sạch, cắt khúc 2cm', isOptional: false },
+            { name: 'Nước mắm', amount: 2, unit: 'muỗng canh', scalePolicy: 'MANUAL_ADJUST', preparation: '', isOptional: false },
+            { name: 'Tiêu xay', amount: 0.5, unit: 'muỗng cà phê', scalePolicy: 'MANUAL_ADJUST', preparation: '', isOptional: true },
+          ],
+          steps: [
+            { stepNumber: 1, phaseName: 'Sơ chế', instruction: `Sơ chế sạch các nguyên liệu cho món ${matchedName}, ướp gia vị trong 15 phút.`, timerSeconds: 900, tipText: 'Ướp trước giúp nguyên liệu thấm đều gia vị.' },
+            { stepNumber: 2, phaseName: 'Chế biến', instruction: 'Bắc chảo hoặc nồi lên bếp, phi thơm hành rồi nấu chín với lửa vừa cho đến khi dậy mùi thơm.', timerSeconds: 1200, tipText: 'Nấu lửa vừa giúp món ăn chín đều mà không bị cháy.' },
+            { stepNumber: 3, phaseName: 'Hoàn thành', instruction: 'Rắc hành lá, tiêu xay lên trên và múc ra đĩa, dùng nóng với cơm trắng.', timerSeconds: 0, tipText: 'Thưởng thức ngay khi còn nóng để cảm nhận trọn vẹn hương vị.' },
+          ],
+        });
+      } else if (promptLower.includes('mâm cơm') || promptLower.includes('meal') || promptLower.includes('gợi ý')) {
         responseText = JSON.stringify({
           rationale: 'Gợi ý mâm cơm gia đình cân bằng dinh dưỡng truyền thống dựa trên thuật toán heuristic.',
+          mainSlug: 'thit-ba-chi-kho-tieu',
+          soupSlug: 'canh-rau-ngot-thit-bam',
+          sideSlug: 'rau-muong-xao-toi',
           recommendation: {
             mainSlug: 'thit-ba-chi-kho-tieu',
             mainName: 'Thịt ba chỉ kho tiêu đậm đà',
@@ -32,24 +72,6 @@ export class MockHeuristicProvider implements AiProvider {
             sideName: 'Rau muống xào tỏi giòn xanh',
           },
           matchingIngredients: ['thịt ba chỉ', 'rau ngót', 'rau muống'],
-        });
-      } else if (promptLower.includes('soạn thảo') || promptLower.includes('công thức')) {
-        responseText = JSON.stringify({
-          name: 'Món ăn gia đình gợi ý',
-          role: 'MAIN',
-          prepTimeMinutes: 15,
-          cookTimeMinutes: 20,
-          difficulty: 'Dễ',
-          shortDescription: 'Món ăn gia đình thơm ngon đậm đà do trợ lý bếp nhà chuẩn hóa.',
-          ingredients: [
-            { name: 'Thịt nạc heo', amount: 300, unit: 'g', scalePolicy: 'LINEAR' },
-            { name: 'Hành tím', amount: 2, unit: 'củ', scalePolicy: 'LINEAR' },
-            { name: 'Nước mắm', amount: 1, unit: 'muỗng canh', scalePolicy: 'LINEAR' },
-          ],
-          steps: [
-            { stepNumber: 1, phaseName: 'Sơ chế', instruction: 'Rửa sạch thịt và thái miếng vừa ăn.', timerSeconds: 300 },
-            { stepNumber: 2, phaseName: 'Chế biến', instruction: 'Phi thơm hành rồi đảo thịt chín vàng đều.', timerSeconds: 600 },
-          ],
         });
       } else {
         responseText = JSON.stringify({

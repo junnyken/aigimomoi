@@ -18,6 +18,8 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { ImageUpload } from '@/components/ui/ImageUpload';
+import { AiDraftModal } from '@/components/editor/AiDraftModal';
+import type { AiRecipeDraftPayload } from '@/lib/ai/recipeDraftGenerator';
 
 interface IngredientOption {
   id: number;
@@ -94,6 +96,7 @@ export default function NewRecipePage() {
   // UI state
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [isAiModalOpen, setIsAiModalOpen] = useState(false);
 
   useEffect(() => {
     async function loadRefs() {
@@ -190,6 +193,42 @@ export default function NewRecipePage() {
     setSelectedTaxonomyIds((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
     );
+  };
+
+  // Áp dụng bản nháp từ AI Assistant
+  const handleApplyDraft = (draft: AiRecipeDraftPayload) => {
+    setName(draft.name);
+    setDishName(draft.dishName);
+    setShortDescription(draft.shortDescription);
+    setRole(draft.role);
+    setDifficulty(draft.difficulty);
+    setBaseServings(draft.baseServings);
+    setPrepTimeMinutes(draft.prepTimeMinutes);
+    setCookTimeMinutes(draft.cookTimeMinutes);
+
+    if (draft.ingredients.length > 0) {
+      setIngredientRows(
+        draft.ingredients.map((ing) => ({
+          ingredientId: ing.ingredientId,
+          amount: ing.amount,
+          unit: ing.unit,
+          scalePolicy: ing.scalePolicy,
+          preparation: ing.preparation || '',
+          isOptional: ing.isOptional,
+        }))
+      );
+    }
+
+    if (draft.steps.length > 0) {
+      setStepRows(
+        draft.steps.map((st) => ({
+          phaseName: st.phaseName,
+          instruction: st.instruction,
+          timerMinutes: st.timerSeconds > 0 ? Math.round(st.timerSeconds / 60) : '',
+          tipText: st.tipText || '',
+        }))
+      );
+    }
   };
 
   // Submit Handler
@@ -317,6 +356,15 @@ export default function NewRecipePage() {
           </div>
 
           <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setIsAiModalOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-amber-500 to-orange-600 text-white text-xs font-semibold rounded-xl hover:from-amber-600 hover:to-orange-700 transition-all shadow-xs"
+              title="Sử dụng AI để tự động tạo khung công thức"
+            >
+              <Sparkles className="w-4 h-4 text-amber-200" />
+              <span>Soạn bằng AI</span>
+            </button>
             <button
               type="button"
               onClick={() => handleSubmit('DRAFT')}
@@ -809,6 +857,13 @@ export default function NewRecipePage() {
           </button>
         </div>
       </main>
+
+      {/* AI Authoring Draft Modal */}
+      <AiDraftModal
+        isOpen={isAiModalOpen}
+        onClose={() => setIsAiModalOpen(false)}
+        onApplyDraft={handleApplyDraft}
+      />
     </div>
   );
 }

@@ -121,6 +121,9 @@ export const recipes = pgTable('recipes', {
   isCookTested: boolean('is_cook_tested').notNull().default(false),
   isNutritionVerified: boolean('is_nutrition_verified').notNull().default(false),
 
+  // AG-29: Provenance tracking (Gate P4: nháp có provenance, không tự publish)
+  provenance: text('provenance').notNull().default('MANUAL'),
+
   // AG-15: Publishing & Revision Gate (Invariants §5.1 — RecipeVersion bất biến)
   versionNumber: integer('version_number').notNull().default(1),
   // Bản PUBLISHED gốc mà bản sửa đổi này được nhân bản từ đó (null với bản v1)

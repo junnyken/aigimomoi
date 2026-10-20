@@ -109,6 +109,7 @@ function EditRecipeContent() {
   const [reviewNotes, setReviewNotes] = useState<string | null>(null);
   const [openRevisionId, setOpenRevisionId] = useState<number | null>(null);
   const [creatingRevision, setCreatingRevision] = useState(false);
+  const [provenance, setProvenance] = useState<string>('MANUAL');
 
   useEffect(() => {
     async function init() {
@@ -137,6 +138,7 @@ function EditRecipeContent() {
           setRevisionOfId(recipe.revisionOfId ?? null);
           setReviewNotes(recipe.reviewNotes ?? null);
           setOpenRevisionId(openRevId ?? null);
+          setProvenance(recipe.provenance || 'MANUAL');
           setName(recipe.name);
           setDishName(recipe.dish?.name || '');
           setShortDescription(recipe.shortDescription);
@@ -390,6 +392,12 @@ function EditRecipeContent() {
               <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-[#3F6240]/10 text-[#3F6240]">
                 v{versionNumber}
               </span>
+              {provenance === 'AI_ASSISTED' && (
+                <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200">
+                  <Sparkles className="w-3 h-3 text-amber-600" />
+                  <span>Bản thảo AI</span>
+                </span>
+              )}
               {revisionOfId && (
                 <Link
                   href={`/editor/recipes/${revisionOfId}`}
