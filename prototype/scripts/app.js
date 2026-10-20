@@ -167,6 +167,16 @@ function generateRandomMeal() {
 
   state.selectedMeal = { main: randomMain, soup: randomSoup, side: randomSide };
 
+  // Sync to meal state for meal.html & shopping.html
+  try {
+    localStorage.setItem('angimom_current_meal_v1', JSON.stringify({
+      servings: 4,
+      mainId: randomMain.id,
+      soupId: randomSoup.id,
+      sideId: randomSide.id
+    }));
+  } catch (e) {}
+
   // Render suggestion items
   renderMealDish(mealMain, randomMain, 'Món mặn');
   renderMealDish(mealSoup, randomSoup, 'Món canh');

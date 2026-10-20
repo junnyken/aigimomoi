@@ -104,3 +104,19 @@ Kiểm tra tài liệu/skill (script read-only, 8 nhóm):
 | 5 | Chuyển hướng từ trang chủ `index.html` sang `recipe.html?id=...` chuẩn xác | PASS |
 | 6 | Secret scan: không có secret | PASS |
 | 7 | DECISIONS.md ghi nhận D26 | PASS |
+
+## AG-07 — Meal & Shopping Prototype — 20/10/2026
+
+**App tests: N/A.**
+
+| # | Kiểm tra | Kết quả |
+|---|---|---|
+| 1 | HTTP server port 8090 phản hồi mã 200 OK trên meal.html, meal.js, shopping.html, shopping.js, meal_state.js | PASS |
+| 2 | Cú pháp JS (node --check) trên toàn bộ các file module prototype | PASS |
+| 3 | Mâm cơm 3 món chuẩn hóa theo vai trò MAIN, SOUP, SIDE và hỗ trợ đổi món độc lập từng slot | PASS |
+| 4 | Bộ máy gộp nguyên liệu (aggregateIngredients) tuân thủ Invariants §5.4: gộp đúng cùng đơn vị, truy vết nguồn gốc rõ ràng, tách riêng gia vị MANUAL_ADJUST | PASS |
+| 5 | Checklist đi chợ lưu trạng thái vào localStorage và thanh tiến độ cập nhật % theo thời gian thực | PASS |
+| 6 | Đồng bộ điều hướng 4 trang liên hoàn (Khám phá <-> Mâm cơm <-> Đi chợ <-> Chi tiết món) | PASS |
+| 7 | Secret scan: không có secret | PASS |
+| 8 | DECISIONS.md ghi nhận D27 | PASS |
+

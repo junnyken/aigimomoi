@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Danh sách đi chợ — ĂN GÌ MOM</title>
+  <meta name="description" content="Danh sách đi chợ thông minh gộp nguyên liệu từ cả mâm cơm, phân loại đồ tươi sống và gia vị sẵn có, định lượng theo số người.">
+  <link rel="stylesheet" href="styles/main.css">
+</head>
+<body>
+
+  <!-- Sticky Header -->
+  <header class="header">
+    <div class="header-container">
+      <a href="index.html" class="brand-logo" aria-label="Trang chủ ĂN GÌ MOM">
+        <div class="wordmark">
+          <span class="wordmark-an-gi">ĂN GÌ</span>
+          <span class="wordmark-mom">MOM</span>
+        </div>
+        <span class="brand-tagline">Bữa cơm nhà, bớt nghĩ hôm nay ăn gì.</span>
+      </a>
+
+      <nav class="header-nav" aria-label="Điều hướng chính">
+        <a href="index.html" class="nav-link">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          <span>Khám phá</span>
+        </a>
+        <a href="meal.html" class="nav-link">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a10 10 0 0 1 10 10"></path></svg>
+          <span>Mâm cơm</span>
+        </a>
+        <a href="shopping.html" class="nav-link active">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
+          <span>Đi chợ</span>
+        </a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main Shopping Content -->
+  <main class="shopping-container">
+
+    <!-- Shopping Summary Card -->
+    <section class="shopping-summary-card">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: var(--space-3); margin-bottom: var(--space-2);">
+        <div>
+          <h1 class="meal-banner-title" style="margin: 0;">Danh sách đi chợ</h1>
+          <p class="meal-banner-subtitle">
+            Chuẩn bị cho mâm cơm <strong id="shoppingServingsText" style="color: var(--color-brand-primary);">4 người</strong>
+          </p>
+        </div>
+        <div style="display: flex; gap: var(--space-2);">
+          <a href="meal.html" class="btn btn-outline btn-sm">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
+            <span>Đổi món / khẩu phần</span>
+          </a>
+          <button id="resetShoppingBtn" class="btn btn-outline btn-sm" type="button" title="Đặt lại toàn bộ danh sách đã tick">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>
+            <span>Đặt lại</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Dishes included in this shopping list -->
+      <div class="shopping-dishes-chips" id="shoppingDishesChips">
+        <!-- Rendered pills -->
+      </div>
+
+      <!-- Progress Tracking Bar -->
+      <div class="shopping-progress-wrapper">
+        <div class="progress-label-bar">
+          <span style="color: var(--color-text-secondary);">Tiến độ chuẩn bị:</span>
+          <span id="progressSummaryText" style="color: var(--color-brand-primary);">0 / 0 món (0%)</span>
+        </div>
+        <div class="progress-track" aria-hidden="true">
+          <div class="progress-fill" id="progressBarFill" style="width: 0%;"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 1: Fresh Ingredients (Aggregated) -->
+    <section class="section-panel">
+      <div class="section-panel-header">
+        <h2 class="section-panel-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
+          <span>Nguyên liệu tươi sống & rau củ</span>
+        </h2>
+        <span class="badge badge-tested" id="freshCountBadge">0 món</span>
+      </div>
+
+      <div id="freshIngredientsList">
+        <!-- Rendered shopping item rows -->
+      </div>
+    </section>
+
+    <!-- Section 2: Seasonings & Staples (Manual Adjust / Kitchen Pantry) -->
+    <section class="section-panel">
+      <div class="section-panel-header">
+        <h2 class="section-panel-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+          <span>Gia vị & nếp bếp có sẵn</span>
+        </h2>
+        <span class="badge" style="background-color: var(--color-surface-raised); color: var(--color-text-secondary);" id="seasoningsCountBadge">0 món</span>
+      </div>
+      <p style="font-size: var(--font-size-xs); color: var(--color-text-muted); margin-bottom: var(--space-4);">
+        * Gia vị thường có sẵn trong gian bếp Việt. Hãy kiểm tra trước khi đi chợ để nêm nếm vừa khẩu vị gia đình.
+      </p>
+
+      <div id="seasoningsList">
+        <!-- Rendered seasonings rows -->
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <p class="footer-text">ĂN GÌ MOM — Bữa cơm nhà, bớt nghĩ hôm nay ăn gì. Bản mẫu tương tác (Prototype v1).</p>
+  </footer>
+
+  <script type="module" src="scripts/shopping.js"></script>
+</body>
+</html>

@@ -68,6 +68,12 @@ Nguồn ưu tiên cao nhất khi có xung đột (master plan §0). Chỉ ghi `a
 |---|---|
 | D26 | **Recipe & Cooking Prototype**: Triển khai bản mẫu xem chi tiết công thức (`recipe.html`), động hóa co giãn định lượng nguyên liệu theo số người ăn không sai số lũy tiến (Invariants §5.3), và chế độ nấu ăn tập trung (Cooking Mode) kèm timer an toàn không tự nhảy bước và ngăn kéo tra cứu nguyên liệu nhanh |
 
+## Quyết định trong AG-07 (`drafted / implemented` ngày 20/10/2026)
+
+| ID | Nội dung |
+|---|---|
+| D27 | **Meal State & Shopping Aggregation Pattern**: Phê duyệt cấu trúc mâm cơm 3 món (`prototype/meal.html`) với tính năng đổi món linh hoạt theo vai trò (`MAIN`, `SOUP`, `SIDE`), co giãn khẩu phần toàn mâm và bộ máy tổng hợp nguyên liệu đi chợ (`aggregateIngredients`, `prototype/shopping.html`) tuân thủ tuyệt đối Invariants §5.4: gộp các nguyên liệu tương thích theo cùng đơn vị tính, bảo toàn khả năng truy vết nguồn gốc (traceability) từ từng món, phân tách nhóm gia vị bếp gia đình (`MANUAL_ADJUST`), và quản lý tiến độ chuẩn bị qua checklist lưu trữ `localStorage` |
+
 ## Còn mở (`unknown`)
 
 | # | Vấn đề | Quyết định tại |
