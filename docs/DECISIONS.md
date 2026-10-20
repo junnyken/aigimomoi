@@ -140,6 +140,12 @@ Nguồn ưu tiên cao nhất khi có xung đột (master plan §0). Chỉ ghi `a
 |---|---|
 | D38 | **Serving Adjustment & Client-side Realtime Scaling**: Phê duyệt triển khai bộ điều khiển khẩu phần `ServingSelector` trên trang công thức công khai `/cong-thuc/[slug]`, hỗ trợ tăng giảm từ 1 đến 20 người ăn. Tuân thủ nghiêm ngặt Invariants §5.4 (D21): chỉ co giãn các nguyên liệu có `scalePolicy === 'LINEAR'` theo tỷ lệ $R = \text{target} / \text{base}$; các dòng `FIXED` (hương liệu thảo mộc) và `MANUAL_ADJUST` (gia vị nêm nếm theo khẩu vị) giữ nguyên định lượng gốc. Làm tròn chỉ ở tầng hiển thị UI (tối đa 2 chữ số thập phân), tuyệt đối không lưu đè giá trị làm tròn vào state tính toán. Giữ nguyên vẹn thời gian nấu (không nhân theo $R$). Đồng bộ khẩu phần lên URL parameter `?servings=X` phía client qua `window.history.replaceState` mà không reload trang. |
 
+## Quyết định trong AG-19 (`drafted / implemented` ngày 20/10/2026)
+
+| ID | Nội dung |
+|---|---|
+| D39 | **Cooking Mode & Kitchen Safety Timer Invariants**: Triển khai giao diện Chế độ nấu tập trung toàn màn hình tại route `/cong-thuc/[slug]/nau`. Tuân thủ nghiêm ngặt Invariants §6.7: bộ hẹn giờ `StepTimer` khi đếm ngược về 0 chỉ phát cảnh báo âm thanh (Web Audio API) và hiệu ứng thị giác, tuyệt đối KHÔNG tự động chuyển bước hay giả định món ăn đã chín; người nấu tự quan sát thực tế và chủ động bấm "Bước tiếp theo". Tích hợp ngăn kéo `QuickIngredientsSheet` mở nhanh bảng nguyên liệu (đã scale theo `?servings=X` từ AG-18) mà không làm mất vị trí bước đang nấu. Hỗ trợ phím tắt bàn phím và thanh tiến độ hoàn thành. |
+
 ## Còn mở (`unknown`)
 
 | # | Vấn đề | Quyết định tại |

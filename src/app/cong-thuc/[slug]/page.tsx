@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound, permanentRedirect } from 'next/navigation';
-import { ArrowLeft, Clock, Flame, Gauge, Users, UtensilsCrossed, Tag } from 'lucide-react';
+import { ArrowLeft, Clock, Flame, Gauge, Users, UtensilsCrossed, Tag, ChefHat } from 'lucide-react';
 import { getCurrentSlugForArchived, getPublishedRecipeBySlug } from '@/lib/recipes/public';
 import {
   ROLE_LABELS,
@@ -125,6 +125,16 @@ export default async function PublicRecipePage({ params }: PageParams) {
             <Stat icon={Gauge} label="Độ khó" value={recipe.difficulty} />
             <Stat icon={Users} label="Khẩu phần gốc" value={`${recipe.baseServings} người`} />
           </dl>
+
+          <div className="pt-1">
+            <Link
+              href={`${recipePath(recipe.slug)}/nau`}
+              className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl font-bold bg-[var(--color-brand-primary)] text-white hover:opacity-95 transition-all shadow-xs w-full sm:w-auto"
+            >
+              <ChefHat className="w-5 h-5" />
+              <span>Bắt đầu nấu món này</span>
+            </Link>
+          </div>
 
           <p className="text-xs text-[var(--color-text-muted)]">
             Tổng thời gian khoảng {formatDuration(totalMinutes)}

@@ -328,4 +328,25 @@ Kiểm tra tài liệu/skill (script read-only, 8 nhóm):
 | 16 | `tsc --noEmit` sạch lỗi; `npm run build` thành công 21/21 routes (exit code 0) | PASS |
 | 17 | DECISIONS.md ghi nhận D38 | PASS |
 
+## AG-19 — Cooking Mode — 20/10/2026
+
+**App tests: `test_cooking_mode.ts` (19 test cases), regression checks (`test_serving_adjustment.ts`, `test_search_filters.ts`, `test_public_rendering.ts`), TypeScript (`tsc --noEmit`), Next.js production build (`npm run build`).**
+
+| # | Kiểm tra | Kết quả |
+|---|---|---|
+| 1 | Invariants §5.1: Chỉ cho phép công thức `PUBLISHED` mở chế độ nấu; chặn `DRAFT`/`SUBMITTED`/`ARCHIVED` (404) | PASS |
+| 2 | Invariants §6.7: Thứ tự bước theo `stepNumber` tăng dần, hiển thị đầy đủ tên giai đoạn và mẹo nấu | PASS |
+| 3 | Invariants §6.7: Bộ đếm ngược `StepTimer` đếm đúng thời gian, khi hết giờ cảnh báo và KHÔNG tự động chuyển bước | PASS |
+| 4 | Kế thừa khẩu phần ăn (AG-18, §5.4): Nguyên liệu scale đúng theo `?servings=X` (LINEAR nhân $R$, FIXED/MANUAL giữ nguyên) | PASS |
+| 5 | Điều hướng bước an toàn: Bounds checking không bị lỗi tràn mảng index | PASS |
+| 6 | Ngăn kéo `QuickIngredientsSheet` mở tra cứu nguyên liệu nhanh mà không làm mất vị trí bước đang nấu | PASS |
+| 7 | Hỗ trợ phím tắt bàn phím (ArrowLeft/ArrowRight), thanh tiến độ trực quan, modal chúc mừng nấu xong | PASS |
+| 8 | `test_cooking_mode.ts`: 19 PASS, 0 FAIL (exit code 0) | PASS |
+| 9 | `test_serving_adjustment.ts`: 40 PASS, 0 FAIL (không hồi quy AG-18) | PASS |
+| 10 | `test_search_filters.ts`: 36 PASS, 0 FAIL (không hồi quy AG-17) | PASS |
+| 11 | `test_public_rendering.ts`: 31 PASS, 0 FAIL (không hồi quy AG-16) | PASS |
+| 12 | `tsc --noEmit` sạch lỗi; `npm run build` thành công với 23 routes (exit code 0) | PASS |
+| 13 | DECISIONS.md ghi nhận D39 | PASS |
+
+
 
