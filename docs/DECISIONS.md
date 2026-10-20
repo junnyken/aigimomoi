@@ -92,11 +92,17 @@ Nguồn ưu tiên cao nhất khi có xung đột (master plan §0). Chỉ ghi `a
 |---|---|
 | D30 | **Culinary Data Model Drizzle Schema & Initial Migration**: Phê duyệt toàn bộ lược đồ cơ sở dữ liệu PostgreSQL cho nghiệp vụ bữa cơm gia đình (`src/lib/db/schema.ts`, `relations.ts`), bao gồm 6 enums miền, 11 bảng dữ liệu (`users`, `dishes`, `dish_aliases`, `recipes`, `ingredients`, `recipe_ingredients`, `cooking_steps`, `taxonomies`, `recipe_tags`, `meals`, `meal_items`), hệ thống khóa ngoại và chỉ mục (indexes) tối ưu hóa truy vấn tìm kiếm, và tập tin migration SQL đầu tiên (`drizzle/0000_dry_orphan.sql`) đảm bảo tuân thủ 100% Invariants §5 (tách biệt Dish/Recipe, định lượng nguyên liệu có cấu trúc, 3 cờ kiểm chứng độc lập) |
 
-## Quyết định trong AG-11 (`drafted / implemented` ngày 20/10/2026)
+## Quyết định trong AG-11 (`approved` ngày 20/10/2026)
 
 | ID | Nội dung |
 |---|---|
 | D31 | **Identity, Web Crypto Session, RBAC & Middleware Architecture**: Phê duyệt cơ chế định danh và phân quyền Role-Based Access Control (`ADMIN`, `EDITOR`, `COOK`) sử dụng băm mật khẩu chuẩn bảo mật Node.js scrypt (timing-safe verification), cơ chế quản lý phiên đăng nhập không trạng thái (stateless signed tokens qua Web Crypto HMAC-SHA256) lưu trữ trong cookie HttpOnly SameSite=Lax an toàn, API endpoints (`/api/auth/login`, `logout`, `me`), giao diện đăng nhập chuẩn thiết kế Warm Kitchen, và Next.js Middleware kiểm soát nghiêm ngặt các tuyến đường biên tập `/editor/*` và quản trị `/admin/*` |
+
+## Quyết định trong AG-12 (`drafted / implemented` ngày 20/10/2026)
+
+| ID | Nội dung |
+|---|---|
+| D32 | **Structured Ingredients Dictionary & Taxonomy Tree Architecture**: Phê duyệt hệ thống API CRUD và giao diện quản trị từ điển nguyên liệu chuẩn hóa (`/editor/ingredients`) và phân loại đa trục (`/editor/taxonomies`), bắt buộc chuẩn hóa slug duy nhất, đơn vị tính chuẩn, phân loại nhóm thực phẩm và cờ gia vị bếp thường trực (`isPantryStaple`), kiểm tra ràng buộc toàn vẹn khóa ngoại khi xóa (chặn xóa nguyên liệu đang dùng trong công thức), và nạp sẵn danh mục 29 nguyên liệu cơ sở và 15 taxonomies của Batch 0 |
 
 ## Còn mở (`unknown`)
 

@@ -182,6 +182,23 @@ Kiểm tra tài liệu/skill (script read-only, 8 nhóm):
 | 9 | Secret scan: không có secret | PASS |
 | 10 | DECISIONS.md ghi nhận D31 | PASS |
 
+## AG-12 — Ingredient & Taxonomy CRUD — 20/10/2026
+
+**App tests: Next.js production build (`npm run build`).**
+
+| # | Kiểm tra | Kết quả |
+|---|---|---|
+| 1 | API `/api/ingredients` (GET search, filter category/staple, POST có kiểm tra quyền EDITOR/ADMIN) | PASS |
+| 2 | API `/api/ingredients/[id]` (GET, PUT, DELETE có kiểm tra ràng buộc khóa ngoại recipes) | PASS |
+| 3 | API `/api/taxonomies` và `/[id]` (GET theo type, POST, DELETE có kiểm tra quyền EDITOR/ADMIN) | PASS |
+| 4 | Seeder `src/scripts/seed_catalog.ts` chứa đầy đủ 29 nguyên liệu chuẩn hóa và 15 nhóm taxonomies cho Batch 0 | PASS |
+| 5 | Giao diện `/editor/ingredients`: Bảng quản lý nguyên liệu, tìm kiếm tức thời, modal tạo mới, responsive | PASS |
+| 6 | Giao diện `/editor/taxonomies`: Quản lý 4 nhóm thẻ phân loại đa trục, tạo mới và xóa thẻ | PASS |
+| 7 | `npm run build` biên dịch thành công ứng dụng với tất cả API CRUD và trang biên tập viên (exit code 0) | PASS |
+| 8 | Secret scan: không có secret | PASS |
+| 9 | DECISIONS.md ghi nhận D32 | PASS |
+
+
 
 
 
