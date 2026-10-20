@@ -348,5 +348,28 @@ Kiểm tra tài liệu/skill (script read-only, 8 nhóm):
 | 12 | `tsc --noEmit` sạch lỗi; `npm run build` thành công với 23 routes (exit code 0) | PASS |
 | 13 | DECISIONS.md ghi nhận D39 | PASS |
 
+## AG-20 — Saved Recipes — 20/10/2026
+
+**App tests: `test_saved_recipes.ts` (25 test cases), regression checks (`test_cooking_mode.ts`, `test_serving_adjustment.ts`, `test_search_filters.ts`), TypeScript (`tsc --noEmit`), Next.js production build (`npm run build`).**
+
+| # | Kiểm tra | Kết quả |
+|---|---|---|
+| 1 | Invariants §6.7: Khách vãng lai lưu/bỏ lưu tức thời vào `localStorage`, không popup chặn luồng | PASS |
+| 2 | Invariants §5.1: Danh sách món đã lưu chỉ hiển thị công thức `PUBLISHED`, tự động ẩn DRAFT/ARCHIVED | PASS |
+| 3 | Thao tác lưu/bỏ lưu: User lưu và xóa bản ghi thành công trong database | PASS |
+| 4 | Ràng buộc duy nhất (Unique constraint): Không bị duplicate khi lưu lại cùng một món | PASS |
+| 5 | Cô lập dữ liệu (Data isolation): Dữ liệu món đã lưu giữa các người dùng hoàn toàn độc lập | PASS |
+| 6 | Xóa liên hoàn (Cascade delete): Bản ghi `saved_recipes` tự động xóa khi user hoặc recipe bị xóa | PASS |
+| 7 | Helper `queryPublishedRecipeCardsBySlugs`: Chỉ trả về thẻ của món PUBLISHED, bảo vệ thông tin tác giả | PASS |
+| 8 | Đồng bộ khách vãng lai (Guest sync simulation): Tự động gộp danh sách từ khách vào DB an toàn | PASS |
+| 9 | `test_saved_recipes.ts`: 25 PASS, 0 FAIL (exit code 0) | PASS |
+| 10 | `test_cooking_mode.ts`: 19 PASS, 0 FAIL (không hồi quy AG-19) | PASS |
+| 11 | `test_serving_adjustment.ts`: 40 PASS, 0 FAIL (không hồi quy AG-18) | PASS |
+| 12 | `test_search_filters.ts`: 36 PASS, 0 FAIL (không hồi quy AG-17) | PASS |
+| 13 | Component `BookmarkButton`: Tích hợp trên `RecipeCard` và trang chi tiết `/cong-thuc/[slug]` | PASS |
+| 14 | Trang `/da-luu`: Giao diện bộ sưu tập có Empty State, realtime cards grid | PASS |
+| 15 | `tsc --noEmit` sạch lỗi; `npm run build` thành công với 27 routes (exit code 0) | PASS |
+| 16 | DECISIONS.md ghi nhận D40 | PASS |
+
 
 

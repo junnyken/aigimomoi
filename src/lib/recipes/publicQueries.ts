@@ -258,3 +258,31 @@ export async function queryPublishedRecipeCards(limit = 12): Promise<PublicRecip
     heroImage: safeImageSrc(heroImage),
   }));
 }
+
+export async function queryPublishedRecipeCardsBySlugs(slugs: string[]): Promise<PublicRecipeCard[]> {
+  const validSlugs = slugs.filter(isValidPublicSlug).slice(0, 100);
+  if (validSlugs.length === 0) return [];
+
+  const rows = await db
+    .select({
+      slug: recipes.slug,
+      name: recipes.name,
+      shortDescription: recipes.shortDescription,
+      role: recipes.role,
+      baseServings: recipes.baseServings,
+      prepTimeMinutes: recipes.prepTimeMinutes,
+      cookTimeMinutes: recipes.cookTimeMinutes,
+      difficulty: recipes.difficulty,
+      heroImage: recipes.heroImage,
+      isCookTested: recipes.isCookTested,
+    })
+    .from(recipes)
+    .where(and(inArray(recipes.slug, validSlugs), eq(recipes.status, 'PUBLISHED')));
+
+  return rows.map(({ prepTimeMinutes, cookTimeMinutes, heroImage, ...rest }) => ({
+    ...rest,
+    totalTimeMinutes: prepTimeMinutes + cookTimeMinutes,
+    heroImage: safeImageSrc(heroImage),
+  }));
+}
+

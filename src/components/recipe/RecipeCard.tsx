@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Clock, Users, ChefHat, UtensilsCrossed } from 'lucide-react';
 import type { PublicRecipeCard } from '@/lib/recipes/publicQueries';
 import { ROLE_LABELS, formatDuration, recipePath } from '@/lib/recipes/labels';
+import { BookmarkButton } from './BookmarkButton';
 
 export function RecipeCard({ recipe }: { recipe: PublicRecipeCard }) {
   return (
@@ -23,12 +24,15 @@ export function RecipeCard({ recipe }: { recipe: PublicRecipeCard }) {
         <span className="absolute top-3 left-3 px-2.5 py-1 rounded-full text-xs font-semibold bg-[var(--color-brand-primary)] text-white">
           {ROLE_LABELS[recipe.role] ?? recipe.role}
         </span>
-        {recipe.isCookTested && (
-          <span className="absolute top-3 right-3 inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-semibold bg-[var(--color-surface-white)] text-[var(--color-success-base)]">
-            <ChefHat className="w-3 h-3" aria-hidden="true" />
-            Đã nấu thử
-          </span>
-        )}
+        <div className="absolute top-3 right-3 flex items-center gap-1.5 z-20">
+          {recipe.isCookTested && (
+            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-semibold bg-[var(--color-surface-white)] text-[var(--color-success-base)] shadow-xs">
+              <ChefHat className="w-3 h-3" aria-hidden="true" />
+              Đã nấu thử
+            </span>
+          )}
+          <BookmarkButton slug={recipe.slug} size="sm" />
+        </div>
       </div>
 
       <div className="p-4 flex flex-col flex-1">

@@ -11,11 +11,13 @@ import {
   recipeTags,
   meals,
   mealItems,
+  savedRecipes,
 } from './schema';
 
 export const usersRelations = relations(users, ({ many }) => ({
   recipes: many(recipes),
   meals: many(meals),
+  savedRecipes: many(savedRecipes),
 }));
 
 export const dishesRelations = relations(dishes, ({ many }) => ({
@@ -43,6 +45,7 @@ export const recipesRelations = relations(recipes, ({ one, many }) => ({
   steps: many(cookingSteps),
   tags: many(recipeTags),
   mealItems: many(mealItems),
+  savedByUsers: many(savedRecipes),
 }));
 
 export const ingredientsRelations = relations(ingredients, ({ many }) => ({
@@ -100,3 +103,15 @@ export const mealItemsRelations = relations(mealItems, ({ one }) => ({
     references: [recipes.id],
   }),
 }));
+
+export const savedRecipesRelations = relations(savedRecipes, ({ one }) => ({
+  user: one(users, {
+    fields: [savedRecipes.userId],
+    references: [users.id],
+  }),
+  recipe: one(recipes, {
+    fields: [savedRecipes.recipeId],
+    references: [recipes.id],
+  }),
+}));
+

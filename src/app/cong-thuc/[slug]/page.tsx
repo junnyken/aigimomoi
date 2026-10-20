@@ -14,6 +14,7 @@ import { VerificationBadges } from '@/components/recipe/VerificationBadges';
 import { IngredientList } from '@/components/recipe/IngredientList';
 import { StepList } from '@/components/recipe/StepList';
 import { NutritionNotice } from '@/components/recipe/NutritionNotice';
+import { BookmarkButton } from '@/components/recipe/BookmarkButton';
 
 interface PageParams {
   params: Promise<{ slug: string }>;
@@ -126,7 +127,7 @@ export default async function PublicRecipePage({ params }: PageParams) {
             <Stat icon={Users} label="Khẩu phần gốc" value={`${recipe.baseServings} người`} />
           </dl>
 
-          <div className="pt-1">
+          <div className="pt-1 flex flex-wrap items-center gap-3">
             <Link
               href={`${recipePath(recipe.slug)}/nau`}
               className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl font-bold bg-[var(--color-brand-primary)] text-white hover:opacity-95 transition-all shadow-xs w-full sm:w-auto"
@@ -134,6 +135,7 @@ export default async function PublicRecipePage({ params }: PageParams) {
               <ChefHat className="w-5 h-5" />
               <span>Bắt đầu nấu món này</span>
             </Link>
+            <BookmarkButton slug={recipe.slug} size="lg" showText={true} />
           </div>
 
           <p className="text-xs text-[var(--color-text-muted)]">

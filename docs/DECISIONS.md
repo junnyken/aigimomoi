@@ -146,6 +146,12 @@ Nguồn ưu tiên cao nhất khi có xung đột (master plan §0). Chỉ ghi `a
 |---|---|
 | D39 | **Cooking Mode & Kitchen Safety Timer Invariants**: Triển khai giao diện Chế độ nấu tập trung toàn màn hình tại route `/cong-thuc/[slug]/nau`. Tuân thủ nghiêm ngặt Invariants §6.7: bộ hẹn giờ `StepTimer` khi đếm ngược về 0 chỉ phát cảnh báo âm thanh (Web Audio API) và hiệu ứng thị giác, tuyệt đối KHÔNG tự động chuyển bước hay giả định món ăn đã chín; người nấu tự quan sát thực tế và chủ động bấm "Bước tiếp theo". Tích hợp ngăn kéo `QuickIngredientsSheet` mở nhanh bảng nguyên liệu (đã scale theo `?servings=X` từ AG-18) mà không làm mất vị trí bước đang nấu. Hỗ trợ phím tắt bàn phím và thanh tiến độ hoàn thành. |
 
+## Quyết định trong AG-20 (`drafted / implemented` ngày 20/10/2026)
+
+| ID | Nội dung |
+|---|---|
+| D40 | **Saved Recipes & Guest-first Synchronization**: Triển khai tính năng Lưu món ăn yêu thích (`Saved Recipes`) hỗ trợ trải nghiệm không rào cản cho khách vãng lai (Guest-first, Invariants §6.7). Khách vãng lai lưu/bỏ lưu trực tiếp vào `localStorage` (`angimom_saved_recipes`) mà không bao giờ bị gián đoạn hay ép buộc đăng nhập. Khi đăng nhập vào tài khoản, hệ thống tự động đồng bộ (`/api/saved-recipes/sync`) và gộp an toàn vào bảng `saved_recipes` trong Postgres với Unique Index `(user_id, recipe_id)` và `ON CONFLICT DO NOTHING`. Bảng `saved_recipes` áp dụng `ON DELETE CASCADE`. API truy vấn và trang danh sách `/da-luu` luôn tuân thủ nghiêm ngặt Invariants §5.1: chỉ hiển thị công thức có trạng thái `PUBLISHED`, tự động ẩn các bản `DRAFT`/`ARCHIVED` và loại bỏ toàn bộ dữ liệu nội bộ/nhạy cảm của tác giả. |
+
 ## Còn mở (`unknown`)
 
 | # | Vấn đề | Quyết định tại |

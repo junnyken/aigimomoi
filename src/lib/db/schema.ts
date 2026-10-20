@@ -9,6 +9,7 @@ import {
   pgEnum, 
   primaryKey,
   index,
+  uniqueIndex,
   type AnyPgColumn,
 } from 'drizzle-orm/pg-core';
 
@@ -224,3 +225,16 @@ export const mealItems = pgTable('meal_items', {
   index('meal_items_meal_id_idx').on(table.mealId),
   index('meal_items_recipe_id_idx').on(table.recipeId),
 ]);
+
+// Saved Recipes (Món ăn đã lưu riêng tư của người dùng - AG-20)
+export const savedRecipes = pgTable('saved_recipes', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  recipeId: integer('recipe_id').notNull().references(() => recipes.id, { onDelete: 'cascade' }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex('saved_recipes_user_recipe_idx').on(table.userId, table.recipeId),
+  index('saved_recipes_user_idx').on(table.userId),
+  index('saved_recipes_recipe_idx').on(table.recipeId),
+]);
+

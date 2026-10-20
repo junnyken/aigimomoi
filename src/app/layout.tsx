@@ -45,9 +45,15 @@ export default function RootLayout({
               </Link>
               <Link
                 href="/mon-an"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold bg-[var(--color-brand-light)] text-[var(--color-brand-primary)]"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-brand-primary)] hover:bg-[var(--color-surface-raised)] transition-colors"
               >
                 <span>Tìm món</span>
+              </Link>
+              <Link
+                href="/da-luu"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-brand-primary)] hover:bg-[var(--color-surface-raised)] transition-colors"
+              >
+                <span>Đã lưu</span>
               </Link>
               <Link
                 href="/meal"
