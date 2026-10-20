@@ -18,6 +18,7 @@ import { BookmarkButton } from '@/components/recipe/BookmarkButton';
 import { ReportButton } from '@/components/recipe/ReportButton';
 import { KitchenStorySection } from '@/components/recipe/KitchenStorySection';
 import { RegionalVariants } from '@/components/recipe/RegionalVariants';
+import { CookedItSection } from '@/components/recipe/CookedItSection';
 import { RecipeJsonLd } from '@/components/seo/RecipeJsonLd';
 
 interface PageParams {
@@ -197,6 +198,9 @@ export default async function PublicRecipePage({ params }: PageParams) {
               </ul>
             </section>
           )}
+
+          {/* AG-34: Cộng đồng nấu thử & ảnh thành phẩm */}
+          <CookedItSection recipeId={recipe.id} recipeName={recipe.name} />
 
           {/* AG-32: Báo cáo vi phạm nội dung */}
           <div className="pt-4 border-t border-[var(--color-border-base)] flex justify-end">

@@ -74,6 +74,12 @@ export const reportReasonEnum = pgEnum('report_reason', [
   'OTHER'
 ]);
 
+export const feedbackStatusEnum = pgEnum('feedback_status', [
+  'PENDING',
+  'APPROVED',
+  'REJECTED'
+]);
+
 // ============================================================================
 // 2. CORE ENTITIES
 // ============================================================================
@@ -280,5 +286,26 @@ export const recipeReports = pgTable('recipe_reports', {
   index('recipe_reports_recipe_idx').on(table.recipeId),
   index('recipe_reports_status_idx').on(table.status),
   index('recipe_reports_created_at_idx').on(table.createdAt),
+]);
+
+// Recipe Cooked Feedbacks (Cộng đồng nấu thử & ảnh thành phẩm - AG-34)
+export const recipeCookedFeedbacks = pgTable('recipe_cooked_feedbacks', {
+  id: serial('id').primaryKey(),
+  recipeId: integer('recipe_id').notNull().references(() => recipes.id, { onDelete: 'cascade' }),
+  userId: integer('user_id').references(() => users.id, { onDelete: 'set null' }),
+  cookName: text('cook_name').notNull(),
+  cookEmail: text('cook_email'),
+  rating: integer('rating').notNull().default(5),
+  notes: text('notes'),
+  photoUrl: text('photo_url'),
+  status: feedbackStatusEnum('status').notNull().default('PENDING'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  approvedAt: timestamp('approved_at', { withTimezone: true }),
+  approvedById: integer('approved_by_id').references(() => users.id, { onDelete: 'set null' }),
+}, (table) => [
+  index('recipe_cooked_feedbacks_recipe_idx').on(table.recipeId),
+  index('recipe_cooked_feedbacks_status_idx').on(table.status),
+  index('recipe_cooked_feedbacks_created_at_idx').on(table.createdAt),
+  index('recipe_cooked_feedbacks_user_recipe_idx').on(table.recipeId, table.userId),
 ]);
 

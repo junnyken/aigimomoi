@@ -230,6 +230,12 @@ Nguồn ưu tiên cao nhất khi có xung đột (master plan §0). Chỉ ghi `a
 |---|---|
 | D53 | **Regional Dish Variants, Kitchen Stories & Source Attribution**: Phê duyệt cấu trúc biến thể vùng miền và câu chuyện bếp nhà (Invariants §5.1, §5.2, §8.1, Gate P5): (1) Cấu trúc văn hóa món ăn: Bổ sung 4 trường dữ liệu vào `recipes`: `region` ('NORTH', 'CENTRAL', 'SOUTH', 'GENERAL'), `kitchenStory` (văn bản chia sẻ kỷ niệm, bối cảnh sum vầy gia đình), `sourceAttribution` (trích dẫn cội nguồn, mẹo gia truyền) và `variantOfId` (liên kết món ăn gốc); (2) Invariants Bảo vệ Catalog (§5.1): Danh sách biến thể gợi ý `variants` tại trang chi tiết món ăn CHỈ hiển thị các biến thể ở trạng thái `PUBLISHED`. Bản nháp `DRAFT` hoặc `NEEDS_CHANGES` của tác giả khác tuyệt đối không được xuất hiện; (3) Liên kết hai chiều: Truy vấn món gốc trả về danh sách các biến thể vùng miền; truy vấn bất kỳ biến thể nào cũng nhận diện và liên kết ngược về món gốc và các biến thể anh em; (4) Trải nghiệm giao diện: Tích hợp `KitchenStorySection` với thiết kế ấm áp, trang trọng và `RegionalVariants` cho phép chuyển đổi mượt mà giữa các biến thể ẩm thực Bắc - Trung - Nam; (5) Form đóng góp: Cho phép thành viên cộng đồng bổ sung câu chuyện và trích dẫn nguồn gốc khi đóng góp công thức mới. |
 
+## Quyết định trong AG-34 (`implemented` ngày 21/10/2026)
+
+| ID | Nội dung |
+|---|---|
+| D54 | **Cooked-it Feedback & Photos**: Phê duyệt cơ chế phản hồi nấu thử, ảnh đĩa cơm gia đình và nghiệm thu Gate P5 (Invariants §5.1, §5.2, Gate P5): (1) Đĩa cơm cộng đồng: Cho phép độc giả chia sẻ trải nghiệm nấu thực tế, đánh giá sao (1-5 sao), mẹo nêm nếm gia vị và ảnh chụp đĩa thức ăn thành phẩm tại `/cong-thuc/[slug]`; (2) Invariants Chống Spam & Giữ Gìn Văn Hóa (Gate P5): Mọi phản hồi có ảnh hoặc từ khách vãng lai bắt buộc chuyển sang trạng thái `PENDING` và chờ Ban biên tập phê duyệt trước khi hiển thị công khai; thành viên đăng nhập gửi phản hồi text thuần sạch được duyệt tự động; (3) Ngăn chặn trùng lặp: Áp dụng cơ chế Upsert (chỉ duy trì 1 phản hồi / user / recipe, cho phép cập nhật khi nấu lại nhiều lần); (4) Quản trị nội dung: Cung cấp hàng đợi `/editor/feedbacks` và API `/api/editor/feedbacks/[id]` để Ban biên tập duyệt nhanh 1-click; (5) Nghiệm thu toàn diện Gate P5: Hoàn tất 100% 4 capability của Phase P5 (AG-31, AG-32, AG-33, AG-34). |
+
 ## Còn mở (`unknown`)
 
 | # | Vấn đề | Quyết định tại |
