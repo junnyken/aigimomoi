@@ -10,14 +10,14 @@ Trạng thái spec: `not-started` · `spec-drafted` · `approved-for-build` · `
 | AG-00 | Workspace audit & skill setup | Tài liệu gốc | `closed` (20/10/2026) |
 | AG-01 | Existing infrastructure inventory | AG-00 | `closed` (20/10/2026 - S2 pending details) |
 | AG-02 | Architecture & domain decisions | AG-01 | `closed` (20/10/2026) |
-| AG-03 | Content operations plan | AG-00 | `awaiting-close` |
+| AG-03 | Content operations plan | AG-00 | `closed` (20/10/2026) |
 
-Gate P0: scope, thuật ngữ, kiến trúc, người duyệt và khoản chưa biết được ghi rõ.
+Gate P0: scope, thuật ngữ, kiến trúc, người duyệt và khoản chưa biết được ghi rõ. — **GATE P0 ĐÃ ĐẠT**
 
 ## P1 — UX/UI và prototype
 | ID | Capability | Dependency | Trạng thái |
 |---|---|---|---|
-| AG-04 | Design tokens & primitives | AG-02 | `not-started` |
+| AG-04 | Design tokens & primitives | AG-02 | `spec-drafted` |
 | AG-05 | Discovery prototype | AG-04 | `not-started` |
 | AG-06 | Recipe & cooking prototype | AG-04 | `not-started` |
 | AG-07 | Meal & shopping prototype | AG-06 | `not-started` |
