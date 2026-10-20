@@ -165,6 +165,24 @@ Kiểm tra tài liệu/skill (script read-only, 8 nhóm):
 | 6 | Secret scan: không có secret | PASS |
 | 7 | DECISIONS.md ghi nhận D30 | PASS |
 
+## AG-11 — Identity & Authorization — 20/10/2026
+
+**App tests: Unit tests (`seed_users.ts`) & Next.js production build (`npm run build`).**
+
+| # | Kiểm tra | Kết quả |
+|---|---|---|
+| 1 | Bổ sung trường `password_hash` vào bảng `users` và sinh migration `drizzle/0001_happy_talon.sql` | PASS |
+| 2 | Băm mật khẩu bằng Node.js scrypt và so sánh thời gian bất biến (timing-safe verification) | PASS |
+| 3 | Ký và giải mã session token stateless bằng Web Crypto HMAC-SHA256 tương thích Edge Runtime | PASS |
+| 4 | Cấu hình cookie session có cờ bảo mật `HttpOnly`, `SameSite=Lax`, `Secure` (production) | PASS |
+| 5 | Các API endpoint xác thực `/api/auth/login`, `/api/auth/logout`, `/api/auth/me` | PASS |
+| 6 | Next.js Middleware chặn truy cập trái phép vào `/admin/*` và `/editor/*`, chuyển hướng `/login` | PASS |
+| 7 | Trang `/login` giao diện chuẩn Warm Kitchen kèm Suspense boundary pre-render an toàn | PASS |
+| 8 | `npm run build` biên dịch thành công ứng dụng với middleware và dynamic auth routes (exit code 0) | PASS |
+| 9 | Secret scan: không có secret | PASS |
+| 10 | DECISIONS.md ghi nhận D31 | PASS |
+
+
 
 
 

@@ -67,6 +67,7 @@ export const users = pgTable('users', {
   id: serial('id').primaryKey(),
   email: text('email').notNull().unique(),
   displayName: text('display_name').notNull(),
+  passwordHash: text('password_hash'),
   avatarUrl: text('avatar_url'),
   role: userRoleEnum('role').notNull().default('COOK'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
