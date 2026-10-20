@@ -32,8 +32,8 @@ Gate P1: chủ sản phẩm duyệt luồng/thiết kế trước wiring dữ li
 | AG-10 | Schema & migrations | AG-09 | `closed` (20/10/2026) |
 | AG-11 | Identity & authorization | AG-10 | `closed` (20/10/2026) |
 | AG-12 | Ingredient & taxonomy CRUD | AG-11 | `closed` (20/10/2026) |
-| AG-13 | Structured recipe editor | AG-12 | `awaiting-close` |
-| AG-14 | Media pipeline | AG-11 | `not-started` |
+| AG-13 | Structured recipe editor | AG-12 | `closed` (20/10/2026) |
+| AG-14 | Media pipeline | AG-11 | `spec-drafted` |
 | AG-15 | Publishing & revision gate | AG-13, 14 | `not-started` |
 | AG-16 | Public recipe rendering | AG-15 | `not-started` |
 
