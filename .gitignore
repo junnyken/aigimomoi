@@ -19,3 +19,7 @@ coverage/
 public/uploads/*
 !public/uploads/**/.gitkeep
 *.tsbuildinfo
+
+# Backups
+backups/
+*.sql.gz

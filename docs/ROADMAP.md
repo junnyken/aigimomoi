@@ -51,9 +51,9 @@ Gate P2: tạo → kiểm → xuất bản → đọc lại chạy được. —
 | AG-23 | Shopping checklist persistence | AG-22 | `closed` (20/10/2026) |
 | AG-24 | SEO & index boundaries | AG-16, 17 | `closed` (20/10/2026) |
 | AG-25 | Staging deploy & observability | Core tests pass | `closed` (20/10/2026) |
-| AG-26 | Content batch review & MVP pilot gate | AG-03, 15, 23, 25 | `not-started` |
+| AG-26 | Content batch review & MVP pilot gate | AG-03, 15, 23, 25 | `closed` (20/10/2026) |
 
-Gate P3 = MVP đủ dùng thử (không cần P4–P8).
+Gate P3 = MVP đủ dùng thử (không cần P4–P8). — **GATE P3 ĐÃ ĐẠT (M3 MVP PILOT READY)**
 
 ## P4 — AI có kiểm soát
 AG-27 provider boundary & budget · AG-28 AI recipe suggestion · AG-29 AI authoring drafts · AG-30 AI evaluation & fallback — tất cả `not-started`, cần duyệt provider (O4).

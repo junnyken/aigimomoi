@@ -495,6 +495,42 @@ Kiểm tra tài liệu/skill (script read-only, 8 nhóm):
 | 23 | `tsc --noEmit` sạch lỗi; `npm run build` thành công với 35 routes (exit code 0) | PASS |
 | 24 | DECISIONS.md ghi nhận D45 | PASS |
 
+## AG-26 — Content Batch Review & MVP Pilot Gate — 20/10/2026
+
+**App tests: `test_p3_pilot_gate.ts` (36 test cases), complete P3 regression checks (`test_staging_observability.ts`, `test_seo_boundaries.ts`, `test_shopping_checklist.ts`, `test_ingredient_aggregation.ts`, `test_meal_composition.ts`, `test_saved_recipes.ts`), TypeScript (`tsc --noEmit`), Next.js production build (`npm run build`).**
+
+| # | Kiểm tra | Kết quả |
+|---|---|---|
+| 1 | Catalog Batch 1: Số lượng công thức `PUBLISHED` trong DB $\ge 10$ (thực tế có 12 món) | PASS |
+| 2 | Catalog Batch 1: Đủ tối thiểu 3 món mặn (MAIN), 3 món canh (SOUP), 2 món rau/xào (SIDE) | PASS |
+| 3 | Invariants §5.5: 100% công thức đạt chuẩn chất lượng có `isCookTested = true` và `isEditorialReviewed = true` | PASS |
+| 4 | Invariants §5.4: Tất cả nguyên liệu đều có `scalePolicy` rõ ràng (`LINEAR`, `FIXED`, `MANUAL_ADJUST`) | PASS |
+| 5 | Các bước nấu: Có đầy đủ hướng dẫn chi tiết, hẹn giờ `timerSeconds` và mẹo bếp `tipText` | PASS |
+| 6 | E2E Flow 1: Tìm kiếm theo vai trò (`MAIN`) trả về danh sách công thức phù hợp | PASS |
+| 7 | E2E Flow 1: Chi tiết công thức hiển thị đầy đủ nguyên liệu, bước nấu và nhãn tags | PASS |
+| 8 | E2E Flow 1: Co giãn khẩu phần 4 $\to$ 6 người ($R = 1.5$) co giãn chính xác định lượng `LINEAR` và giữ nguyên `MANUAL_ADJUST` | PASS |
+| 9 | E2E Flow 1: Bước nấu Cooking Mode có đồng hồ đếm ngược hoạt động chuẩn xác | PASS |
+| 10 | E2E Flow 2: Phân giải mâm cơm 3 món chuẩn Việt Nam (MAIN, SOUP, SIDE) | PASS |
+| 11 | E2E Flow 2: Đổi món cục bộ slot SOUP giữ nguyên vẹn 2 slot MAIN và SIDE | PASS |
+| 12 | E2E Flow 2: Tự động gộp nguyên liệu mâm cơm, tách riêng đồ tươi sống và gia vị bếp nhà | PASS |
+| 13 | E2E Flow 2: Checklist đi chợ hỗ trợ tick chọn, thanh tiến độ và xuất văn bản sao chép chuẩn mực | PASS |
+| 14 | Invariants §11.4: Tồn tại kịch bản sao lưu `scripts/backup_db.sh` và khôi phục `scripts/restore_db.sh` | PASS |
+| 15 | Invariants §11.4: Diễn tập sao lưu tạo thành công tệp .sql có timestamp | PASS |
+| 16 | Invariants §11.4: Diễn tập khôi phục (Restore Drill) loại bỏ bản ghi thử nghiệm tạm và khôi phục 100% dữ liệu gốc | PASS |
+| 17 | Healthcheck & Liveness: Endpoint `/api/health` trả về HTTP 200 OK, DB `connected` | PASS |
+| 18 | SEO & Robots: `robots.txt` chặn `/editor/`, Sitemap chứa 17 URLs công khai hợp lệ | PASS |
+| 19 | `test_p3_pilot_gate.ts`: 36 PASS, 0 FAIL (exit code 0) | PASS |
+| 20 | `test_staging_observability.ts`: 39 PASS, 0 FAIL (không hồi quy AG-25) | PASS |
+| 21 | `test_seo_boundaries.ts`: 37 PASS, 0 FAIL (không hồi quy AG-24) | PASS |
+| 22 | `test_shopping_checklist.ts`: 22 PASS, 0 FAIL (không hồi quy AG-23) | PASS |
+| 23 | `test_ingredient_aggregation.ts`: 37 PASS, 0 FAIL (không hồi quy AG-22) | PASS |
+| 24 | `test_meal_composition.ts`: 37 PASS, 0 FAIL (không hồi quy AG-21) | PASS |
+| 25 | `test_saved_recipes.ts`: 25 PASS, 0 FAIL (không hồi quy AG-20) | PASS |
+| 26 | **TỔNG CỘNG CHUỖI P3: 233 PASS, 0 FAIL (100%)** | PASS |
+| 27 | `tsc --noEmit` sạch lỗi; `npm run build` thành công với 35 routes (exit code 0) | PASS |
+| 28 | DECISIONS.md ghi nhận D46 — **GATE P3 ĐẠT TOÀN DIỆN** | PASS |
+
+
 
 
 

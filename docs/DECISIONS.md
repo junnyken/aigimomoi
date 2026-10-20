@@ -182,6 +182,12 @@ Nguồn ưu tiên cao nhất khi có xung đột (master plan §0). Chỉ ghi `a
 |---|---|
 | D45 | **Staging Deploy, Observability & Structured Logger with Secret Redaction**: Phê duyệt tiêu chuẩn triển khai độc lập và giám sát hệ thống cho Ăn Gì Mom: (1) Endpoint giám sát sức khỏe `/api/health` trả về trạng thái liveness/readiness probe, kiểm tra trực tiếp kết nối DB (`SELECT 1`), uptime, version, phản hồi HTTP 200 khi kết nối tốt và HTTP 503 khi mất kết nối; (2) Invariant "Log không lộ secrets": Module `src/lib/logger.ts` tự động làm sạch (redact) các trường nhạy cảm (`password`, `token`, `secret`, `jwt`, `cookie`, `database_url`), che giấu mật khẩu PostgreSQL connection string và Bearer authorization trước khi ghi log ra container/stdout; (3) Tối ưu hóa điều phối container `docker-compose.yml`: Bổ sung healthcheck định kỳ cho service `web` (`/api/health`) và điều kiện `caddy` phụ thuộc `web: condition: service_healthy`, đảm bảo luồng traffic chỉ được chuyển tiếp khi ứng dụng và DB đã hoàn toàn sẵn sàng. |
 
+## Quyết định trong AG-26 (`drafted / implemented` ngày 20/10/2026)
+
+| ID | Nội dung |
+|---|---|
+| D46 | **Content Batch 1 Approval, Automated Backup-Restore Drill & MVP Pilot Release Gate**: Phê duyệt toàn diện các điều kiện tiên quyết và mở cổng bàn giao MVP Pilot Gate (Gate P3): (1) Phê duyệt bộ dữ liệu Catalog Batch 1 với 12 công thức chuẩn mực (`src/scripts/seed_production_catalog.ts`) bao phủ cả 3 miền và 3 vai trò mâm cơm (`MAIN`, `SOUP`, `SIDE`), 100% đạt trạng thái `PUBLISHED`, đầy đủ định lượng `scalePolicy`, timer, mẹo bếp và đã được xác thực `isCookTested = true`, `isEditorialReviewed = true` (Invariants §5.5); (2) Phê duyệt quy trình sao lưu và phục hồi dữ liệu tự động (`scripts/backup_db.sh`, `scripts/restore_db.sh`) và hoàn thành diễn tập phục hồi thực tế (Restore Drill - Invariants §11.4); (3) Toàn bộ 233/233 test cases liên hoàn (AG-17..AG-26) đạt kết quả PASS 100%, không có lỗi hồi quy; (4) Chính thức công bố hoàn tất Phase P3, hệ thống sẵn sàng bàn giao cho chủ sản phẩm thử nghiệm pilot trên thiết bị di động thực tế. |
+
 ## Còn mở (`unknown`)
 
 | # | Vấn đề | Quyết định tại |
