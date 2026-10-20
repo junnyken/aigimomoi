@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chi tiết công thức — ĂN GÌ MOM</title>
+  <link rel="stylesheet" href="styles/main.css">
+</head>
+<body>
+
+  <!-- Sticky Header -->
+  <header class="header">
+    <div class="header-container">
+      <a href="index.html" class="brand-logo" aria-label="Trang chủ ĂN GÌ MOM">
+        <div class="wordmark">
+          <span class="wordmark-an-gi">ĂN GÌ</span>
+          <span class="wordmark-mom">MOM</span>
+        </div>
+        <span class="brand-tagline">Bữa cơm nhà, bớt nghĩ hôm nay ăn gì.</span>
+      </a>
+
+      <div class="header-actions">
+        <a href="index.html" class="btn btn-outline">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+          <span>Khám phá món khác</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Recipe Detail Content -->
+  <main class="recipe-detail-container">
+    <a href="index.html" class="back-link">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+      <span>Quay lại danh sách món</span>
+    </a>
+
+    <!-- Recipe Hero Banner -->
+    <article class="recipe-hero">
+      <div class="recipe-hero-img-wrapper">
+        <img id="heroImage" src="" alt="" class="recipe-hero-img">
+        <div class="card-badges">
+          <span id="roleBadge" class="badge"></span>
+          <span id="testedBadge" class="badge badge-tested">✓ Đã nấu thử</span>
+        </div>
+        <span class="badge-demo">[DEMO_FIXTURE]</span>
+      </div>
+
+      <div class="recipe-hero-content">
+        <h1 id="heroTitle" class="recipe-hero-title"></h1>
+        <p id="heroAliases" class="recipe-hero-aliases"></p>
+        <p id="heroDesc" class="recipe-hero-desc"></p>
+
+        <!-- Quick Specs -->
+        <div class="recipe-quick-specs">
+          <div class="spec-box">
+            <span class="spec-label">Chuẩn bị</span>
+            <span id="prepTimeSpec" class="spec-value"></span>
+          </div>
+          <div class="spec-box">
+            <span class="spec-label">Nấu chín</span>
+            <span id="cookTimeSpec" class="spec-value"></span>
+          </div>
+          <div class="spec-box">
+            <span class="spec-label">Khẩu phần gốc</span>
+            <span id="servingsSpec" class="spec-value"></span>
+          </div>
+          <div class="spec-box">
+            <span class="spec-label">Người chia sẻ</span>
+            <span id="authorSpec" class="spec-value"></span>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- Ingredients Section & Serving Selector -->
+    <section class="section-panel" aria-labelledby="ingredientsHeading">
+      <div class="section-panel-header">
+        <h2 id="ingredientsHeading" class="section-panel-title">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
+          <span>Nguyên liệu chuẩn bị</span>
+        </h2>
+
+        <!-- Serving Selector (Dynamic Scaling) -->
+        <div class="serving-selector" aria-label="Bộ chọn số người ăn">
+          <button id="btnDecreaseServing" class="serving-btn" aria-label="Giảm 1 người">−</button>
+          <div class="serving-display">
+            <span id="servingCount">4 người</span>
+            <small id="servingBaseHint">(Gốc: 4 người)</small>
+          </div>
+          <button id="btnIncreaseServing" class="serving-btn" aria-label="Tăng 1 người">+</button>
+        </div>
+      </div>
+
+      <p style="font-size:13px; color:var(--color-text-secondary); margin-bottom:var(--space-3);">
+        💡 <em>Mẹo: Bạn có thể đánh dấu vào ô để kiểm tra nguyên liệu đã có sẵn trong bếp. Định lượng tự động tính toán theo số người ăn.</em>
+      </p>
+
+      <div class="ingredients-list" id="ingredientsList">
+        <!-- Rendered by JavaScript -->
+      </div>
+    </section>
+
+    <!-- Cooking Steps Section -->
+    <section class="section-panel" aria-labelledby="stepsHeading">
+      <div class="section-panel-header">
+        <h2 id="stepsHeading" class="section-panel-title">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path></svg>
+          <span>Các bước thực hiện</span>
+        </h2>
+      </div>
+
+      <div class="steps-list" id="stepsList">
+        <!-- Rendered by JavaScript -->
+      </div>
+    </section>
+  </main>
+
+  <!-- Sticky Bottom Cook Bar -->
+  <aside class="cook-bar" aria-label="Thanh kích hoạt nấu ăn">
+    <div class="cook-bar-container">
+      <div>
+        <span style="font-size:13px; color:var(--color-text-muted);">Sẵn sàng vào bếp?</span>
+        <div style="font-weight:600; font-size:15px; color:var(--color-text-primary);">Chế độ nấu ăn từng bước</div>
+      </div>
+      <button id="startCookBtn" class="btn btn-accent" style="padding:10px 24px; font-size:15px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+        <span>Bắt đầu nấu ngay</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- Cooking Mode Fullscreen Overlay -->
+  <div class="cooking-overlay" id="cookingOverlay" role="dialog" aria-modal="true" aria-label="Chế độ nấu ăn từng bước">
+    <!-- Overlay Header -->
+    <div class="cooking-header">
+      <div style="display:flex; align-items:center; gap:var(--space-3);">
+        <span class="cooking-progress-text" id="cookingProgressText">BƯỚC 1 / 4</span>
+      </div>
+      <div style="display:flex; gap:var(--space-2);">
+        <button id="btnOpenIngredients" class="btn btn-outline" style="padding:6px 12px; font-size:13px;">
+          <span>📋 Xem nguyên liệu</span>
+        </button>
+        <button id="exitCookingBtn" class="btn btn-outline" style="padding:6px 12px; font-size:13px;" aria-label="Thoát chế độ nấu">
+          <span>✕ Thoát</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Overlay Body (Focused Step) -->
+    <div class="cooking-body">
+      <span class="cooking-step-badge" id="cookingStepBadge">Sơ chế & Ướp</span>
+      <h2 class="cooking-step-title" id="cookingStepTitle">Giai đoạn: Sơ chế</h2>
+      <p class="cooking-step-desc" id="cookingStepDesc"></p>
+
+      <!-- Step Timer Component -->
+      <div class="cooking-timer-box" id="timerBox">
+        <div>
+          <span style="font-size:13px; color:var(--color-text-muted); display:block;">Thời gian gợi ý</span>
+          <div class="timer-digits" id="timerDigits">05:00</div>
+        </div>
+        <div class="timer-controls">
+          <button id="btnToggleTimer" class="btn btn-primary" style="padding:8px 18px;">Bắt đầu</button>
+          <button id="btnResetTimer" class="btn btn-outline" style="padding:8px 14px;">Đặt lại</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Overlay Footer (Navigation) -->
+    <div class="cooking-footer">
+      <div class="cooking-footer-container">
+        <button id="btnPrevStep" class="btn btn-outline" style="padding:10px 20px;">
+          <span>← Bước trước</span>
+        </button>
+        <button id="btnNextStep" class="btn btn-primary" style="padding:10px 24px;">
+          <span>Bước tiếp theo →</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Ingredients Drawer (Slide-over) -->
+  <aside class="ingredients-drawer" id="ingredientsDrawer" aria-label="Bảng tra cứu nguyên liệu nhanh">
+    <div class="drawer-header">
+      <h3 style="font-size:16px; font-weight:600; color:var(--color-brand-primary);">Nguyên liệu món ăn</h3>
+      <button id="closeDrawerBtn" class="btn btn-outline" style="padding:4px 8px; font-size:12px;" aria-label="Đóng bảng">✕</button>
+    </div>
+    <div class="drawer-body" id="drawerIngredientsList">
+      <!-- Injected from ingredients list -->
+    </div>
+  </aside>
+
+  <script type="module" src="scripts/recipe.js"></script>
+</body>
+</html>

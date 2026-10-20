@@ -90,3 +90,17 @@ Kiểm tra tài liệu/skill (script read-only, 8 nhóm):
 | 5 | Trạng thái rỗng (Empty State) xuất hiện khi tìm từ khóa không có thật | PASS |
 | 6 | Secret scan: không có secret | PASS |
 | 7 | DECISIONS.md ghi nhận D25, giải quyết O7 | PASS |
+
+## AG-06 — Recipe & Cooking Prototype — 20/10/2026
+
+**App tests: N/A.**
+
+| # | Kiểm tra | Kết quả |
+|---|---|---|
+| 1 | HTTP server port 8090 phản hồi mã 200 OK trên recipe.html và recipe.js | PASS |
+| 2 | Invariant co giãn khẩu phần 4 -> 6 -> 4 người trả về chính xác 100% định lượng ban đầu cho cả 3 ScalePolicy | PASS |
+| 3 | Chế độ nấu (Cooking Mode) mở toàn màn hình, điều hướng bước chính xác, timer an toàn không tự nhảy bước | PASS |
+| 4 | Bảng tra cứu nguyên liệu nhanh (Quick Drawer) mở/đóng mượt mà không làm mất trạng thái bước nấu | PASS |
+| 5 | Chuyển hướng từ trang chủ `index.html` sang `recipe.html?id=...` chuẩn xác | PASS |
+| 6 | Secret scan: không có secret | PASS |
+| 7 | DECISIONS.md ghi nhận D26 | PASS |

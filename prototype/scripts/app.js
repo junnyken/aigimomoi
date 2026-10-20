@@ -121,7 +121,8 @@ function renderRecipes() {
     if (recipe.role === 'SIDE') roleBadgeClass = 'badge-role-side';
 
     return `
-      <article class="recipe-card" data-id="${recipe.id}">
+      <a href="recipe.html?id=${recipe.id}" class="recipe-card-link" style="text-decoration:none; color:inherit; display:flex;">
+      <article class="recipe-card" data-id="${recipe.id}" style="width:100%;">
         <div class="card-image-wrapper">
           <img src="${recipe.image}" alt="${recipe.name}" class="card-image" loading="lazy">
           <div class="card-badges">
@@ -149,6 +150,7 @@ function renderRecipes() {
           </div>
         </div>
       </article>
+      </a>
     `;
   }).join('');
 }
@@ -176,11 +178,13 @@ function generateRandomMeal() {
 
 function renderMealDish(container, dish, label) {
   container.innerHTML = `
-    <img src="${dish.image}" alt="${dish.name}" class="meal-dish-thumb">
-    <div class="meal-dish-info">
-      <span>${label}</span>
-      <h4>${dish.name}</h4>
-    </div>
+    <a href="recipe.html?id=${dish.id}" style="display:flex; align-items:center; gap:var(--space-3); text-decoration:none; color:inherit; width:100%;">
+      <img src="${dish.image}" alt="${dish.name}" class="meal-dish-thumb">
+      <div class="meal-dish-info">
+        <span>${label}</span>
+        <h4>${dish.name}</h4>
+      </div>
+    </a>
   `;
 }
 

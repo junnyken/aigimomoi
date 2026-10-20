@@ -62,6 +62,12 @@ Nguồn ưu tiên cao nhất khi có xung đột (master plan §0). Chỉ ghi `a
 |---|---|
 | D25 | **Discovery Prototype**: Triển khai bản mẫu tương tác web thuần chuẩn SEO, tích hợp 7 món Batch 0 (`[DEMO_FIXTURE]`), bộ lọc vai trò (`MAIN`, `SOUP`, `SIDE`), tìm kiếm tức thời và thuật toán chọn mâm cơm ngẫu nhiên 3 món cân bằng ("Hôm nay ăn gì?" - O7) không cần AI |
 
+## Quyết định trong AG-06 (`approved` ngày 20/10/2026)
+
+| ID | Nội dung |
+|---|---|
+| D26 | **Recipe & Cooking Prototype**: Triển khai bản mẫu xem chi tiết công thức (`recipe.html`), động hóa co giãn định lượng nguyên liệu theo số người ăn không sai số lũy tiến (Invariants §5.3), và chế độ nấu ăn tập trung (Cooking Mode) kèm timer an toàn không tự nhảy bước và ngăn kéo tra cứu nguyên liệu nhanh |
+
 ## Còn mở (`unknown`)
 
 | # | Vấn đề | Quyết định tại |

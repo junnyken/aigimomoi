@@ -19,7 +19,7 @@ Gate P0: scope, thuật ngữ, kiến trúc, người duyệt và khoản chưa 
 |---|---|---|---|
 | AG-04 | Design tokens & primitives | AG-02 | `closed` (20/10/2026) |
 | AG-05 | Discovery prototype | AG-04 | `closed` (20/10/2026) |
-| AG-06 | Recipe & cooking prototype | AG-04 | `spec-drafted` |
+| AG-06 | Recipe & cooking prototype | AG-04 | `awaiting-close` |
 | AG-07 | Meal & shopping prototype | AG-06 | `not-started` |
 | AG-08 | Responsive & usability review | AG-05..07 | `not-started` |
 
