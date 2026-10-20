@@ -258,3 +258,25 @@ Kiểm tra tài liệu/skill (script read-only, 8 nhóm):
 | 13 | `tsc --noEmit` sạch; `npm run build` thành công với 18 routes (exit code 0) | PASS |
 | 14 | Secret scan: không có secret | PASS |
 | 15 | DECISIONS.md ghi nhận D35 | PASS |
+
+## AG-16 — Public Recipe Rendering — 20/10/2026
+
+**App tests: `test_public_rendering.ts` (query + HTTP trên server standalone), TypeScript (`tsc --noEmit`), Next.js production build (`npm run build`).**
+
+| # | Kiểm tra | Kết quả |
+|---|---|---|
+| 1 | `safeImageSrc` chặn `javascript:`, protocol-relative, `http:`, path traversal; slug lạ bị từ chối trước truy vấn | PASS |
+| 2 | DRAFT/SUBMITTED không đọc được; PUBLISHED đọc được | PASS |
+| 3 | Payload công khai không chứa email tác giả, ghi chú duyệt, trường nội bộ | PASS |
+| 4 | Nguyên liệu theo `sortOrder`, bước theo `stepNumber`, giữ giá trị gốc, timer, `scalePolicy` | PASS |
+| 5 | Slug ARCHIVED resolve về bản PUBLISHED hiện hành; slug DRAFT không resolve | PASS |
+| 6 | Proxy: PUBLISHED → cho qua; ARCHIVED → redirect; DRAFT/SUBMITTED/placeholder → missing | PASS |
+| 7 | Danh sách trang chủ chỉ gồm PUBLISHED | PASS |
+| 8 | HTTP: PUBLISHED 200; DRAFT 404; không tồn tại 404; ARCHIVED 308 → bản hiện hành | PASS |
+| 9 | HTML không lộ email/ghi chú duyệt; trang chủ liệt kê PUBLISHED, không liệt kê DRAFT | PASS |
+| 10 | `test_public_rendering.ts`: 39 PASS, 0 FAIL | PASS |
+| 11 | 404 render trong layout, có `noindex`; percent-encoding hỏng → 400 | PASS |
+| 12 | 0 `dangerouslySetInnerHTML` trong `src/` | PASS |
+| 13 | `tsc --noEmit` sạch; `npm run build` thành công (exit code 0) | PASS |
+| 14 | Kiểm tra giao diện bằng mắt (desktop/mobile) | Chủ sản phẩm kiểm tra thủ công |
+| 15 | DECISIONS.md ghi nhận D36 | PASS |

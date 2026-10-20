@@ -122,6 +122,12 @@ Nguồn ưu tiên cao nhất khi có xung đột (master plan §0). Chỉ ghi `a
 |---|---|
 | D35 | **Publishing Gate & Revision Lineage**: Mỗi phiên bản công thức là một bản ghi `recipes` riêng (`versionNumber`, `revisionOfId`); chỉ `ADMIN` được chuyển `SUBMITTED → PUBLISHED` (sau Gate Check dùng chung server/UI trong `src/lib/recipes/gate.ts`) hoặc `SUBMITTED → NEEDS_CHANGES` (bắt buộc ghi chú góp ý). Bản sửa đổi được nhân bản từ bản `PUBLISHED` (nguyên liệu, bước nấu, tag) với nhãn kiểm chứng reset (D23); tối đa một bản sửa đổi mở trên mỗi công thức. Khi bản sửa đổi được xuất bản, bản cũ chuyển `ARCHIVED` (nội dung bất biến, slug `--vN`) và bản mới tiếp quản slug công khai trong cùng transaction có khóa dòng. `PUT` không còn đặt được `PUBLISHED`; mọi endpoint đổi trạng thái kiểm tra Same-Origin (CSRF). Seed tài khoản dev đọc mật khẩu từ `SEED_ADMIN_PASSWORD` / `SEED_EDITOR_PASSWORD`, không hardcode. |
 
+## Quyết định trong AG-16 (`drafted / implemented` ngày 20/10/2026)
+
+| ID | Nội dung |
+|---|---|
+| D36 | **Public Recipe Rendering & HTTP Status Boundary**: Route công khai `/cong-thuc/[slug]` (A1) chỉ đọc bản `PUBLISHED` qua allow-list cột (không email, không ghi chú duyệt); dữ liệu cache bằng `use cache` + tag `public-recipes`, invalidate ngay (`expire: 0`) khi duyệt xuất bản. Quyết định 404/308 đặt trong `src/proxy.ts` (Node runtime — thay `middleware.ts` vốn chạy Edge) trước khi stream để trả mã HTTP thật dưới Partial Prefetching; bản không công khai không phân biệt với slug không tồn tại; link phiên bản `ARCHIVED` chuyển vĩnh viễn (308) sang bản hiện hành theo lineage. Build không phụ thuộc DB (placeholder param). |
+
 ## Còn mở (`unknown`)
 
 | # | Vấn đề | Quyết định tại |

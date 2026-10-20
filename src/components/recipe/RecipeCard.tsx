@@ -1,0 +1,55 @@
+import Link from 'next/link';
+import { Clock, Users, ChefHat, UtensilsCrossed } from 'lucide-react';
+import type { PublicRecipeCard } from '@/lib/recipes/publicQueries';
+import { ROLE_LABELS, formatDuration, recipePath } from '@/lib/recipes/labels';
+
+export function RecipeCard({ recipe }: { recipe: PublicRecipeCard }) {
+  return (
+    <article className="group relative bg-[var(--color-surface-white)] border border-[var(--color-border-base)] rounded-2xl overflow-hidden shadow-xs hover:shadow-md transition-all hover:-translate-y-1 flex flex-col focus-within:ring-2 focus-within:ring-[var(--color-brand-primary)]">
+      <div className="relative w-full h-48 bg-[var(--color-surface-raised)] overflow-hidden">
+        {recipe.heroImage ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={recipe.heroImage}
+            alt=""
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            loading="lazy"
+          />
+        ) : (
+          <div className="flex h-full items-center justify-center text-[var(--color-text-muted)]">
+            <UtensilsCrossed className="w-10 h-10" aria-hidden="true" />
+          </div>
+        )}
+        <span className="absolute top-3 left-3 px-2.5 py-1 rounded-full text-xs font-semibold bg-[var(--color-brand-primary)] text-white">
+          {ROLE_LABELS[recipe.role] ?? recipe.role}
+        </span>
+        {recipe.isCookTested && (
+          <span className="absolute top-3 right-3 inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-semibold bg-[var(--color-surface-white)] text-[var(--color-success-base)]">
+            <ChefHat className="w-3 h-3" aria-hidden="true" />
+            Đã nấu thử
+          </span>
+        )}
+      </div>
+
+      <div className="p-4 flex flex-col flex-1">
+        <h3 className="text-lg font-semibold text-[var(--color-text-primary)] mb-1">
+          <Link href={recipePath(recipe.slug)} className="after:absolute after:inset-0 focus:outline-none">
+            {recipe.name}
+          </Link>
+        </h3>
+        <p className="text-sm text-[var(--color-text-secondary)] line-clamp-2 mb-4 flex-1">{recipe.shortDescription}</p>
+
+        <div className="pt-3 border-t border-[var(--color-border-subtle)] flex items-center justify-between text-xs text-[var(--color-text-muted)]">
+          <span className="inline-flex items-center gap-1">
+            <Clock className="w-3.5 h-3.5" aria-hidden="true" />
+            {formatDuration(recipe.totalTimeMinutes)}
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <Users className="w-3.5 h-3.5" aria-hidden="true" />
+            {recipe.baseServings} người
+          </span>
+        </div>
+      </div>
+    </article>
+  );
+}

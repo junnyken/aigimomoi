@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSessionUser } from '@/lib/auth/session';
 import { isSameOrigin } from '@/lib/http/sameOrigin';
 import { publishRecipe, PublishingError } from '@/lib/recipes/publishing';
+import { revalidateTag } from 'next/cache';
+import { PUBLIC_RECIPES_TAG } from '@/lib/recipes/public';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -48,6 +50,8 @@ export async function POST(request: NextRequest, context: RouteContext) {
       isCookTested: b.isCookTested as boolean,
       isNutritionVerified: b.isNutritionVerified as boolean,
     });
+    // AG-16: trang công khai + redirect từ bản ARCHIVED phải phản ánh ngay bản vừa duyệt
+    revalidateTag(PUBLIC_RECIPES_TAG, { expire: 0 });
     return NextResponse.json({ recipe });
   } catch (error) {
     if (error instanceof PublishingError) {

@@ -35,9 +35,9 @@ Gate P1: chủ sản phẩm duyệt luồng/thiết kế trước wiring dữ li
 | AG-13 | Structured recipe editor | AG-12 | `closed` (20/10/2026) |
 | AG-14 | Media pipeline | AG-11 | `closed` (20/10/2026) |
 | AG-15 | Publishing & revision gate | AG-13, 14 | `closed` (20/10/2026) |
-| AG-16 | Public recipe rendering | AG-15 | `spec-drafted` |
+| AG-16 | Public recipe rendering | AG-15 | `closed` (20/10/2026) |
 
-Gate P2: tạo → kiểm → xuất bản → đọc lại chạy được.
+Gate P2: tạo → kiểm → xuất bản → đọc lại chạy được. — **GATE P2 ĐÃ ĐẠT**
 
 ## P3 — MVP bữa cơm và đi chợ
 | ID | Capability | Dependency | Trạng thái |

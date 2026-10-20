@@ -1,53 +1,9 @@
-import Link from "next/link";
-import { Sparkles, Utensils, ShoppingBag, Clock, Users } from "lucide-react";
+import { Suspense } from "react";
+import { connection } from "next/server";
+import { Sparkles, Utensils, ShoppingBag, ChefHat } from "lucide-react";
+import { listPublishedRecipes } from "@/lib/recipes/public";
+import { RecipeCard } from "@/components/recipe/RecipeCard";
 
-const BATCH_0_SHOWCASE = [
-  {
-    id: "thit-ba-chi-kho-tieu",
-    name: "Thịt ba chỉ kho tiêu",
-    role: "Món mặn",
-    cookTime: 35,
-    servings: 4,
-    desc: "Thịt ba chỉ mềm rục, ngấm đều gia vị mặn ngọt đậm đà, thơm nồng hạt tiêu đen giã dập.",
-    image: "https://images.unsplash.com/photo-1544025162-d76694265947?w=600&auto=format&fit=crop&q=80",
-  },
-  {
-    id: "ga-xao-sa-ot",
-    name: "Gà xào sả ớt",
-    role: "Món mặn",
-    cookTime: 25,
-    servings: 4,
-    desc: "Thịt gà săn chắc xào vàng ruộm, quyện hương sả phi thơm nức và vị cay nồng của ớt tươi.",
-    image: "https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?w=600&auto=format&fit=crop&q=80",
-  },
-  {
-    id: "canh-rau-ngot-thit-bam",
-    name: "Canh rau ngót thịt băm",
-    role: "Món canh",
-    cookTime: 15,
-    servings: 4,
-    desc: "Rau ngót vò kỹ nấu cùng thịt heo nạc băm xào thơm, nước canh trong ngọt tự nhiên.",
-    image: "https://images.unsplash.com/photo-1547592166-23ac45744acd?w=600&auto=format&fit=crop&q=80",
-  },
-  {
-    id: "canh-chua-ca-loc",
-    name: "Canh chua cá lóc",
-    role: "Món canh",
-    cookTime: 30,
-    servings: 4,
-    desc: "Cá lóc đồng nấu cùng dứa, cà chua, đậu bắp, giá đỗ và me chua, rắc ngò gai rau ngổ thơm lừng.",
-    image: "https://images.unsplash.com/photo-1559847844-5315695dadae?w=600&auto=format&fit=crop&q=80",
-  },
-  {
-    id: "rau-muong-xao-toi",
-    name: "Rau muống xào tỏi",
-    role: "Món rau",
-    cookTime: 10,
-    servings: 4,
-    desc: "Rau muống xanh mướt giòn sần sật xào to lửa với tỏi đập dập thơm lừng cả gian bếp.",
-    image: "https://images.unsplash.com/photo-1540420773420-3366772f4999?w=600&auto=format&fit=crop&q=80",
-  },
-];
 
 export default function HomePage() {
   return (
@@ -85,67 +41,66 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Featured Batch 0 Catalog */}
-      <section>
+      {/* AG-16: Công thức đã xuất bản thật từ DB */}
+      <section aria-labelledby="published-heading">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h2 className="text-2xl font-bold text-[var(--color-text-primary)]">
+            <h2 id="published-heading" className="text-2xl font-bold text-[var(--color-text-primary)]">
               Món ngon quen thuộc
             </h2>
             <p className="text-sm text-[var(--color-text-secondary)]">
-              Danh mục Batch 0 kinh điển cho bữa cơm người Việt.
+              Công thức cơm nhà đã qua biên tập và duyệt xuất bản.
             </p>
           </div>
-          <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-[var(--color-surface-raised)] text-[var(--color-text-secondary)] border border-[var(--color-border-base)]">
-            Batch 0: 7 món
-          </span>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {BATCH_0_SHOWCASE.map((dish) => (
-            <article
-              key={dish.id}
-              className="bg-[var(--color-surface-white)] border border-[var(--color-border-base)] rounded-2xl overflow-hidden shadow-xs hover:shadow-md transition-all hover:-translate-y-1 flex flex-col"
-            >
-              <div className="relative w-full h-48 bg-[var(--color-surface-raised)]">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={dish.image}
-                  alt={dish.name}
-                  className="w-full h-full object-cover"
-                  loading="lazy"
-                />
-                <span className="absolute top-3 left-3 px-2.5 py-1 rounded-full text-xs font-semibold bg-[var(--color-brand-primary)] text-white">
-                  {dish.role}
-                </span>
-                <span className="absolute bottom-2 right-2 text-[10px] font-mono px-1.5 py-0.5 rounded bg-[rgba(37,49,38,0.75)] text-white">
-                  [DEMO_FIXTURE]
-                </span>
-              </div>
-
-              <div className="p-4 flex flex-col flex-1">
-                <h3 className="text-lg font-semibold text-[var(--color-text-primary)] mb-1">
-                  {dish.name}
-                </h3>
-                <p className="text-xs text-[var(--color-text-secondary)] line-clamp-2 mb-4 flex-1">
-                  {dish.desc}
-                </p>
-
-                <div className="pt-3 border-t border-[var(--color-border-subtle)] flex items-center justify-between text-xs text-[var(--color-text-muted)]">
-                  <span className="inline-flex items-center gap-1">
-                    <Clock className="w-3.5 h-3.5" />
-                    {dish.cookTime} phút
-                  </span>
-                  <span className="inline-flex items-center gap-1">
-                    <Users className="w-3.5 h-3.5" />
-                    {dish.servings} người
-                  </span>
-                </div>
-              </div>
-            </article>
-          ))}
-        </div>
+        <Suspense fallback={<PublishedShowcaseSkeleton />}>
+          <PublishedShowcase />
+        </Suspense>
       </section>
+    </div>
+  );
+}
+
+async function PublishedShowcase() {
+  // Đọc lúc request (dữ liệu vẫn được cache theo tag) để build không cần DB.
+  await connection();
+  const recipes = await listPublishedRecipes(12);
+
+  if (recipes.length === 0) {
+    return (
+      <div className="rounded-3xl border border-dashed border-[var(--color-border-strong)] bg-[var(--color-surface-white)] p-10 text-center">
+        <ChefHat className="mx-auto mb-3 w-10 h-10 text-[var(--color-text-muted)]" aria-hidden="true" />
+        <p className="font-semibold text-[var(--color-text-primary)]">Chưa có công thức nào được xuất bản</p>
+        <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
+          Các món sẽ xuất hiện ở đây ngay khi được duyệt xuất bản.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      {recipes.map((recipe) => (
+        <RecipeCard key={recipe.slug} recipe={recipe} />
+      ))}
+    </div>
+  );
+}
+
+function PublishedShowcaseSkeleton() {
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" aria-busy="true" aria-label="Đang tải công thức">
+      {Array.from({ length: 3 }, (_, i) => (
+        <div key={i} className="rounded-2xl border border-[var(--color-border-base)] bg-[var(--color-surface-white)] overflow-hidden animate-pulse">
+          <div className="h-48 bg-[var(--color-surface-raised)]" />
+          <div className="p-4 space-y-2">
+            <div className="h-5 w-2/3 rounded bg-[var(--color-surface-raised)]" />
+            <div className="h-3 w-full rounded bg-[var(--color-surface-subtle)]" />
+            <div className="h-3 w-4/5 rounded bg-[var(--color-surface-subtle)]" />
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

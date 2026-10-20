@@ -19,6 +19,7 @@ import {
   GitBranch,
   MessageSquareWarning,
   Archive,
+  ExternalLink,
 } from 'lucide-react';
 import { ImageUpload } from '@/components/ui/ImageUpload';
 
@@ -103,6 +104,7 @@ function EditRecipeContent() {
 
   // AG-15: Versioning & review state
   const [versionNumber, setVersionNumber] = useState(1);
+  const [publicSlug, setPublicSlug] = useState<string | null>(null);
   const [revisionOfId, setRevisionOfId] = useState<number | null>(null);
   const [reviewNotes, setReviewNotes] = useState<string | null>(null);
   const [openRevisionId, setOpenRevisionId] = useState<number | null>(null);
@@ -131,6 +133,7 @@ function EditRecipeContent() {
         if (recipeRes.ok) {
           const { recipe, openRevisionId: openRevId } = await recipeRes.json();
           setVersionNumber(recipe.versionNumber ?? 1);
+          setPublicSlug(typeof recipe.slug === 'string' ? recipe.slug : null);
           setRevisionOfId(recipe.revisionOfId ?? null);
           setReviewNotes(recipe.reviewNotes ?? null);
           setOpenRevisionId(openRevId ?? null);
@@ -448,6 +451,18 @@ function EditRecipeContent() {
                   ? 'Đang tạo...'
                   : `Tạo bản sửa đổi mới (v${versionNumber + 1})`}
             </button>
+            {publicSlug && (
+              <Link
+                id="view-public-recipe-link"
+                href={`/cong-thuc/${encodeURIComponent(publicSlug)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-white text-[#3F6240] border border-[#BCD0BE] text-xs font-semibold rounded-xl hover:bg-[#EAF0EA] transition-all shadow-xs shrink-0"
+              >
+                <ExternalLink className="w-4 h-4" />
+                Xem trang công khai
+              </Link>
+            )}
           </div>
         )}
 
