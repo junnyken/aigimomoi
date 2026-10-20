@@ -15,6 +15,7 @@ import { IngredientList } from '@/components/recipe/IngredientList';
 import { StepList } from '@/components/recipe/StepList';
 import { NutritionNotice } from '@/components/recipe/NutritionNotice';
 import { BookmarkButton } from '@/components/recipe/BookmarkButton';
+import { LogToDiaryButton } from '@/components/recipe/LogToDiaryButton';
 import { ReportButton } from '@/components/recipe/ReportButton';
 import { KitchenStorySection } from '@/components/recipe/KitchenStorySection';
 import { RegionalVariants } from '@/components/recipe/RegionalVariants';
@@ -142,6 +143,7 @@ export default async function PublicRecipePage({ params }: PageParams) {
               <span>Bắt đầu nấu món này</span>
             </Link>
             <BookmarkButton slug={recipe.slug} size="lg" showText={true} />
+            <LogToDiaryButton recipeId={recipe.id} recipeName={recipe.name} />
           </div>
 
           <p className="text-xs text-[var(--color-text-muted)]">

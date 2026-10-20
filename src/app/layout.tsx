@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Be_Vietnam_Pro } from "next/font/google";
 import Link from "next/link";
+import { ServiceWorkerRegister } from "@/components/pwa/ServiceWorkerRegister";
 import "./globals.css";
 
 const beVietnamPro = Be_Vietnam_Pro({
@@ -13,6 +14,7 @@ const beVietnamPro = Be_Vietnam_Pro({
 export const metadata: Metadata = {
   title: "ĂN GÌ MOM — Bữa cơm nhà, bớt nghĩ hôm nay ăn gì",
   description: "Website giúp người nấu cơm gia đình tìm món, chuẩn bị nguyên liệu đúng khẩu phần, ghép một bữa cơm và làm theo từng bước.",
+  manifest: "/manifest.json",
 };
 
 export default function RootLayout({
@@ -23,6 +25,7 @@ export default function RootLayout({
   return (
     <html lang="vi" className={`${beVietnamPro.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col bg-[var(--color-bg-primary)] text-[var(--color-text-primary)]">
+        <ServiceWorkerRegister />
         {/* Sticky Header */}
         <header className="sticky top-0 z-40 bg-[var(--color-surface-white)] border-b border-[var(--color-border-base)] shadow-xs">
           <div className="max-w-[1200px] mx-auto px-4 py-3 flex items-center justify-between gap-4">

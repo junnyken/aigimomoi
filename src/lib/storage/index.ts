@@ -16,7 +16,7 @@ export interface UploadResult {
   provider: 'LOCAL' | 'S3_R2';
 }
 
-const ALLOWED_MIME_TYPES = [
+export const ALLOWED_MIME_TYPES = [
   'image/jpeg',
   'image/png',
   'image/webp',
@@ -24,7 +24,7 @@ const ALLOWED_MIME_TYPES = [
   'image/avif',
 ];
 
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+export const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
 export async function saveUploadedFile(file: File, subfolder: string = 'recipes'): Promise<UploadResult> {
   if (!ALLOWED_MIME_TYPES.includes(file.type)) {
