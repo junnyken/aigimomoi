@@ -52,3 +52,15 @@ Kiểm tra tài liệu/skill (script read-only, 8 nhóm):
 | 3 | API.md định nghĩa rõ chuẩn Next.js Server Actions và REST boundaries | PASS |
 | 4 | Secret scan trên docs | PASS |
 | 5 | DECISIONS.md ghi nhận đủ D19, D20, D21 | PASS |
+
+## AG-03 — Content Operations Plan & Editorial Gate — 20/10/2026
+
+**App tests: N/A.**
+
+| # | Kiểm tra | Kết quả |
+|---|---|---|
+| 1 | CONTENT_GUIDELINES.md chốt 5 bước biên tập và mẫu JSON Schema chuẩn | PASS |
+| 2 | Danh mục Batch 0 (7 món) phủ đủ 3 nhóm mặn/canh/rau (`MAIN`, `SOUP`, `SIDE`) | PASS |
+| 3 | Checklist 9 tiêu chí bao hàm toàn bộ Master Plan §8.4 | PASS |
+| 4 | Secret scan trên docs: không có secret | PASS |
+| 5 | DECISIONS.md ghi nhận D22, D23; giải quyết O5, O10 | PASS |

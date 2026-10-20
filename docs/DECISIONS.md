@@ -43,6 +43,13 @@ Nguồn ưu tiên cao nhất khi có xung đột (master plan §0). Chỉ ghi `a
 | D20 | **Chiến lược hạ tầng độc lập**: Container hóa toàn bộ qua Dockerfile multi-stage + Docker Compose; Caddy tự động quản lý HTTPS; lưu trữ ảnh và DB qua local volume trên VPS (không vendor lock-in) |
 | D21 | **Hợp đồng miền & Invariants**: Khóa cứng các enum cốt lõi (`RecipePublishStatus`, `MealRole`, `ScalePolicy`, `NutritionDataStatus`), nguyên liệu có cấu trúc, RecipeVersion bất biến, làm tròn chỉ ở tầng UI |
 
+## Quyết định trong AG-03 (`approved` ngày 20/10/2026)
+
+| ID | Nội dung |
+|---|---|
+| D22 | **Kế hoạch các đợt nội dung**: Batch 0 (6-8 món kinh điển cơm nhà Việt để thử nghiệm prototype P1); Batch 1 (30 món: 15 mặn, 8 canh, 7 rau/phụ cho phát hành MVP P3); Batch 2 (50+ món mở rộng sau MVP) |
+| D23 | **Quy trình thẩm định & minh bạch dữ liệu**: Chủ sản phẩm duyệt cuối; chỉ bật nhãn `COOK_TESTED` / `NUTRITION_VERIFIED` khi có kiểm chứng thực tế; không cào dữ liệu lậu hay dùng AI bịa công thức; dữ liệu thử nghiệm phải gắn cờ `[DEMO_FIXTURE]` |
+
 ## Còn mở (`unknown`)
 
 | # | Vấn đề | Quyết định tại |
@@ -51,9 +58,9 @@ Nguồn ưu tiên cao nhất khi có xung đột (master plan §0). Chỉ ghi `a
 | O2 | Tận dụng Coolify/`mb-deploy` trên Mắt Bão làm môi trường preview/staging nội bộ trong quá trình dev | Đã chốt hướng tích hợp qua Docker container (D20) |
 | O3 | Ngân sách vận hành/tháng | Tối thiểu hóa bằng giải pháp tự host trên VPS (D20), không phí subscription ban đầu |
 | O4 | Nhà cung cấp AI/model và budget | Trước P4 |
-| O5 | Người kiểm/nấu thử công thức | AG-03 |
+| O5 | Người kiểm/nấu thử công thức | Chủ sản phẩm chịu trách nhiệm tổ chức/phê duyệt; Antigravity hỗ trợ chuẩn hóa cấu trúc (D23) |
 | O6 | Nghĩa của “ăn theo thì” | P7 |
 | O7 | Nút chọn món không cần AI trong discovery | AG-05 |
 | O8 | Xác nhận diễn giải D12 | Duyệt phạm vi MVP |
 | O9 | Tagline “Bữa cơm nhà, bớt nghĩ hôm nay ăn gì.” và wordmark tạm | AG-04 |
-| O10 | Số lượng công thức Batch 0/1/2 | AG-03 |
+| O10 | Số lượng công thức Batch 0/1/2 | Đã chốt theo D22 (Batch 0: 6-8 món, Batch 1: 30 món) |
