@@ -15,6 +15,7 @@ import { IngredientList } from '@/components/recipe/IngredientList';
 import { StepList } from '@/components/recipe/StepList';
 import { NutritionNotice } from '@/components/recipe/NutritionNotice';
 import { BookmarkButton } from '@/components/recipe/BookmarkButton';
+import { RecipeJsonLd } from '@/components/seo/RecipeJsonLd';
 
 interface PageParams {
   params: Promise<{ slug: string }>;
@@ -72,6 +73,7 @@ export default async function PublicRecipePage({ params }: PageParams) {
 
   return (
     <article className="flex flex-col gap-8 pb-12">
+      <RecipeJsonLd recipe={recipe} />
       <Link
         href="/"
         className="inline-flex w-fit items-center gap-1.5 text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-brand-primary)] transition-colors"

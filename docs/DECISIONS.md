@@ -170,6 +170,12 @@ Nguồn ưu tiên cao nhất khi có xung đột (master plan §0). Chỉ ghi `a
 |---|---|
 | D43 | **Shopping Checklist Persistence, Market Categorization & Export Utility**: Phê duyệt triển khai trang danh sách đi chợ chuyên dụng tại `/shopping` với các quy chuẩn: (1) Quản lý trạng thái đánh dấu (check/uncheck) bền vững phía client lưu vào `localStorage` (`angimom_shopping_checked_v1`), không bao giờ bị mất dữ liệu khi đổi tab, tắt app hay gián đoạn mạng ở chợ (Invariants §6.7); (2) Thanh tiến độ đi chợ cập nhật trực quan thời gian thực theo tỷ lệ % hoàn thành; (3) Phân loại quầy chợ khoa học (Thịt/Thủy hải sản, Rau củ quả, Nguyên liệu tươi khác) kèm phần kiểm tra kệ bếp nhà (Pantry Check) cho các gia vị `MANUAL_ADJUST`; (4) Tiện ích sao chép danh sách đi chợ dạng văn bản tiếng Việt chuẩn mực (Zalo/SMS clipboard) để người dùng gửi nhanh cho người nhà đi chợ hộ; (5) Vùng chạm cảm ứng đạt chuẩn WCAG 2.2 Criterion 2.5.8 ($\ge 44\text{px}$) tối ưu thao tác 1 tay trên thiết bị di động. |
 
+## Quyết định trong AG-24 (`drafted / implemented` ngày 20/10/2026)
+
+| ID | Nội dung |
+|---|---|
+| D44 | **SEO & Index Boundaries, Dynamic Sitemap & Schema.org Recipe JSON-LD**: Phê duyệt thiết lập SEO toàn diện và ranh giới chỉ mục cho dự án Ăn Gì Mom: (1) `robots.txt` (`src/app/robots.ts`) mở cửa cho toàn bộ công cụ tìm kiếm cào dữ liệu các trang công khai (`/`, `/mon-an`, `/cong-thuc/*`, `/meal`, `/da-luu`, `/shopping`), đồng thời chặn triệt để khu vực quản trị/biên tập (`/editor/*`), API nội bộ (`/api/*`), và trang đăng nhập (`/login`); (2) Sitemap động (`src/app/sitemap.ts`) tự động truy vấn cơ sở dữ liệu thời gian thực và tuyệt đối chỉ đưa vào các công thức có trạng thái `PUBLISHED` (tuân thủ nghiêm ngặt Invariants §5.1), loại bỏ 100% bản `DRAFT` và `ARCHIVED`; (3) Dữ liệu có cấu trúc Schema.org Recipe JSON-LD (`RecipeJsonLd.tsx`) chuẩn mực được nhúng vào trang chi tiết công thức (`/cong-thuc/[slug]`), chuẩn hóa thời gian chuẩn ISO 8601 (`PT...`), danh sách nguyên liệu định lượng và các bước hướng dẫn `HowToStep`; (4) Bảo mật chuỗi JSON chống tấn công XSS qua cơ chế sanitize escape ký tự `<` thành `\u003c`. |
+
 ## Còn mở (`unknown`)
 
 | # | Vấn đề | Quyết định tại |

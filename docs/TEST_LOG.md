@@ -440,6 +440,31 @@ Kiểm tra tài liệu/skill (script read-only, 8 nhóm):
 | 14 | `tsc --noEmit` sạch lỗi; `npm run build` thành công với 32 routes (exit code 0) | PASS |
 | 15 | DECISIONS.md ghi nhận D43 | PASS |
 
+## AG-24 — SEO & Index Boundaries — 20/10/2026
+
+**App tests: `test_seo_boundaries.ts` (37 test cases), regression checks (`test_shopping_checklist.ts`, `test_ingredient_aggregation.ts`, `test_meal_composition.ts`, `test_saved_recipes.ts`), TypeScript (`tsc --noEmit`), Next.js production build (`npm run build`).**
+
+| # | Kiểm tra | Kết quả |
+|---|---|---|
+| 1 | `robots.txt`: Khai báo User-agent `*`, allow `/`, disallow `/editor/`, `/api/`, `/login` | PASS |
+| 2 | `robots.txt`: Khai báo chính xác URL Sitemap `https://angimom.vn/sitemap.xml` | PASS |
+| 3 | Dynamic Sitemap: Liệt kê đầy đủ các trang tĩnh trọng tâm (`/`, `/mon-an`, `/meal`, `/da-luu`, `/shopping`) | PASS |
+| 4 | Invariants §5.1: Sitemap chứa 100% công thức `PUBLISHED` từ cơ sở dữ liệu thời gian thực | PASS |
+| 5 | Invariants §5.1: Chặn tuyệt đối 100% công thức `DRAFT` và `ARCHIVED` khỏi Sitemap | PASS |
+| 6 | Sitemap: Không bao giờ rò rỉ các route quản trị `/editor/`, `/api/`, `/login` | PASS |
+| 7 | ISO 8601 Duration Parser: Chuyển đổi chính xác số phút sang định dạng `PT...` (0m -> PT0M, 75m -> PT1H15M, 150m -> PT2H30M) | PASS |
+| 8 | Schema.org Recipe JSON-LD: Khai báo `@context`, `@type: Recipe`, `recipeCuisine: Vietnamese`, `HowToStep` | PASS |
+| 9 | JSON-LD Serialization: Sanitize chống XSS an toàn qua việc escape ký tự `<` thành `\u003c` | PASS |
+| 10 | Tích hợp RecipeJsonLd component vào trang chi tiết công thức `src/app/cong-thuc/[slug]/page.tsx` | PASS |
+| 11 | `test_seo_boundaries.ts`: 37 PASS, 0 FAIL (exit code 0) | PASS |
+| 12 | `test_shopping_checklist.ts`: 22 PASS, 0 FAIL (không hồi quy AG-23) | PASS |
+| 13 | `test_ingredient_aggregation.ts`: 37 PASS, 0 FAIL (không hồi quy AG-22) | PASS |
+| 14 | `test_meal_composition.ts`: 37 PASS, 0 FAIL (không hồi quy AG-21) | PASS |
+| 15 | `test_saved_recipes.ts`: 25 PASS, 0 FAIL (không hồi quy AG-20) | PASS |
+| 16 | `tsc --noEmit` sạch lỗi; `npm run build` thành công với 34 routes (exit code 0) | PASS |
+| 17 | DECISIONS.md ghi nhận D44 | PASS |
+
+
 
 
 
