@@ -164,6 +164,12 @@ Nguồn ưu tiên cao nhất khi có xung đột (master plan §0). Chỉ ghi `a
 |---|---|
 | D42 | **Ingredient Aggregation Engine & Traceability Invariants**: Triển khai Bộ máy Gộp nguyên liệu tự động (`Ingredient Aggregation Engine`) cho mâm cơm nhiều món ăn, tuân thủ nghiêm ngặt Invariants §5.4: (1) Chỉ cộng dồn `totalAmount` khi nguyên liệu có cùng tên và cùng đơn vị tính (`unit`), nếu khác đơn vị đo lường thì bắt buộc tách thành 2 dòng riêng biệt; (2) Truy vết nguồn gốc (Ingredient Traceability): mỗi mục gộp lưu trữ mảng `traces` ghi nhận rõ định lượng phân bổ cho từng món ăn và cách sơ chế; (3) Tách riêng gia vị nêm nếm `MANUAL_ADJUST` vào danh mục `pantrySeasonings` để người dùng kiểm tra nhanh kệ bếp nhà thay vì gộp thô thiển vào danh mục đồ tươi sống cần mua sắm; (4) Phân nhóm trực quan theo quầy chợ (`MEAT_SEAFOOD`, `PRODUCE`, `PANTRY`, `OTHER`) và format tầng hiển thị an toàn bằng dấu phẩy tiếng Việt mà không làm biến dạng giá trị tính toán nội bộ (D21). |
 
+## Quyết định trong AG-23 (`drafted / implemented` ngày 20/10/2026)
+
+| ID | Nội dung |
+|---|---|
+| D43 | **Shopping Checklist Persistence, Market Categorization & Export Utility**: Phê duyệt triển khai trang danh sách đi chợ chuyên dụng tại `/shopping` với các quy chuẩn: (1) Quản lý trạng thái đánh dấu (check/uncheck) bền vững phía client lưu vào `localStorage` (`angimom_shopping_checked_v1`), không bao giờ bị mất dữ liệu khi đổi tab, tắt app hay gián đoạn mạng ở chợ (Invariants §6.7); (2) Thanh tiến độ đi chợ cập nhật trực quan thời gian thực theo tỷ lệ % hoàn thành; (3) Phân loại quầy chợ khoa học (Thịt/Thủy hải sản, Rau củ quả, Nguyên liệu tươi khác) kèm phần kiểm tra kệ bếp nhà (Pantry Check) cho các gia vị `MANUAL_ADJUST`; (4) Tiện ích sao chép danh sách đi chợ dạng văn bản tiếng Việt chuẩn mực (Zalo/SMS clipboard) để người dùng gửi nhanh cho người nhà đi chợ hộ; (5) Vùng chạm cảm ứng đạt chuẩn WCAG 2.2 Criterion 2.5.8 ($\ge 44\text{px}$) tối ưu thao tác 1 tay trên thiết bị di động. |
+
 ## Còn mở (`unknown`)
 
 | # | Vấn đề | Quyết định tại |

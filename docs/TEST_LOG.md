@@ -418,6 +418,29 @@ Kiểm tra tài liệu/skill (script read-only, 8 nhóm):
 | 16 | `tsc --noEmit` sạch lỗi; `npm run build` thành công với 31 routes (exit code 0) | PASS |
 | 17 | DECISIONS.md ghi nhận D42 | PASS |
 
+## AG-23 — Shopping Checklist Persistence — 20/10/2026
+
+**App tests: `test_shopping_checklist.ts` (22 test cases), regression checks (`test_ingredient_aggregation.ts`, `test_meal_composition.ts`, `test_saved_recipes.ts`), TypeScript (`tsc --noEmit`), Next.js production build (`npm run build`).**
+
+| # | Kiểm tra | Kết quả |
+|---|---|---|
+| 1 | Khởi tạo danh sách đi chợ từ mâm cơm: Phân loại đúng quầy thịt cá, rau củ và đồ khô | PASS |
+| 2 | Invariants §5.4: Gộp đúng cùng đơn vị (Hành tím 3 + 2 = 5 củ), tách riêng gia vị bếp nhà | PASS |
+| 3 | Theo dõi tiến độ (Progress Tracking): Tính đúng số món và tỷ lệ % hoàn thành | PASS |
+| 4 | Cơ chế Check / Uncheck: Tăng giảm chính xác tiến độ và cập nhật trạng thái hiển thị | PASS |
+| 5 | Trạng thái hoàn thành: Đạt 100% khi tick đủ các món, hiển thị cờ hoàn thành | PASS |
+| 6 | Cơ chế đặt lại (Reset Checklist): Xóa sạch danh sách tick về 0% cho lần đi chợ mới | PASS |
+| 7 | Tiện ích xuất văn bản (Copy to Clipboard): Tạo nội dung tiếng Việt chuẩn mực gửi Zalo/SMS | PASS |
+| 8 | `test_shopping_checklist.ts`: 22 PASS, 0 FAIL (exit code 0) | PASS |
+| 9 | `test_ingredient_aggregation.ts`: 37 PASS, 0 FAIL (không hồi quy AG-22) | PASS |
+| 10 | `test_meal_composition.ts`: 37 PASS, 0 FAIL (không hồi quy AG-21) | PASS |
+| 11 | `test_saved_recipes.ts`: 25 PASS, 0 FAIL (không hồi quy AG-20) | PASS |
+| 12 | Component `ShoppingView`, `ShoppingProgressBar`, `ShoppingItemRow` | PASS |
+| 13 | Trang `/shopping`: Server Component với Partial Prerendering và metadata SEO | PASS |
+| 14 | `tsc --noEmit` sạch lỗi; `npm run build` thành công với 32 routes (exit code 0) | PASS |
+| 15 | DECISIONS.md ghi nhận D43 | PASS |
+
+
 
 
 
