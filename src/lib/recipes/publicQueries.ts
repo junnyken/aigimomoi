@@ -57,6 +57,7 @@ export interface PublicRecipeTag {
 }
 
 export interface PublicRecipe {
+  id: number;
   slug: string;
   name: string;
   shortDescription: string;
@@ -98,6 +99,7 @@ export async function queryPublishedRecipeBySlug(slug: string): Promise<PublicRe
   const row = await db.query.recipes.findFirst({
     where: and(eq(recipes.slug, slug), eq(recipes.status, 'PUBLISHED')),
     columns: {
+      id: true,
       slug: true,
       name: true,
       shortDescription: true,
@@ -142,6 +144,7 @@ export async function queryPublishedRecipeBySlug(slug: string): Promise<PublicRe
   if (!row) return null;
 
   return {
+    id: row.id,
     slug: row.slug,
     name: row.name,
     shortDescription: row.shortDescription,

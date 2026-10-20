@@ -15,6 +15,7 @@ import { IngredientList } from '@/components/recipe/IngredientList';
 import { StepList } from '@/components/recipe/StepList';
 import { NutritionNotice } from '@/components/recipe/NutritionNotice';
 import { BookmarkButton } from '@/components/recipe/BookmarkButton';
+import { ReportButton } from '@/components/recipe/ReportButton';
 import { RecipeJsonLd } from '@/components/seo/RecipeJsonLd';
 
 interface PageParams {
@@ -181,6 +182,11 @@ export default async function PublicRecipePage({ params }: PageParams) {
               </ul>
             </section>
           )}
+
+          {/* AG-32: Báo cáo vi phạm nội dung */}
+          <div className="pt-4 border-t border-[var(--color-border-base)] flex justify-end">
+            <ReportButton recipeId={recipe.id} recipeName={recipe.name} />
+          </div>
         </div>
       </div>
     </article>

@@ -218,6 +218,12 @@ Nguồn ưu tiên cao nhất khi có xung đột (master plan §0). Chỉ ghi `a
 |---|---|
 | D51 | **Community Contributor Submissions, Structured Editor Reuse & Review Queue**: Phê duyệt cơ chế đóng góp công thức từ cộng đồng và hàng đợi kiểm duyệt (Invariants §5.1, §5.2, §8.1, §8.2, Gate P5): (1) Phân quyền Contributor: Thành viên có tài khoản (`role = 'COOK'`) được phép đóng góp công thức thông qua form có cấu trúc chuẩn tại `/contribute/new` và quản lý danh sách tại `/contribute`; (2) Invariant Không Tự Xuất Bản: Bài đóng góp chỉ có 2 trạng thái `DRAFT` (lưu nháp cá nhân) hoặc `SUBMITTED` (chuyển vào hàng đợi kiểm duyệt của Ban biên tập), tuyệt đối cấm gán `status = 'PUBLISHED'` hoặc tự gán cờ kiểm định (`isEditorialReviewed = false`, `isCookTested = false`); (3) Invariant Provenance & Attribution: Bắt buộc đánh dấu `provenance = 'COMMUNITY_SUBMITTED'`, gắn chặt `authorId = user.id`; (4) Bảo vệ quyền sở hữu & Khóa sửa đổi (Ownership Guard): Tác giả chỉ được sửa/xóa bài của mình khi ở trạng thái `DRAFT` hoặc khi được Ban biên tập yêu cầu sửa (`NEEDS_CHANGES`). Khi đang `SUBMITTED`, bài viết bị khóa sửa đổi để bảo toàn tính trung thực trong quá trình kiểm duyệt; (5) Tích hợp AI Pre-fill: Cho phép Contributor tận dụng AI Draft Modal để sinh khung ý tưởng công thức gia đình một cách nhanh chóng. |
 
+## Quyết định trong AG-32 (`implemented` ngày 21/10/2026)
+
+| ID | Nội dung |
+|---|---|
+| D52 | **Content Moderation, Abuse Reports & Takedown Flow**: Phê duyệt cơ chế báo cáo vi phạm nội dung và hàng đợi kiểm duyệt an toàn (Invariants §5.1, §5.2, §8.1, §8.2, Gate P5): (1) Báo cáo vi phạm mở: Cho phép mọi độc giả (kể cả khách vãng lai) gửi phản ánh công thức có vấn đề tại `/cong-thuc/[slug]` mà không bị ép buộc đăng nhập, tự động lưu `reporterId` khi có session; (2) Phân quyền hàng đợi: Endpoint `/api/editor/reports` và giao diện `/editor/reports` được bảo vệ nghiêm ngặt, chỉ cho phép `EDITOR` và `ADMIN` truy cập (chặn HTTP 403 đối với `COOK`); (3) Cơ chế Takedown & Audit Trail: Biên tập viên có quyền gỡ bài vi phạm (chuyển ngay về `NEEDS_CHANGES`, lưu lý do vào `reviewNotes`), đồng thời bài viết lập tức bị ẩn 100% khỏi danh mục công khai (`queryPublishedRecipeBySlug` trả về `null`), ghi nhận đầy đủ `resolvedById` và `resolvedAt`; (4) Luồng nộp lại: Tác giả xem góp ý chi tiết trong Bếp Nhà, chỉnh sửa và nộp lại vào hàng đợi `SUBMITTED`. |
+
 ## Còn mở (`unknown`)
 
 | # | Vấn đề | Quyết định tại |

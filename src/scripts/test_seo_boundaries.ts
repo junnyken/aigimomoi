@@ -138,6 +138,7 @@ async function runTests() {
   console.log('\n--- Test Case Group 4: Schema.org Recipe JSON-LD Builder ---');
 
   const mockPublicRecipe: PublicRecipe = {
+    id: 1,
     slug: 'thit-kho-trung-ag24',
     name: 'Thịt Kho Trứng Chuẩn Vị',
     shortDescription: 'Món thịt kho béo ngậy cho bữa cơm gia đình',

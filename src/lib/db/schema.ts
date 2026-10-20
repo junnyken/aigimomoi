@@ -60,6 +60,20 @@ export const taxonomyTypeEnum = pgEnum('taxonomy_type', [
   'OCCASION'
 ]);
 
+export const reportStatusEnum = pgEnum('report_status', [
+  'PENDING',
+  'RESOLVED',
+  'DISMISSED'
+]);
+
+export const reportReasonEnum = pgEnum('report_reason', [
+  'UNSAFE_FOOD',
+  'INCORRECT_RECIPE',
+  'COPYRIGHT',
+  'INAPPROPRIATE',
+  'OTHER'
+]);
+
 // ============================================================================
 // 2. CORE ENTITIES
 // ============================================================================
@@ -239,5 +253,24 @@ export const savedRecipes = pgTable('saved_recipes', {
   uniqueIndex('saved_recipes_user_recipe_idx').on(table.userId, table.recipeId),
   index('saved_recipes_user_idx').on(table.userId),
   index('saved_recipes_recipe_idx').on(table.recipeId),
+]);
+
+// Recipe Reports (Báo cáo vi phạm nội dung từ cộng đồng - AG-32)
+export const recipeReports = pgTable('recipe_reports', {
+  id: serial('id').primaryKey(),
+  recipeId: integer('recipe_id').notNull().references(() => recipes.id, { onDelete: 'cascade' }),
+  reporterId: integer('reporter_id').references(() => users.id, { onDelete: 'set null' }),
+  reporterEmail: text('reporter_email'),
+  reason: reportReasonEnum('reason').notNull().default('OTHER'),
+  details: text('details'),
+  status: reportStatusEnum('status').notNull().default('PENDING'),
+  moderatorNotes: text('moderator_notes'),
+  resolvedById: integer('resolved_by_id').references(() => users.id, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  resolvedAt: timestamp('resolved_at', { withTimezone: true }),
+}, (table) => [
+  index('recipe_reports_recipe_idx').on(table.recipeId),
+  index('recipe_reports_status_idx').on(table.status),
+  index('recipe_reports_created_at_idx').on(table.createdAt),
 ]);
 

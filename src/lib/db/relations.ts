@@ -12,12 +12,15 @@ import {
   meals,
   mealItems,
   savedRecipes,
+  recipeReports,
 } from './schema';
 
 export const usersRelations = relations(users, ({ many }) => ({
   recipes: many(recipes),
   meals: many(meals),
   savedRecipes: many(savedRecipes),
+  reportsSubmitted: many(recipeReports, { relationName: 'reporterUser' }),
+  reportsResolved: many(recipeReports, { relationName: 'moderatorUser' }),
 }));
 
 export const dishesRelations = relations(dishes, ({ many }) => ({
@@ -46,6 +49,7 @@ export const recipesRelations = relations(recipes, ({ one, many }) => ({
   tags: many(recipeTags),
   mealItems: many(mealItems),
   savedByUsers: many(savedRecipes),
+  reports: many(recipeReports),
 }));
 
 export const ingredientsRelations = relations(ingredients, ({ many }) => ({
@@ -114,4 +118,22 @@ export const savedRecipesRelations = relations(savedRecipes, ({ one }) => ({
     references: [recipes.id],
   }),
 }));
+
+export const recipeReportsRelations = relations(recipeReports, ({ one }) => ({
+  recipe: one(recipes, {
+    fields: [recipeReports.recipeId],
+    references: [recipes.id],
+  }),
+  reporter: one(users, {
+    fields: [recipeReports.reporterId],
+    references: [users.id],
+    relationName: 'reporterUser',
+  }),
+  resolvedBy: one(users, {
+    fields: [recipeReports.resolvedById],
+    references: [users.id],
+    relationName: 'moderatorUser',
+  }),
+}));
+
 

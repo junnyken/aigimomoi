@@ -643,3 +643,24 @@ Kiểm tra tài liệu/skill (script read-only, 8 nhóm):
 | 11 | `test_contributor_submissions.ts`: 19 PASS, 0 FAIL (exit code 0) | PASS |
 | 12 | `tsc --noEmit` sạch lỗi; `npm run build` thành công (exit code 0) | PASS |
 | 13 | DECISIONS.md ghi nhận D51 | PASS |
+
+## AG-32 — Content Moderation & Abuse Reports — 21/10/2026
+
+**App tests: `test_recipe_moderation.ts` (20 test cases), regression checks (`test_contributor_submissions.ts`), TypeScript (`tsc --noEmit`), Next.js production build (`npm run build`).**
+
+| # | Kiểm tra | Kết quả |
+|---|---|---|
+| 1 | Invariants Gate P5: Khách vãng lai gửi báo cáo vi phạm an toàn thực phẩm không cần đăng nhập | PASS |
+| 2 | Invariants Gate P5: Thành viên có session gửi báo cáo ghi nhận chính xác `reporterId` | PASS |
+| 3 | Chặn báo cáo thiếu lý do vi phạm hoặc dữ liệu không hợp lệ (HTTP 400 Bad Request) | PASS |
+| 4 | Phân quyền bảo mật: Người dùng vai trò `COOK` bị chặn truy cập `/api/editor/reports` (HTTP 403 Forbidden) | PASS |
+| 5 | Biên tập viên (`EDITOR`) xem đầy đủ danh sách hàng đợi báo cáo (`status = PENDING`) | PASS |
+| 6 | Biên tập viên xử lý Takedown công thức vi phạm về `NEEDS_CHANGES`, lưu `reviewNotes` và `resolvedById` | PASS |
+| 7 | Invariants §5.1: Công thức bị gỡ ngay lập tức biến mất khỏi catalog công khai (`queryPublishedRecipeBySlug` trả về null) | PASS |
+| 8 | Luồng sửa đổi: Tác giả mở Bếp Nhà xem hướng dẫn, cập nhật nội dung và nộp lại thành công vào `SUBMITTED` | PASS |
+| 9 | Modal báo cáo vi phạm (`ReportRecipeModal`), Nút báo cáo chân trang (`ReportButton`), Trang kiểm duyệt BTV (`/editor/reports`) | PASS |
+| 10 | `test_recipe_moderation.ts`: 20 PASS, 0 FAIL (exit code 0) | PASS |
+| 11 | `test_contributor_submissions.ts`: 19 PASS, 0 FAIL (không hồi quy AG-31) | PASS |
+| 12 | `tsc --noEmit` sạch lỗi; `npm run build` thành công (exit code 0) | PASS |
+| 13 | DECISIONS.md ghi nhận D52 | PASS |
+
