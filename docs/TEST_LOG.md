@@ -599,3 +599,29 @@ Kiểm tra tài liệu/skill (script read-only, 8 nhóm):
 | 16 | `test_p3_pilot_gate.ts`: 36 PASS, 0 FAIL (không hồi quy Gate P3) | PASS |
 | 17 | `tsc --noEmit` sạch lỗi; `npm run build` thành công với 37 routes (exit code 0) | PASS |
 | 18 | DECISIONS.md ghi nhận D49 | PASS |
+
+## AG-30 — AI Evaluation & Fallback Review (Master Gate P4 Verification) — 20/10/2026
+
+**App tests: `test_p4_evaluation_gate.ts` (43 test cases), regression checks (`test_ai_authoring_drafts.ts`, `test_ai_meal_suggestion.ts`, `test_ai_boundary_budget.ts`, `test_p3_pilot_gate.ts`), TypeScript (`tsc --noEmit`), Next.js production build (`npm run build`).**
+
+| # | Kiểm tra | Kết quả |
+|---|---|---|
+| 1 | Anti-Hallucination: 100% slug món ăn gợi ý là ID thật trong catalog `PUBLISHED` (Hallucination Rate: 0.0%) | PASS |
+| 2 | Invariants Gate P4: status BẮT BUỘC là `DRAFT` cho mọi bản thảo do AI sinh ra | PASS |
+| 3 | Invariants Gate P4: provenance BẮT BUỘC là `AI_ASSISTED` | PASS |
+| 4 | Invariants Gate P4: Không tự động bật cờ `isCookTested`, `isEditorialReviewed` hay `isNutritionVerified` | PASS |
+| 5 | Database Persistence: Bản nháp lưu vào PostgreSQL bảo toàn 100% các cờ an toàn và `publishedAt = null` | PASS |
+| 6 | Budget Discipline: Token cap tự động clamp về trần an toàn $\le 1200$ tokens | PASS |
+| 7 | Budget Discipline: Timeout cap tự động clamp về $\le 10$s | PASS |
+| 8 | Abuse Prevention: Rate limiting chặn đứng request vượt ngưỡng và kích hoạt fallback | PASS |
+| 9 | Transparent Fallback: Gắn cờ `isFallback: true` và `provider: 'mock'` minh bạch khi chạy Heuristic | PASS |
+| 10 | Fallback Resilience: Mâm cơm fallback vẫn 100% là công thức thật trong database, không lỗi 500 | PASS |
+| 11 | Server-Only Secrets: Không rò rỉ bất kỳ khóa API AI nào ra client-side (`NEXT_PUBLIC_` không tồn tại) | PASS |
+| 12 | `test_p4_evaluation_gate.ts`: 43 PASS, 0 FAIL (exit code 0) | PASS |
+| 13 | `test_ai_authoring_drafts.ts`: 52 PASS, 0 FAIL (không hồi quy AG-29) | PASS |
+| 14 | `test_ai_meal_suggestion.ts`: 30 PASS, 0 FAIL (không hồi quy AG-28) | PASS |
+| 15 | `test_ai_boundary_budget.ts`: 20 PASS, 0 FAIL (không hồi quy AG-27) | PASS |
+| 16 | `test_p3_pilot_gate.ts`: 36 PASS, 0 FAIL (không hồi quy Gate P3) | PASS |
+| 17 | **TỔNG CỘNG CHUỖI P4: 181 PASS, 0 FAIL (100%)** | PASS |
+| 18 | `tsc --noEmit` sạch lỗi; `npm run build` thành công với 37 routes (exit code 0) | PASS |
+| 19 | DECISIONS.md ghi nhận D50 — **GATE P4 ĐẠT TOÀN DIỆN (M4 AI AN TOÀN & CÓ KIỂM SOÁT)** | PASS |
