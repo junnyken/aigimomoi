@@ -23,3 +23,20 @@ Kiểm tra tài liệu/skill (script read-only, 8 nhóm):
 
 ### Chưa kiểm
 - Antigravity có tự nạp skill từ `projects/angimom/.agents/skills/` khi mở thư mục này làm workspace root hay không — chưa xác minh trong IDE (xem report §8).
+
+## AG-01 — Existing Infrastructure Inventory — 20/10/2026
+
+**App tests: N/A.**
+
+| # | Kiểm tra | Kết quả |
+|---|---|---|
+| 1 | Mọi dòng bảng trong INFRA_INVENTORY có nhãn `verified`/`declared`/`unknown` | PASS |
+| 2 | Secret scan trên docs | PASS |
+| 3 | Chỉ chạy lệnh đọc (không create/redeploy/allow-ip/set-scope/preview) | PASS |
+| 4 | Diff chỉ ở docs trong scope | PASS |
+
+### Bug thật tìm được
+- Không có.
+
+### Chưa kiểm / blocked
+- Toàn bộ S2 (VPS/domain riêng): chờ thông tin chủ sản phẩm.

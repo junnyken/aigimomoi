@@ -28,12 +28,19 @@ Nguồn ưu tiên cao nhất khi có xung đột (master plan §0). Chỉ ghi `a
 | D15 | Skill dự án đặt tại `.agents/skills/` (theo master plan §14) |
 | D16 | Ba file nguồn gốc giữ nguyên ở thư mục gốc; docs/skill dùng bản sao nguyên văn |
 
+## Quyết định trong AG-01 (`approved` ngày 20/10/2026)
+
+| ID | Nội dung |
+|---|---|
+| D17 | **VPS/domain riêng của chủ sản phẩm là nền chính** cho ĂN GÌ MOM. Chi tiết sẽ bổ sung sau (hiện `unknown`). Mắt Bão Cloud IDE là môi trường phát triển |
+| D18 | Chủ sản phẩm cho phép tiếp tục các bước không phụ thuộc hạ tầng trong khi chờ thông tin VPS/domain (“cứ xây dựng đi”) |
+
 ## Còn mở (`unknown`)
 
 | # | Vấn đề | Quyết định tại |
 |---|---|---|
-| O1 | Domain, VPS, dịch vụ đang chạy, DB/storage/email | AG-01 |
-| O2 | Có dùng Coolify/`mb-deploy` (Mắt Bão Cloud IDE) làm hosting không | AG-01/02 |
+| O1 | Chi tiết VPS/domain riêng: nhà cung cấp, cấu hình, dịch vụ đang chạy, DB/storage/email, backup | Chủ sản phẩm bổ sung → cập nhật INFRA_INVENTORY trước khi AG-02 chốt lớp hạ tầng |
+| O2 | Có dùng Coolify/`mb-deploy` để xem thử nội bộ/staging không (nền chính đã là VPS riêng — D17) | AG-02 |
 | O3 | Ngân sách vận hành/tháng | AG-02 |
 | O4 | Nhà cung cấp AI/model và budget | Trước P4 |
 | O5 | Người kiểm/nấu thử công thức | AG-03 |
