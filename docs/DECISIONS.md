@@ -104,6 +104,12 @@ Nguồn ưu tiên cao nhất khi có xung đột (master plan §0). Chỉ ghi `a
 |---|---|
 | D32 | **Structured Ingredients Dictionary & Taxonomy Tree Architecture**: Phê duyệt hệ thống API CRUD và giao diện quản trị từ điển nguyên liệu chuẩn hóa (`/editor/ingredients`) và phân loại đa trục (`/editor/taxonomies`), bắt buộc chuẩn hóa slug duy nhất, đơn vị tính chuẩn, phân loại nhóm thực phẩm và cờ gia vị bếp thường trực (`isPantryStaple`), kiểm tra ràng buộc toàn vẹn khóa ngoại khi xóa (chặn xóa nguyên liệu đang dùng trong công thức), và nạp sẵn danh mục 29 nguyên liệu cơ sở và 15 taxonomies của Batch 0 |
 
+## Quyết định trong AG-13 (`drafted / implemented` ngày 20/10/2026)
+
+| ID | Nội dung |
+|---|---|
+| D33 | **Structured Recipe Editor & Invariants Protection**: Triển khai trình biên tập công thức có cấu trúc trực quan (`/editor/recipes/new`, `/editor/recipes/[id]`) và bộ API (`/api/recipes`, `/api/recipes/[id]`) tuân thủ nghiêm ngặt Invariants §5: tách bạch Dish và Recipe, 100% nguyên liệu liên kết từ điển với chính sách co giãn (`scalePolicy`: LINEAR/FIXED/MANUAL_ADJUST), bước nấu phân giai đoạn kèm hẹn giờ an toàn không tự nhảy bước, và cấm sửa đổi trực tiếp (in-place mutation) đối với công thức đã ở trạng thái `PUBLISHED`. |
+
 ## Còn mở (`unknown`)
 
 | # | Vấn đề | Quyết định tại |

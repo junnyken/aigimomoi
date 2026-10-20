@@ -198,8 +198,21 @@ Kiểm tra tài liệu/skill (script read-only, 8 nhóm):
 | 8 | Secret scan: không có secret | PASS |
 | 9 | DECISIONS.md ghi nhận D32 | PASS |
 
+## AG-13 — Structured Recipe Editor — 20/10/2026
 
+**App tests: Unit tests (`test_recipes_crud.ts`), Postgres real DB integration, & Next.js production build (`npm run build`).**
 
-
-
-
+| # | Kiểm tra | Kết quả |
+|---|---|---|
+| 1 | Khởi động Postgres container `angimom_postgres`, áp dụng 2 migration SQL thành công | PASS |
+| 2 | Nạp thành công seeder users và seeder catalog (29 nguyên liệu chuẩn hóa + 15 taxonomies) | PASS |
+| 3 | API `/api/recipes` (GET tìm kiếm/lọc vai trò/trạng thái, POST tạo recipe có cấu trúc trong transaction) | PASS |
+| 4 | API `/api/recipes/[id]` (GET trả về đầy đủ dish, ingredients, steps, tags; PUT cập nhật; DELETE xóa draft) | PASS |
+| 5 | Bảo vệ Invariants §5.1: Cấm cập nhật trực tiếp hoặc xóa công thức đã xuất bản `PUBLISHED` | PASS |
+| 6 | Giao diện `/editor/recipes`: Danh sách thẻ công thức, thống kê trạng thái, bộ lọc vai trò, responsive | PASS |
+| 7 | Giao diện `/editor/recipes/new`: Form soạn thảo trực quan 4 phần (Thông tin chung, Bảng nguyên liệu động, Bước nấu có timer, Taxonomies) | PASS |
+| 8 | Giao diện `/editor/recipes/[id]`: Xem/sửa công thức có cấu trúc kèm khóa bảo vệ banner khi `PUBLISHED` | PASS |
+| 9 | `test_recipes_crud.ts` tự động kiểm thử CRUD và xác nhận Invariants §5.1 | PASS |
+| 10 | `npm run build` biên dịch thành công ứng dụng với 14 routes sạch lỗi (exit code 0) | PASS |
+| 11 | Secret scan: không có secret | PASS |
+| 12 | DECISIONS.md ghi nhận D33 | PASS |
