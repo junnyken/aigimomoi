@@ -45,7 +45,7 @@ Gate P2: tạo → kiểm → xuất bản → đọc lại chạy được. —
 | AG-17 | Search & filters | AG-16 | `closed` (20/10/2026) |
 | AG-18 | Serving adjustment | AG-16 | `closed` (20/10/2026) |
 | AG-19 | Cooking mode | AG-18 | `closed` (20/10/2026) |
-| AG-20 | Saved recipes | AG-11, 16 | `not-started` |
+| AG-20 | Saved recipes | AG-11, 16 | `spec-drafted` |
 | AG-21 | Meal composition & replacement | AG-17, 18 | `not-started` |
 | AG-22 | Ingredient aggregation | AG-21 | `not-started` |
 | AG-23 | Shopping checklist persistence | AG-22 | `not-started` |
