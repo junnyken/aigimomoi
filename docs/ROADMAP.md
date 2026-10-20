@@ -7,8 +7,8 @@ Trạng thái spec: `not-started` · `spec-drafted` · `approved-for-build` · `
 ## P0 — Nền móng
 | ID | Capability | Dependency | Trạng thái |
 |---|---|---|---|
-| AG-00 | Workspace audit & skill setup | Tài liệu gốc | `awaiting-close` |
-| AG-01 | Existing infrastructure inventory | AG-00 | `not-started` |
+| AG-00 | Workspace audit & skill setup | Tài liệu gốc | `closed` (20/10/2026) |
+| AG-01 | Existing infrastructure inventory | AG-00 | `spec-drafted` |
 | AG-02 | Architecture & domain decisions | AG-01 | `not-started` |
 | AG-03 | Content operations plan | AG-00 | `not-started` |
 
