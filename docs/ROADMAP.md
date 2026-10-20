@@ -66,7 +66,14 @@ Gate P3 = MVP đủ dùng thử (không cần P4–P8). — **GATE P3 ĐÃ ĐẠ
 Gate P4: AI không tạo đường tắt publish, không suy số dinh dưỡng và không gây chi phí không kiểm soát. — **GATE P4 ĐÃ ĐẠT (M4 AI AN TOÀN & CÓ KIỂM SOÁT)**
 
 ## P5 — Cộng đồng
-AG-31 contributor submission · AG-32 moderation · AG-33 dish variants & stories · AG-34 cooked-it feedback — `not-started`.
+| ID | Capability | Dependency | Trạng thái |
+|---|---|---|---|
+| AG-31 | Contributor submission & editor reuse | AG-13, 15 | `closed` (21/10/2026) |
+| AG-32 | Moderation & abuse reports | AG-31 | `not-started` |
+| AG-33 | Dish variants & kitchen stories | AG-31 | `not-started` |
+| AG-34 | Cooked-it feedback & photos | AG-31, 32 | `not-started` |
+
+Gate: nội dung cộng đồng có queue duyệt, quyền sở hữu và xử lý báo cáo; không biến thành social feed trước khi vận hành ổn.
 
 ## P6 — Dinh dưỡng và nhật ký
 AG-35 nutrition source audit · AG-36 recipe nutrition calc · AG-37 consumed portions & snapshots · AG-38 daily summaries & privacy — `not-started`.

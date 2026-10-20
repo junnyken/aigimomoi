@@ -624,4 +624,22 @@ Kiểm tra tài liệu/skill (script read-only, 8 nhóm):
 | 16 | `test_p3_pilot_gate.ts`: 36 PASS, 0 FAIL (không hồi quy Gate P3) | PASS |
 | 17 | **TỔNG CỘNG CHUỖI P4: 181 PASS, 0 FAIL (100%)** | PASS |
 | 18 | `tsc --noEmit` sạch lỗi; `npm run build` thành công với 37 routes (exit code 0) | PASS |
-| 19 | DECISIONS.md ghi nhận D50 — **GATE P4 ĐẠT TOÀN DIỆN (M4 AI AN TOÀN & CÓ KIỂM SOÁT)** | PASS |
+## AG-31 — Contributor Submissions — 21/10/2026
+
+**App tests: `test_contributor_submissions.ts` (19 test cases), TypeScript (`tsc --noEmit`), Next.js production build (`npm run build`).**
+
+| # | Kiểm tra | Kết quả |
+|---|---|---|
+| 1 | Invariants Gate P5: Chặn truy cập API đóng góp khi chưa đăng nhập (HTTP 401 Unauthorized) | PASS |
+| 2 | Contributor tạo thành công bản nháp công thức gia đình (`status = 'DRAFT'`) | PASS |
+| 3 | Invariants Gate P5: `provenance = 'COMMUNITY_SUBMITTED'`, `authorId = cook1.id` | PASS |
+| 4 | Invariants Gate P5: Mặc định `isEditorialReviewed = false`, `isCookTested = false` | PASS |
+| 5 | Phân lập dữ liệu: Contributor 1 thấy bài của mình tại `/api/contribute/recipes`, Contributor 2 không thấy bản nháp của Contributor 1 | PASS |
+| 6 | Bảo vệ quyền sở hữu (Ownership Guard): Chặn Contributor 2 sửa hoặc xóa bài của Contributor 1 (HTTP 404) | PASS |
+| 7 | Nộp bài vào Hàng đợi Kiểm duyệt: Chuyển đổi trạng thái sang `SUBMITTED` | PASS |
+| 8 | Khóa sửa đổi: Chặn tuyệt đối hành vi sửa bài hoặc xóa bài khi đang ở trạng thái `SUBMITTED` (HTTP 409 Conflict) | PASS |
+| 9 | Quy trình Ban biên tập yêu cầu sửa (`NEEDS_CHANGES`): Tác giả được mở quyền cập nhật và nộp lại thành công | PASS |
+| 10 | Giao diện Bếp Nhà (`/contribute`), Form soạn thảo đóng góp (`/contribute/new`), Form chỉnh sửa nộp lại (`/contribute/[id]`) | PASS |
+| 11 | `test_contributor_submissions.ts`: 19 PASS, 0 FAIL (exit code 0) | PASS |
+| 12 | `tsc --noEmit` sạch lỗi; `npm run build` thành công (exit code 0) | PASS |
+| 13 | DECISIONS.md ghi nhận D51 | PASS |
