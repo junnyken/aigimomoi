@@ -1,39 +1,29 @@
 #!/bin/bash
-# AG-26: Database Restore Script — Ăn Gì Mom
-# Tuân thủ Invariants §11.4: Khôi phục cơ sở dữ liệu từ tệp .sql sao lưu
+# AG-Production: Script phục hồi PostgreSQL Database từ bản sao lưu
+# Sử dụng: ./scripts/restore_db.sh <đường_dẫn_tệp_backup.sql.gz>
 
 set -e
 
 BACKUP_FILE="$1"
 
-if [ -z "$BACKUP_FILE" ]; then
-  echo "LỖI: Thiếu đường dẫn tệp sao lưu!"
-  echo "Cách dùng: $0 <path_to_backup_file.sql>"
+if [ -z "$BACKUP_FILE" ] || [ ! -f "$BACKUP_FILE" ]; then
+  echo "Lỗi: Vui lòng chỉ định đường dẫn tệp sao lưu hợp lệ."
+  echo "Ví dụ: ./scripts/restore_db.sh ./backups/angimom_backup_20261021_000000.sql.gz"
   exit 1
 fi
 
-if [ ! -f "$BACKUP_FILE" ]; then
-  echo "LỖI: Tệp sao lưu không tồn tại: $BACKUP_FILE"
-  exit 1
-fi
-
-CONTAINER_NAME="angimom_postgres"
 DB_USER="${POSTGRES_USER:-angimom}"
 DB_NAME="${POSTGRES_DB:-angimom_db}"
+CONTAINER_NAME="${PG_CONTAINER:-angimom_postgres}"
 
-echo "=== BẮT ĐẦU PHỤC HỒI CƠ SỞ DỮ LIỆU ==="
-echo "Tệp nguồn: $BACKUP_FILE"
-echo "Cơ sở dữ liệu đích: $DB_NAME"
-
-if docker ps | grep -q "$CONTAINER_NAME"; then
-  echo "Khôi phục qua Docker container $CONTAINER_NAME..."
-  docker exec -i "$CONTAINER_NAME" psql -U "$DB_USER" -d "$DB_NAME" < "$BACKUP_FILE"
-elif command -v psql > /dev/null; then
-  echo "Khôi phục qua lệnh psql cục bộ..."
-  psql -U "$DB_USER" -d "$DB_NAME" -h localhost -p 5432 < "$BACKUP_FILE"
-else
-  echo "LỖI: Không tìm thấy container $CONTAINER_NAME hoặc lệnh psql trên hệ thống!"
-  exit 1
+echo "CẢNH BÁO: Thao tác này sẽ ghi đè toàn bộ dữ liệu trong database '$DB_NAME'!"
+read -p "Bạn có chắc chắn muốn tiếp tục? (y/N): " CONFIRM
+if [ "$CONFIRM" != "y" ] && [ "$CONFIRM" != "Y" ]; then
+  echo "Đã hủy thao tác phục hồi."
+  exit 0
 fi
 
-echo "✓ Phục hồi cơ sở dữ liệu thành công!"
+echo "==> Đang phục hồi cơ sở dữ liệu từ '$BACKUP_FILE'..."
+gunzip -c "$BACKUP_FILE" | docker exec -i "$CONTAINER_NAME" psql -U "$DB_USER" -d "$DB_NAME"
+
+echo "✓ Phục hồi dữ liệu thành công!"

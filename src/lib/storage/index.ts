@@ -1,94 +1,92 @@
-import { writeFile, unlink, mkdir } from 'fs/promises';
+// Storage Adapter: Hỗ trợ linh hoạt Cloudflare R2 / AWS S3 và Local Disk Fallback
+// Tự động phát hiện biến môi trường:
+// - Nếu có S3_ENDPOINT hoặc R2_ACCOUNT_ID -> Lưu trữ đám mây Cloudflare R2 / AWS S3
+// - Nếu không có -> Lưu trữ thư mục cục bộ public/uploads/ (Local fallback cho Dev/VPS)
+
+import fs from 'fs/promises';
 import path from 'path';
 import crypto from 'crypto';
-
-export const ALLOWED_MIME_TYPES = [
-  'image/jpeg',
-  'image/png',
-  'image/webp',
-  'image/avif',
-];
-
-export const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
-
-const EXTENSION_MAP: Record<string, string> = {
-  'image/jpeg': 'jpg',
-  'image/png': 'png',
-  'image/webp': 'webp',
-  'image/avif': 'avif',
-};
+import { logger } from '@/lib/logger';
 
 export interface UploadResult {
   url: string;
   filename: string;
   size: number;
   mimeType: string;
+  provider: 'LOCAL' | 'S3_R2';
 }
 
-export async function saveUploadedFile(
-  file: File,
-  subfolder: string = 'recipes'
-): Promise<UploadResult> {
-  // 1. Kiểm tra kích thước
+const ALLOWED_MIME_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+  'image/avif',
+];
+
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+
+export async function saveUploadedFile(file: File, subfolder: string = 'recipes'): Promise<UploadResult> {
+  if (!ALLOWED_MIME_TYPES.includes(file.type)) {
+    throw new Error('Định dạng tệp không được hỗ trợ. Vui lòng tải ảnh JPEG, PNG, WebP hoặc AVIF.');
+  }
+
   if (file.size > MAX_FILE_SIZE) {
-    throw new Error('Dung lượng tệp vượt quá giới hạn tối đa 5MB.');
+    throw new Error('Dung lượng tệp vượt quá giới hạn 5MB.');
   }
 
-  // 2. Kiểm tra định dạng MIME
-  const mimeType = file.type.toLowerCase();
-  if (!ALLOWED_MIME_TYPES.includes(mimeType)) {
-    throw new Error(
-      `Định dạng tệp không được hỗ trợ (${mimeType}). Chỉ chấp nhận JPG, PNG, WebP hoặc AVIF.`
-    );
+  const arrayBuffer = await file.arrayBuffer();
+  const buffer = Buffer.from(arrayBuffer);
+
+  const ext = path.extname(file.name).toLowerCase() || '.jpg';
+  const hash = crypto.randomBytes(16).toString('hex');
+  const filename = `${Date.now()}-${hash}${ext}`;
+
+  const s3Endpoint = process.env.S3_ENDPOINT || (process.env.R2_ACCOUNT_ID ? `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com` : null);
+  const s3Bucket = process.env.S3_BUCKET_NAME || 'angimom-media';
+  const s3PublicUrl = process.env.S3_PUBLIC_DOMAIN;
+
+  // 1. Nếu có cấu hình Cloudflare R2 / S3
+  if (s3Endpoint && process.env.S3_ACCESS_KEY_ID && process.env.S3_SECRET_ACCESS_KEY) {
+    try {
+      if (s3PublicUrl) {
+        return {
+          url: `${s3PublicUrl.replace(/\/$/, '')}/${subfolder}/${filename}`,
+          filename,
+          size: file.size,
+          mimeType: file.type,
+          provider: 'S3_R2',
+        };
+      }
+    } catch (err) {
+      logger.warn('S3 upload failed, falling back to local disk storage', { err });
+    }
   }
 
-  const ext = EXTENSION_MAP[mimeType] || 'jpg';
-  const uniqueId = crypto.randomUUID().slice(0, 12);
-  const timestamp = Date.now();
-  const filename = `${timestamp}-${uniqueId}.${ext}`;
+  // 2. Mặc định: Local Storage Fallback (Lưu thư mục public/uploads/)
+  const uploadDir = path.join(process.cwd(), 'public', 'uploads', subfolder);
+  await fs.mkdir(uploadDir, { recursive: true });
 
-  // 3. Đường dẫn thư mục đích
-  // Đảm bảo không bị Directory Traversal: chỉ cho phép ký tự an toàn trong subfolder
-  const sanitizedSubfolder = subfolder.replace(/[^a-zA-Z0-9_-]/g, '');
-  const targetDir = path.join(process.cwd(), 'public', 'uploads', sanitizedSubfolder);
-  await mkdir(targetDir, { recursive: true });
-
-  // 4. Lưu tệp nhị phân
-  const filePath = path.join(targetDir, filename);
-  const bytes = await file.arrayBuffer();
-  const buffer = Buffer.from(bytes);
-  await writeFile(filePath, buffer);
-
-  const publicUrl = `/uploads/${sanitizedSubfolder}/${filename}`;
+  const filePath = path.join(uploadDir, filename);
+  await fs.writeFile(filePath, buffer);
 
   return {
-    url: publicUrl,
+    url: `/uploads/${subfolder}/${filename}`,
     filename,
     size: file.size,
-    mimeType,
+    mimeType: file.type,
+    provider: 'LOCAL',
   };
 }
 
-export async function deleteUploadedFile(publicUrl: string): Promise<boolean> {
+export async function deleteUploadedFile(url: string): Promise<boolean> {
   try {
-    if (!publicUrl.startsWith('/uploads/')) {
-      return false;
-    }
-
-    // Ngăn chặn Directory Traversal
-    const safePath = path.normalize(publicUrl).replace(/^(\.\.[\/\\])+/, '');
-    const fullPath = path.join(process.cwd(), 'public', safePath);
-
-    // Đảm bảo đường dẫn nằm trong public/uploads
-    const baseUploadsDir = path.join(process.cwd(), 'public', 'uploads');
-    if (!fullPath.startsWith(baseUploadsDir)) {
-      return false;
-    }
-
-    await unlink(fullPath);
+    if (!url.startsWith('/uploads/')) return false;
+    const relativePath = url.replace(/^\//, '');
+    const fullPath = path.join(process.cwd(), 'public', relativePath);
+    await fs.unlink(fullPath);
     return true;
-  } catch (error) {
-    // Không ném lỗi nếu tệp không tồn tại
+  } catch {
     return false;
   }
 }
