@@ -1,0 +1,63 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: angimom_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-angimom}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-angimom_password}
+      POSTGRES_DB: ${POSTGRES_DB:-angimom_db}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - angimom_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-angimom} -d ${POSTGRES_DB:-angimom_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: angimom_web
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-angimom}:${POSTGRES_PASSWORD:-angimom_password}@db:5432/${POSTGRES_DB:-angimom_db}
+      NODE_ENV: production
+      PORT: 3000
+    ports:
+      - "3000:3000"
+    networks:
+      - angimom_net
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: angimom_caddy
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - web
+    networks:
+      - angimom_net
+
+volumes:
+  pgdata:
+  caddy_data:
+  caddy_config:
+
+networks:
+  angimom_net:
+    driver: bridge

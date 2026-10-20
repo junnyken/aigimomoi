@@ -1,0 +1,6 @@
+# Caddyfile for ĂN GÌ MOM Production
+# Replace :80 with your domain (e.g., angimom.vn) for automatic Let's Encrypt SSL
+:80 {
+    reverse_proxy web:3000
+    encode gzip zstd
+}

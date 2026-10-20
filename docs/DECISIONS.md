@@ -74,11 +74,17 @@ Nguồn ưu tiên cao nhất khi có xung đột (master plan §0). Chỉ ghi `a
 |---|---|
 | D27 | **Meal State & Shopping Aggregation Pattern**: Phê duyệt cấu trúc mâm cơm 3 món (`prototype/meal.html`) với tính năng đổi món linh hoạt theo vai trò (`MAIN`, `SOUP`, `SIDE`), co giãn khẩu phần toàn mâm và bộ máy tổng hợp nguyên liệu đi chợ (`aggregateIngredients`, `prototype/shopping.html`) tuân thủ tuyệt đối Invariants §5.4: gộp các nguyên liệu tương thích theo cùng đơn vị tính, bảo toàn khả năng truy vết nguồn gốc (traceability) từ từng món, phân tách nhóm gia vị bếp gia đình (`MANUAL_ADJUST`), và quản lý tiến độ chuẩn bị qua checklist lưu trữ `localStorage` |
 
-## Quyết định trong AG-08 (`drafted / implemented` ngày 20/10/2026)
+## Quyết định trong AG-08 (`approved` ngày 20/10/2026)
 
 | ID | Nội dung |
 |---|---|
 | D28 | **Responsive & Usability Standards for Gate P1**: Phê duyệt tiêu chuẩn hiển thị đáp ứng (Responsive Breakpoints: Mobile <640px, Tablet 640-1024px, Desktop >1024px), kích thước vùng chạm cảm ứng (Touch Target $\ge 40-44\text{px}$ chuẩn WCAG 2.2 Criterion 2.5.8), khả năng điều hướng bàn phím với focus ring rõ ràng, cấu trúc ngữ nghĩa HTML đầy đủ (viewport, semantic tags, alt, meta description) và xác nhận thông suốt hành trình người dùng toàn diện trên 4 màn hình prototype để nghiệm thu Gate P1 |
+
+## Quyết định trong AG-09 (`drafted / implemented` ngày 20/10/2026)
+
+| ID | Nội dung |
+|---|---|
+| D29 | **Next.js Foundation, Tailwind Tokens, Drizzle ORM & Docker Architecture**: Phê duyệt cấu trúc khởi tạo ứng dụng production Next.js 16 (App Router, TypeScript) tích hợp trọn vẹn bộ Design Tokens từ `docs/tokens.css` (Kem ấm `#FAF7F0`, Xanh lá `#3F6240`, Cam đất `#B75B35`), cấu hình Drizzle ORM với PostgreSQL dialect theo các enums Invariants §5.1, §5.2, §5.3, và hạ tầng container hóa độc lập (Dockerfile multi-stage, docker-compose với PostgreSQL 16 + Caddy tự động HTTPS SSL) đảm bảo sẵn sàng triển khai trên VPS cá nhân (D17, D18, D20) |
 
 ## Còn mở (`unknown`)
 

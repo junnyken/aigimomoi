@@ -28,7 +28,7 @@ Gate P1: chủ sản phẩm duyệt luồng/thiết kế trước wiring dữ li
 ## P2 — Core catalog và biên tập
 | ID | Capability | Dependency | Trạng thái |
 |---|---|---|---|
-| AG-09 | App foundation & environment | AG-02, AG-08 | `spec-drafted` |
+| AG-09 | App foundation & environment | AG-02, AG-08 | `awaiting-close` |
 | AG-10 | Schema & migrations | AG-09 | `not-started` |
 | AG-11 | Identity & authorization | AG-10 | `not-started` |
 | AG-12 | Ingredient & taxonomy CRUD | AG-11 | `not-started` |

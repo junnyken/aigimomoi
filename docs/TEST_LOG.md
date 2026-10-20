@@ -135,4 +135,21 @@ Kiểm tra tài liệu/skill (script read-only, 8 nhóm):
 | 7 | Secret scan: không có secret | PASS |
 | 8 | DECISIONS.md ghi nhận D28, hoàn tất toàn bộ tiêu chí Gate P1 | PASS |
 
+## AG-09 — App Foundation & Environment — 20/10/2026
+
+**App tests: Next.js production build (`npm run build`).**
+
+| # | Kiểm tra | Kết quả |
+|---|---|---|
+| 1 | Khởi tạo Next.js 16 (App Router, TypeScript) trong repo `projects/angimom/` | PASS |
+| 2 | Cấu hình Tailwind CSS và tích hợp trọn vẹn tokens từ `docs/tokens.css` vào `globals.css` | PASS |
+| 3 | Cài đặt và cấu hình Drizzle ORM (`drizzle-orm`, `drizzle-kit`, `postgres`), kiểm tra `npx drizzle-kit check` | PASS |
+| 4 | Định nghĩa Invariants enums và bảng `users`, `recipes` trong `src/lib/db/schema.ts` | PASS |
+| 5 | Cấu hình hạ tầng container hóa: `Dockerfile` multi-stage, `docker-compose.yml`, `Caddyfile`, `.env.example` | PASS |
+| 6 | Kiểm tra `docker compose config` hợp lệ, không lỗi cú pháp | PASS |
+| 7 | Kiểm tra `npm run build` biên dịch TypeScript và tối ưu hóa static pages thành công (exit code 0) | PASS |
+| 8 | Secret scan: không có secret | PASS |
+| 9 | DECISIONS.md ghi nhận D29 | PASS |
+
+
 

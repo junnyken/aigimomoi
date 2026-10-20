@@ -1,0 +1,96 @@
+@import "tailwindcss";
+
+/**
+ * ĂN GÌ MOM — Design Tokens
+ * Version: 1.0.0 (Approved at AG-04)
+ * Theme: Warm Kitchen (Kem nhạt + Xanh lá ấm + Cam đất nướng)
+ * Accessibility: WCAG 2.2 Level AA Compliant
+ */
+
+:root {
+  /* Canvas & Surfaces */
+  --color-bg-primary: #FAF7F0;
+  --color-surface-white: #FFFFFF;
+  --color-surface-raised: #F4EFE6;
+  --color-surface-subtle: #EFE9DC;
+
+  /* Text & Content */
+  --color-text-primary: #253126;
+  --color-text-secondary: #596454;
+  --color-text-muted: #768271;
+  --color-text-inverse: #FFFFFF;
+
+  /* Brand Primary */
+  --color-brand-primary: #3F6240;
+  --color-brand-hover: #314D32;
+  --color-brand-active: #273F28;
+  --color-brand-light: #EAF0EA;
+  --color-brand-border: #BCD0BE;
+
+  /* Accent */
+  --color-accent-primary: #B75B35;
+  --color-accent-hover: #9E4B28;
+  --color-accent-light: #FBEFEA;
+  --color-accent-text: #A94E2A;
+
+  /* Borders & Dividers */
+  --color-border-subtle: #EBECE4;
+  --color-border-base: #E5E7DE;
+  --color-border-strong: #D1D6C5;
+
+  /* Semantic Feedback */
+  --color-success-base: #2E7D32;
+  --color-success-bg: #E8F5E9;
+  --color-success-border: #A5D6A7;
+
+  --color-warning-base: #D97706;
+  --color-warning-bg: #FFFBEB;
+  --color-warning-border: #FCD34D;
+
+  --color-error-base: #DC2626;
+  --color-error-bg: #FEF2F2;
+  --color-error-border: #FCA5A5;
+
+  --color-info-base: #0284C7;
+  --color-info-bg: #F0F9FF;
+  --color-info-border: #BAE6FD;
+
+  /* Typography */
+  --font-family-base: 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+  /* Focus Ring */
+  --focus-ring: 0 0 0 3px rgba(63, 98, 64, 0.4);
+}
+
+@theme inline {
+  --color-bg-primary: var(--color-bg-primary);
+  --color-surface-white: var(--color-surface-white);
+  --color-surface-raised: var(--color-surface-raised);
+  --color-surface-subtle: var(--color-surface-subtle);
+
+  --color-text-primary: var(--color-text-primary);
+  --color-text-secondary: var(--color-text-secondary);
+  --color-text-muted: var(--color-text-muted);
+  --color-text-inverse: var(--color-text-inverse);
+
+  --color-brand-primary: var(--color-brand-primary);
+  --color-brand-hover: var(--color-brand-hover);
+  --color-brand-light: var(--color-brand-light);
+  --color-brand-border: var(--color-brand-border);
+
+  --color-accent-primary: var(--color-accent-primary);
+  --color-accent-hover: var(--color-accent-hover);
+  --color-accent-light: var(--color-accent-light);
+  --color-accent-text: var(--color-accent-text);
+
+  --color-border-subtle: var(--color-border-subtle);
+  --color-border-base: var(--color-border-base);
+  --color-border-strong: var(--color-border-strong);
+}
+
+body {
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  font-family: var(--font-family-base);
+  min-height: 100vh;
+}
