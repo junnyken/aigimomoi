@@ -59,7 +59,7 @@ Gate P3 = MVP đủ dùng thử (không cần P4–P8). — **GATE P3 ĐÃ ĐẠ
 | ID | Capability | Dependency | Trạng thái |
 |---|---|---|---|
 | AG-27 | AI provider boundary & budget | AG-26 + duyệt provider | `closed` (20/10/2026) |
-| AG-28 | AI recipe suggestion | AG-27 | `not-started` |
+| AG-28 | AI recipe suggestion | AG-27 | `closed` (20/10/2026) |
 | AG-29 | AI authoring drafts | AG-27, 13, 15 | `not-started` |
 | AG-30 | AI evaluation & fallback | AG-28, 29 | `not-started` |
 

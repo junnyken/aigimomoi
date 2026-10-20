@@ -194,6 +194,12 @@ Nguồn ưu tiên cao nhất khi có xung đột (master plan §0). Chỉ ghi `a
 |---|---|
 | D47 | **AI Provider Architecture, Token Budget Capping & Graceful Fallback**: Phê duyệt kiến trúc cổng giao tiếp AI (`src/lib/ai/gateway.ts`) và giải quyết dứt điểm câu hỏi mở **O4**: (1) Kiến trúc Provider Adapter đa tầng hỗ trợ Google Gemini (`gemini-1.5-flash`), OpenAI-compatible (`gpt-4o-mini`, DeepSeek, OpenRouter), và `MockHeuristicProvider` tích hợp sẵn; (2) Invariant Server-Only Secrets: Khóa API (`GEMINI_API_KEY`, `OPENAI_API_KEY`) chỉ lưu trong biến môi trường server-side, không cấp tiền tố `NEXT_PUBLIC_`, tự động redact khi in log; (3) Budget Cap & Rate Limiting: Giới hạn token đầu ra $\le 1200$ tokens, timeout $\le 10\text{s}$, rate limit 15 req/phút/IP để kiểm soát chặt chẽ ngân sách vận hành; (4) Graceful Degradation: Khi không có khóa API, hết quota hoặc nghẽn mạng, Gateway tự động chuyển tiếp sang Mock Heuristic Provider dựa trên catalog có sẵn trong database mà không bao giờ gây lỗi 500 hay làm gián đoạn trải nghiệm người dùng; (5) Invariants Gate P4: AI hoàn toàn không có quyền can thiệp vào quy trình biên tập hay tự động publish công thức. |
 
+## Quyết định trong AG-28 (`drafted / implemented` ngày 20/10/2026)
+
+| ID | Nội dung |
+|---|---|
+| D48 | **Strict Catalog Grounding & AI Meal Assistant with Pantry Ingredients**: Phê duyệt động cơ gợi ý mâm cơm thông minh và tiêu chuẩn Grounding chống ảo giác (Invariants §5.1, §5.3, Gate P4): (1) Động cơ gợi ý `src/lib/ai/mealSuggester.ts` nhận danh sách nguyên liệu tủ lạnh sẵn có và khẩu vị gia đình, tự động tổng hợp prompt kèm bối cảnh danh mục công thức `PUBLISHED` trong database; (2) Grounding Validation Layer: 100% slug món ăn trả về (`mainSlug`, `soupSlug`, `sideSlug`) bắt buộc phải là ID/slug thật tồn tại trong database và có trạng thái `PUBLISHED`. Nếu LLM sinh ra slug bịa đặt (hallucination) hoặc trả về bản nháp, hệ thống tự động phát hiện, từ chối và thay thế bằng công thức phù hợp nhất từ catalog có sẵn; (3) Cấu trúc mâm cơm 3 vai trò: Đảm bảo luôn đầy đủ 1 Món Mặn (`MAIN`), 1 Món Canh (`SOUP`), 1 Món Rau/Xào (`SIDE`); (4) Tích hợp UI trực quan: Bổ sung component `AiMealSuggestionModal` vào trang `/meal` với giao diện chọn nhanh nguyên liệu tủ lạnh, lời giải thích ấm áp (`rationale`) từ AI và nút 1 chạm áp dụng mâm cơm đồng bộ ngay lập tức lên URL và LocalStorage. |
+
 ## Còn mở (`unknown`)
 
 | # | Vấn đề | Quyết định tại |

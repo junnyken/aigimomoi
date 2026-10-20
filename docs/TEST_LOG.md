@@ -553,12 +553,24 @@ Kiểm tra tài liệu/skill (script read-only, 8 nhóm):
 | 15 | `tsc --noEmit` sạch lỗi; `npm run build` thành công với 35 routes (exit code 0) | PASS |
 | 16 | DECISIONS.md ghi nhận D47, giải quyết câu hỏi mở O4 | PASS |
 
+## AG-28 — AI Recipe & Meal Suggestion with Catalog Grounding — 20/10/2026
 
+**App tests: `test_ai_meal_suggestion.ts` (30 test cases), regression checks (`test_ai_boundary_budget.ts`, `test_p3_pilot_gate.ts`), TypeScript (`tsc --noEmit`), Next.js production build (`npm run build`).**
 
-
-
-
-
-
-
-
+| # | Kiểm tra | Kết quả |
+|---|---|---|
+| 1 | Invariants §5.1: 100% món ăn gợi ý (`mainSlug`, `soupSlug`, `sideSlug`) là công thức có thật trong DB với `status = 'PUBLISHED'` | PASS |
+| 2 | Invariants §5.3: Cấu trúc 3 món cân bằng chuẩn mâm cơm Việt (1 MAIN, 1 SOUP, 1 SIDE) | PASS |
+| 3 | Anti-Hallucination: Khi AI sinh slug bịa đặt, Grounding Validator tự động chặn và thay thế bằng slug hợp lệ trong catalog | PASS |
+| 4 | Matching Ingredients: Phân tích và nhận diện chính xác nguyên liệu tủ lạnh trùng khớp | PASS |
+| 5 | Guest-first: Khách vãng lai gọi gợi ý với nguyên liệu trống hoặc bất kỳ đều nhận được mâm cơm hợp lệ | PASS |
+| 6 | DTO Integrity: Thông tin món ăn trả về đầy đủ ảnh `heroImage`, thời gian nấu, độ khó và khẩu phần cơ bản | PASS |
+| 7 | UI Modal: Tích hợp `AiMealSuggestionModal` vào trang `/meal`, hỗ trợ chọn nguyên liệu tủ lạnh và xem `rationale` | PASS |
+| 8 | 1-Click Apply: Nút "Áp dụng mâm này" đồng bộ ngay lập tức 3 món vào mâm cơm, URL query params và localStorage | PASS |
+| 9 | API `/api/ai/meal-suggestion`: Phản hồi HTTP 200 OK với header `no-store, no-cache, must-revalidate` | PASS |
+| 10 | Rate Limiting & Abuse Prevention: Áp dụng rate limit theo client IP cho endpoint gợi ý AI | PASS |
+| 11 | `test_ai_meal_suggestion.ts`: 30 PASS, 0 FAIL (exit code 0) | PASS |
+| 12 | `test_ai_boundary_budget.ts`: 20 PASS, 0 FAIL (không hồi quy AG-27) | PASS |
+| 13 | `test_p3_pilot_gate.ts`: 36 PASS, 0 FAIL (không hồi quy Gate P3) | PASS |
+| 14 | `tsc --noEmit` sạch lỗi; `npm run build` thành công với 36 routes (exit code 0) | PASS |
+| 15 | DECISIONS.md ghi nhận D48 | PASS |

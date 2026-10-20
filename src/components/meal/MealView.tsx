@@ -8,6 +8,7 @@ import { MealSlotCard } from './MealSlotCard';
 import { SwapDishModal } from './SwapDishModal';
 import { MealSummaryBar } from './MealSummaryBar';
 import { saveStoredMeal, getStoredMeal } from '@/lib/meal/mealClient';
+import { AiMealSuggestionModal } from './AiMealSuggestionModal';
 
 interface MealViewProps {
   initialSelection: MealSelection;
@@ -22,6 +23,7 @@ export function MealView({ initialSelection, initialServings }: MealViewProps) {
 
   const [activeModalRole, setActiveModalRole] = useState<'MAIN' | 'SOUP' | 'SIDE' | null>(null);
   const [isRandomizing, setIsRandomizing] = useState(false);
+  const [isAiModalOpen, setIsAiModalOpen] = useState(false);
 
   // Đồng bộ URL và localStorage khi state thay đổi
   const syncState = useCallback(
@@ -132,6 +134,32 @@ export function MealView({ initialSelection, initialServings }: MealViewProps) {
     }
   }, [main, soup, side, servings, syncState]);
 
+  // Xử lý áp dụng mâm cơm AI gợi ý
+  const handleApplyAiMeal = useCallback(
+    async (mainSlug: string, soupSlug: string, sideSlug: string) => {
+      try {
+        const [mRes, sRes, dRes] = await Promise.all([
+          fetch(`/api/meal/options?role=MAIN`).then((r) => r.json()),
+          fetch(`/api/meal/options?role=SOUP`).then((r) => r.json()),
+          fetch(`/api/meal/options?role=SIDE`).then((r) => r.json()),
+        ]);
+
+        const foundMain = mRes?.options?.find((d: MealDishSummary) => d.slug === mainSlug) || null;
+        const foundSoup = sRes?.options?.find((d: MealDishSummary) => d.slug === soupSlug) || null;
+        const foundSide = dRes?.options?.find((d: MealDishSummary) => d.slug === sideSlug) || null;
+
+        if (foundMain) setMain(foundMain);
+        if (foundSoup) setSoup(foundSoup);
+        if (foundSide) setSide(foundSide);
+
+        syncState(foundMain || main, foundSoup || soup, foundSide || side, servings);
+      } catch (err) {
+        console.error('Lỗi khi áp dụng mâm cơm AI:', err);
+      }
+    },
+    [main, soup, side, servings, syncState]
+  );
+
   return (
     <div className="w-full flex flex-col gap-8 pb-12">
       {/* Header Banner */}
@@ -162,16 +190,27 @@ export function MealView({ initialSelection, initialServings }: MealViewProps) {
             <span className="text-[11px] font-semibold text-[var(--color-text-muted)] uppercase tracking-wider">
               Tùy chọn
             </span>
-            <button
-              type="button"
-              onClick={handleRandomize}
-              disabled={isRandomizing}
-              className="inline-flex items-center gap-2 px-4 py-3 rounded-2xl border border-[var(--color-border-base)] bg-[var(--color-surface-white)] hover:bg-[var(--color-surface-raised)] text-sm font-semibold text-[var(--color-text-primary)] transition-all shadow-xs disabled:opacity-50"
-              title="Gợi ý một mâm cơm ngẫu nhiên khác"
-            >
-              <Shuffle className={`w-4 h-4 text-[var(--color-brand-primary)] ${isRandomizing ? 'animate-spin' : ''}`} />
-              <span>Gợi ý mâm khác</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setIsAiModalOpen(true)}
+                className="inline-flex items-center gap-2 px-4 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-semibold text-sm shadow-md hover:shadow-lg transition-all"
+                title="Gợi ý mâm cơm từ nguyên liệu tủ lạnh với AI"
+              >
+                <Sparkles className="w-4 h-4 text-amber-200" />
+                <span>Gợi ý AI</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleRandomize}
+                disabled={isRandomizing}
+                className="inline-flex items-center gap-2 px-4 py-3 rounded-2xl border border-[var(--color-border-base)] bg-[var(--color-surface-white)] hover:bg-[var(--color-surface-raised)] text-sm font-semibold text-[var(--color-text-primary)] transition-all shadow-xs disabled:opacity-50"
+                title="Gợi ý một mâm cơm ngẫu nhiên khác"
+              >
+                <Shuffle className={`w-4 h-4 text-[var(--color-brand-primary)] ${isRandomizing ? 'animate-spin' : ''}`} />
+                <span>Mâm khác</span>
+              </button>
+            </div>
           </div>
         </div>
       </section>
@@ -224,6 +263,13 @@ export function MealView({ initialSelection, initialServings }: MealViewProps) {
           onSelect={handleSelectDish}
         />
       )}
+
+      {/* AI Meal Suggestion Modal */}
+      <AiMealSuggestionModal
+        isOpen={isAiModalOpen}
+        onClose={() => setIsAiModalOpen(false)}
+        onApplyMeal={handleApplyAiMeal}
+      />
     </div>
   );
 }
