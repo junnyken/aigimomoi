@@ -34,8 +34,8 @@ Gate P1: chủ sản phẩm duyệt luồng/thiết kế trước wiring dữ li
 | AG-12 | Ingredient & taxonomy CRUD | AG-11 | `closed` (20/10/2026) |
 | AG-13 | Structured recipe editor | AG-12 | `closed` (20/10/2026) |
 | AG-14 | Media pipeline | AG-11 | `closed` (20/10/2026) |
-| AG-15 | Publishing & revision gate | AG-13, 14 | `awaiting-close` |
-| AG-16 | Public recipe rendering | AG-15 | `not-started` |
+| AG-15 | Publishing & revision gate | AG-13, 14 | `closed` (20/10/2026) |
+| AG-16 | Public recipe rendering | AG-15 | `spec-drafted` |
 
 Gate P2: tạo → kiểm → xuất bản → đọc lại chạy được.
 
