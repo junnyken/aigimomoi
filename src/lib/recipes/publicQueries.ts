@@ -82,6 +82,7 @@ export interface PublicRecipe {
   difficulty: string;
   caloriesPerServing: number | null;
   nutritionStatus: 'NO_DATA' | 'INCOMPLETE' | 'ESTIMATED';
+  nutritionSnapshot?: any | null;
   heroImage: string | null;
   isEditorialReviewed: boolean;
   isCookTested: boolean;
@@ -124,6 +125,7 @@ export async function queryPublishedRecipeBySlug(slug: string): Promise<PublicRe
       difficulty: true,
       caloriesPerServing: true,
       nutritionStatus: true,
+      nutritionSnapshot: true,
       heroImage: true,
       isEditorialReviewed: true,
       isCookTested: true,
@@ -207,6 +209,7 @@ export async function queryPublishedRecipeBySlug(slug: string): Promise<PublicRe
     difficulty: row.difficulty,
     caloriesPerServing: row.caloriesPerServing,
     nutritionStatus: row.nutritionStatus,
+    nutritionSnapshot: row.nutritionSnapshot,
     heroImage: safeImageSrc(row.heroImage),
     isEditorialReviewed: row.isEditorialReviewed,
     isCookTested: row.isCookTested,

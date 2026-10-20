@@ -236,6 +236,12 @@ Nguồn ưu tiên cao nhất khi có xung đột (master plan §0). Chỉ ghi `a
 |---|---|
 | D54 | **Cooked-it Feedback & Photos**: Phê duyệt cơ chế phản hồi nấu thử, ảnh đĩa cơm gia đình và nghiệm thu Gate P5 (Invariants §5.1, §5.2, Gate P5): (1) Đĩa cơm cộng đồng: Cho phép độc giả chia sẻ trải nghiệm nấu thực tế, đánh giá sao (1-5 sao), mẹo nêm nếm gia vị và ảnh chụp đĩa thức ăn thành phẩm tại `/cong-thuc/[slug]`; (2) Invariants Chống Spam & Giữ Gìn Văn Hóa (Gate P5): Mọi phản hồi có ảnh hoặc từ khách vãng lai bắt buộc chuyển sang trạng thái `PENDING` và chờ Ban biên tập phê duyệt trước khi hiển thị công khai; thành viên đăng nhập gửi phản hồi text thuần sạch được duyệt tự động; (3) Ngăn chặn trùng lặp: Áp dụng cơ chế Upsert (chỉ duy trì 1 phản hồi / user / recipe, cho phép cập nhật khi nấu lại nhiều lần); (4) Quản trị nội dung: Cung cấp hàng đợi `/editor/feedbacks` và API `/api/editor/feedbacks/[id]` để Ban biên tập duyệt nhanh 1-click; (5) Nghiệm thu toàn diện Gate P5: Hoàn tất 100% 4 capability của Phase P5 (AG-31, AG-32, AG-33, AG-34). |
 
+## Quyết định trong AG-35 & AG-36 (`implemented` ngày 21/10/2026)
+
+| ID | Nội dung |
+|---|---|
+| D55 | **Nutrition Engine & Vietnamese Standard Calculator**: Phê duyệt hệ thống tính toán dinh dưỡng dữ liệu chuẩn Việt Nam (Invariants §5.5, Gate P6): (1) Nguồn dữ liệu kiểm định: Thiết lập bảng `ingredient_nutrition` đối chiếu theo Bảng thành phần thực phẩm Việt Nam (Viện Dinh Dưỡng Quốc Gia - Bộ Y Tế, `VIETNAM_FCT_2007`), có tính đến tỷ lệ phần ăn được (`edibleRate`); (2) Invariant Tối thượng Gate P6: Dữ liệu thiếu không được ép thành 0 (`Missing is NOT zero`), bảo toàn giá trị `null` và hiển thị cảnh báo minh bạch; (3) Bộ chuyển đổi đơn vị dân gian: Hỗ trợ quy đổi `gam`, `kg`, `lạng` (100g), `thìa canh` (15g), `thìa cà phê` (5g), `bát con`, `quả/củ` sang khối lượng thực phẩm ăn được; (4) Snapshot bất biến: Tính toán chi tiết Kcal, Đạm, Béo, Đường bột, Natri và Chất xơ trên 1 khẩu phần (`perServing`), toàn nồi (`totalBatch`) và 100g thành phẩm, lưu trữ dưới dạng snapshot `nutritionSnapshot` trong `recipes` để chống hồi tố khi sửa từ điển sau này; (5) Tỷ lệ bao phủ & Bật nhãn kiểm định: Chỉ bật `isNutritionVerified = true` khi độ bao phủ dinh dưỡng đạt từ 80% trở lên; (6) Giao diện: Hiển thị Bảng Dinh Dưỡng Chuẩn Việt Nam minh bạch trên trang món ăn `/cong-thuc/[slug]`. |
+
 ## Còn mở (`unknown`)
 
 | # | Vấn đề | Quyết định tại |

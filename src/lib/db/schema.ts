@@ -10,6 +10,7 @@ import {
   primaryKey,
   index,
   uniqueIndex,
+  jsonb,
   type AnyPgColumn,
 } from 'drizzle-orm/pg-core';
 
@@ -159,6 +160,9 @@ export const recipes = pgTable('recipes', {
   sourceAttribution: text('source_attribution'),
   variantOfId: integer('variant_of_id').references((): AnyPgColumn => recipes.id, { onDelete: 'set null' }),
 
+  // AG-36: Nutrition Engine Snapshot
+  nutritionSnapshot: jsonb('nutrition_snapshot'),
+
   authorId: integer('author_id').references(() => users.id, { onDelete: 'set null' }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
@@ -307,5 +311,26 @@ export const recipeCookedFeedbacks = pgTable('recipe_cooked_feedbacks', {
   index('recipe_cooked_feedbacks_status_idx').on(table.status),
   index('recipe_cooked_feedbacks_created_at_idx').on(table.createdAt),
   index('recipe_cooked_feedbacks_user_recipe_idx').on(table.recipeId, table.userId),
+]);
+
+// Ingredient Nutrition (Bảng thành phần dinh dưỡng nguyên liệu chuẩn Việt Nam - AG-35)
+export const ingredientNutrition = pgTable('ingredient_nutrition', {
+  id: serial('id').primaryKey(),
+  ingredientId: integer('ingredient_id').notNull().unique().references(() => ingredients.id, { onDelete: 'cascade' }),
+  source: text('source').notNull().default('VIETNAM_FCT_2007'),
+  edibleRate: doublePrecision('edible_rate').notNull().default(1.0),
+  calories100g: doublePrecision('calories_100g'),
+  protein100g: doublePrecision('protein_100g'),
+  fat100g: doublePrecision('fat_100g'),
+  carbs100g: doublePrecision('carbs_100g'),
+  fiber100g: doublePrecision('fiber_100g'),
+  sodium100g: doublePrecision('sodium_100g'),
+  isVerified: boolean('is_verified').notNull().default(false),
+  notes: text('notes'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index('ingredient_nutrition_ingredient_idx').on(table.ingredientId),
+  index('ingredient_nutrition_verified_idx').on(table.isVerified),
 ]);
 

@@ -14,6 +14,7 @@ import {
   savedRecipes,
   recipeReports,
   recipeCookedFeedbacks,
+  ingredientNutrition,
 } from './schema';
 
 export const usersRelations = relations(users, ({ many }) => ({
@@ -62,8 +63,16 @@ export const recipesRelations = relations(recipes, ({ one, many }) => ({
   }),
 }));
 
-export const ingredientsRelations = relations(ingredients, ({ many }) => ({
+export const ingredientsRelations = relations(ingredients, ({ one, many }) => ({
   recipeIngredients: many(recipeIngredients),
+  nutrition: one(ingredientNutrition),
+}));
+
+export const ingredientNutritionRelations = relations(ingredientNutrition, ({ one }) => ({
+  ingredient: one(ingredients, {
+    fields: [ingredientNutrition.ingredientId],
+    references: [ingredients.id],
+  }),
 }));
 
 export const recipeIngredientsRelations = relations(recipeIngredients, ({ one }) => ({

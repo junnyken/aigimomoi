@@ -76,7 +76,14 @@ Gate P4: AI không tạo đường tắt publish, không suy số dinh dưỡng 
 Gate P5: nội dung cộng đồng có queue duyệt, quyền sở hữu và xử lý báo cáo; không biến thành social feed trước khi vận hành ổn. — **GATE P5 ĐÃ ĐẠT (M5 CỘNG ĐỒNG BẾP NHÀ AN TOÀN)**
 
 ## P6 — Dinh dưỡng và nhật ký
-AG-35 nutrition source audit · AG-36 recipe nutrition calc · AG-37 consumed portions & snapshots · AG-38 daily summaries & privacy — `not-started`.
+| ID | Capability | Dependency | Trạng thái |
+|---|---|---|---|
+| AG-35 | Nutrition source audit & mapping | AG-13 | `closed` (21/10/2026) |
+| AG-36 | Recipe nutrition calc & missing-data rules | AG-15, 35 | `closed` (21/10/2026) |
+| AG-37 | Consumed portions & diary snapshots | AG-36 | `not-started` |
+| AG-38 | Daily summaries & privacy | AG-37 | `not-started` |
+
+Gate: nguồn truy vết, lượng đã ăn khác lượng đã nấu, dữ liệu thiếu không thành 0, nhật ký riêng tư và không hồi tố theo revision mới.
 
 ## P7 — Mở rộng catalog
 Món nước, đồ uống, bánh/ngọt, món chay, kế hoạch tuần/pantry, “ăn theo thì” (chờ O6). Mỗi nhánh cần ID mới khi duyệt.

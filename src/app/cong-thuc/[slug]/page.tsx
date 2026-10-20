@@ -160,6 +160,7 @@ export default async function PublicRecipePage({ params }: PageParams) {
             nutritionStatus={recipe.nutritionStatus}
             caloriesPerServing={recipe.caloriesPerServing}
             isNutritionVerified={recipe.isNutritionVerified}
+            nutritionSnapshot={recipe.nutritionSnapshot}
           />
         </aside>
 
