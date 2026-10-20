@@ -147,6 +147,12 @@ export const recipes = pgTable('recipes', {
   reviewedAt: timestamp('reviewed_at', { withTimezone: true }),
   publishedAt: timestamp('published_at', { withTimezone: true }),
   
+  // AG-33: Dish Variants, Kitchen Stories & Source Attribution
+  region: text('region').notNull().default('GENERAL'),
+  kitchenStory: text('kitchen_story'),
+  sourceAttribution: text('source_attribution'),
+  variantOfId: integer('variant_of_id').references((): AnyPgColumn => recipes.id, { onDelete: 'set null' }),
+
   authorId: integer('author_id').references(() => users.id, { onDelete: 'set null' }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
@@ -156,6 +162,8 @@ export const recipes = pgTable('recipes', {
   index('recipes_status_idx').on(table.status),
   index('recipes_author_idx').on(table.authorId),
   index('recipes_revision_of_idx').on(table.revisionOfId),
+  index('recipes_variant_of_idx').on(table.variantOfId),
+  index('recipes_region_idx').on(table.region),
 ]);
 
 // Ingredients (Từ điển nguyên liệu chuẩn hóa)

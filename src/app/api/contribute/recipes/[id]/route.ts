@@ -110,6 +110,10 @@ export async function PUT(request: NextRequest, context: RouteContext) {
       cookTimeMinutes,
       difficulty,
       heroImage,
+      region,
+      kitchenStory,
+      sourceAttribution,
+      variantOfId,
       ingredients: rawIngredients = [],
       steps: rawSteps = [],
       taxonomyIds = [],
@@ -132,6 +136,10 @@ export async function PUT(request: NextRequest, context: RouteContext) {
           cookTimeMinutes: Number(cookTimeMinutes) || undefined,
           difficulty: difficulty || undefined,
           heroImage: heroImage !== undefined ? heroImage : undefined,
+          region: region !== undefined ? region : undefined,
+          kitchenStory: kitchenStory !== undefined ? (kitchenStory ? String(kitchenStory).trim() : null) : undefined,
+          sourceAttribution: sourceAttribution !== undefined ? (sourceAttribution ? String(sourceAttribution).trim() : null) : undefined,
+          variantOfId: variantOfId !== undefined ? (variantOfId ? Number(variantOfId) : null) : undefined,
           updatedAt: new Date(),
         })
         .where(eq(recipes.id, recipeId));

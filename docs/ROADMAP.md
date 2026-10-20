@@ -70,7 +70,7 @@ Gate P4: AI không tạo đường tắt publish, không suy số dinh dưỡng 
 |---|---|---|---|
 | AG-31 | Contributor submission & editor reuse | AG-13, 15 | `closed` (21/10/2026) |
 | AG-32 | Moderation & abuse reports | AG-31 | `closed` (21/10/2026) |
-| AG-33 | Dish variants & kitchen stories | AG-31 | `not-started` |
+| AG-33 | Dish variants & kitchen stories | AG-31 | `closed` (21/10/2026) |
 | AG-34 | Cooked-it feedback & photos | AG-31, 32 | `not-started` |
 
 Gate: nội dung cộng đồng có queue duyệt, quyền sở hữu và xử lý báo cáo; không biến thành social feed trước khi vận hành ổn.

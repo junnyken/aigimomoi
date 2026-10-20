@@ -50,6 +50,14 @@ export const recipesRelations = relations(recipes, ({ one, many }) => ({
   mealItems: many(mealItems),
   savedByUsers: many(savedRecipes),
   reports: many(recipeReports),
+  variantOf: one(recipes, {
+    fields: [recipes.variantOfId],
+    references: [recipes.id],
+    relationName: 'recipeVariants',
+  }),
+  variants: many(recipes, {
+    relationName: 'recipeVariants',
+  }),
 }));
 
 export const ingredientsRelations = relations(ingredients, ({ many }) => ({

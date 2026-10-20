@@ -56,12 +56,26 @@ export interface PublicRecipeTag {
   type: string;
 }
 
+export interface PublicRecipeVariant {
+  id: number;
+  name: string;
+  slug: string;
+  region: string;
+  shortDescription: string;
+  heroImage: string | null;
+}
+
 export interface PublicRecipe {
   id: number;
   slug: string;
   name: string;
   shortDescription: string;
   role: string;
+  region: string;
+  kitchenStory: string | null;
+  sourceAttribution: string | null;
+  variantOfId: number | null;
+  variants: PublicRecipeVariant[];
   baseServings: number;
   prepTimeMinutes: number;
   cookTimeMinutes: number;
@@ -116,6 +130,10 @@ export async function queryPublishedRecipeBySlug(slug: string): Promise<PublicRe
       isNutritionVerified: true,
       versionNumber: true,
       publishedAt: true,
+      region: true,
+      kitchenStory: true,
+      sourceAttribution: true,
+      variantOfId: true,
     },
     with: {
       dish: { columns: { name: true }, with: { aliases: { columns: { aliasName: true } } } },
@@ -143,12 +161,46 @@ export async function queryPublishedRecipeBySlug(slug: string): Promise<PublicRe
 
   if (!row) return null;
 
+  // Lấy các biến thể liên quan (Invariants §5.1: chỉ trả PUBLISHED)
+  const rootId = row.variantOfId || row.id;
+  const rawVariants = await db.query.recipes.findMany({
+    where: (r, { and, or, eq, ne }) =>
+      and(
+        eq(r.status, 'PUBLISHED'),
+        ne(r.id, row.id),
+        or(eq(r.id, rootId), eq(r.variantOfId, rootId))
+      ),
+    columns: {
+      id: true,
+      name: true,
+      slug: true,
+      region: true,
+      shortDescription: true,
+      heroImage: true,
+    },
+    limit: 6,
+  });
+
+  const variants: PublicRecipeVariant[] = rawVariants.map((v) => ({
+    id: v.id,
+    name: v.name,
+    slug: v.slug,
+    region: v.region,
+    shortDescription: v.shortDescription,
+    heroImage: safeImageSrc(v.heroImage),
+  }));
+
   return {
     id: row.id,
     slug: row.slug,
     name: row.name,
     shortDescription: row.shortDescription,
     role: row.role,
+    region: row.region || 'GENERAL',
+    kitchenStory: row.kitchenStory,
+    sourceAttribution: row.sourceAttribution,
+    variantOfId: row.variantOfId,
+    variants,
     baseServings: row.baseServings,
     prepTimeMinutes: row.prepTimeMinutes,
     cookTimeMinutes: row.cookTimeMinutes,

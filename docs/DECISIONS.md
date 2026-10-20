@@ -224,6 +224,12 @@ Nguồn ưu tiên cao nhất khi có xung đột (master plan §0). Chỉ ghi `a
 |---|---|
 | D52 | **Content Moderation, Abuse Reports & Takedown Flow**: Phê duyệt cơ chế báo cáo vi phạm nội dung và hàng đợi kiểm duyệt an toàn (Invariants §5.1, §5.2, §8.1, §8.2, Gate P5): (1) Báo cáo vi phạm mở: Cho phép mọi độc giả (kể cả khách vãng lai) gửi phản ánh công thức có vấn đề tại `/cong-thuc/[slug]` mà không bị ép buộc đăng nhập, tự động lưu `reporterId` khi có session; (2) Phân quyền hàng đợi: Endpoint `/api/editor/reports` và giao diện `/editor/reports` được bảo vệ nghiêm ngặt, chỉ cho phép `EDITOR` và `ADMIN` truy cập (chặn HTTP 403 đối với `COOK`); (3) Cơ chế Takedown & Audit Trail: Biên tập viên có quyền gỡ bài vi phạm (chuyển ngay về `NEEDS_CHANGES`, lưu lý do vào `reviewNotes`), đồng thời bài viết lập tức bị ẩn 100% khỏi danh mục công khai (`queryPublishedRecipeBySlug` trả về `null`), ghi nhận đầy đủ `resolvedById` và `resolvedAt`; (4) Luồng nộp lại: Tác giả xem góp ý chi tiết trong Bếp Nhà, chỉnh sửa và nộp lại vào hàng đợi `SUBMITTED`. |
 
+## Quyết định trong AG-33 (`implemented` ngày 21/10/2026)
+
+| ID | Nội dung |
+|---|---|
+| D53 | **Regional Dish Variants, Kitchen Stories & Source Attribution**: Phê duyệt cấu trúc biến thể vùng miền và câu chuyện bếp nhà (Invariants §5.1, §5.2, §8.1, Gate P5): (1) Cấu trúc văn hóa món ăn: Bổ sung 4 trường dữ liệu vào `recipes`: `region` ('NORTH', 'CENTRAL', 'SOUTH', 'GENERAL'), `kitchenStory` (văn bản chia sẻ kỷ niệm, bối cảnh sum vầy gia đình), `sourceAttribution` (trích dẫn cội nguồn, mẹo gia truyền) và `variantOfId` (liên kết món ăn gốc); (2) Invariants Bảo vệ Catalog (§5.1): Danh sách biến thể gợi ý `variants` tại trang chi tiết món ăn CHỈ hiển thị các biến thể ở trạng thái `PUBLISHED`. Bản nháp `DRAFT` hoặc `NEEDS_CHANGES` của tác giả khác tuyệt đối không được xuất hiện; (3) Liên kết hai chiều: Truy vấn món gốc trả về danh sách các biến thể vùng miền; truy vấn bất kỳ biến thể nào cũng nhận diện và liên kết ngược về món gốc và các biến thể anh em; (4) Trải nghiệm giao diện: Tích hợp `KitchenStorySection` với thiết kế ấm áp, trang trọng và `RegionalVariants` cho phép chuyển đổi mượt mà giữa các biến thể ẩm thực Bắc - Trung - Nam; (5) Form đóng góp: Cho phép thành viên cộng đồng bổ sung câu chuyện và trích dẫn nguồn gốc khi đóng góp công thức mới. |
+
 ## Còn mở (`unknown`)
 
 | # | Vấn đề | Quyết định tại |

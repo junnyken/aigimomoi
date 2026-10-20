@@ -16,6 +16,8 @@ import { StepList } from '@/components/recipe/StepList';
 import { NutritionNotice } from '@/components/recipe/NutritionNotice';
 import { BookmarkButton } from '@/components/recipe/BookmarkButton';
 import { ReportButton } from '@/components/recipe/ReportButton';
+import { KitchenStorySection } from '@/components/recipe/KitchenStorySection';
+import { RegionalVariants } from '@/components/recipe/RegionalVariants';
 import { RecipeJsonLd } from '@/components/seo/RecipeJsonLd';
 
 interface PageParams {
@@ -161,7 +163,20 @@ export default async function PublicRecipePage({ params }: PageParams) {
         </aside>
 
         <div className="flex flex-col gap-8">
+          {/* AG-33: Câu chuyện bếp nhà & nguồn gốc */}
+          <KitchenStorySection
+            kitchenStory={recipe.kitchenStory}
+            sourceAttribution={recipe.sourceAttribution}
+            region={recipe.region}
+          />
+
           <StepList steps={recipe.steps} recipeName={recipe.name} />
+
+          {/* AG-33: Biến thể món ăn vùng miền */}
+          <RegionalVariants
+            currentDishName={recipe.dish?.name}
+            variants={recipe.variants}
+          />
 
           {recipe.tags.length > 0 && (
             <section aria-labelledby="tags-heading">

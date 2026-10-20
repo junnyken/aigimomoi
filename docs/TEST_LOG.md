@@ -664,3 +664,24 @@ Kiểm tra tài liệu/skill (script read-only, 8 nhóm):
 | 12 | `tsc --noEmit` sạch lỗi; `npm run build` thành công (exit code 0) | PASS |
 | 13 | DECISIONS.md ghi nhận D52 | PASS |
 
+## AG-33 — Dish Variants & Kitchen Stories — 21/10/2026
+
+**App tests: `test_dish_variants_stories.ts` (15 test cases), regression checks (`test_contributor_submissions.ts`, `test_recipe_moderation.ts`), TypeScript (`tsc --noEmit`), Next.js production build (`npm run build`).**
+
+| # | Kiểm tra | Kết quả |
+|---|---|---|
+| 1 | Invariants Gate P5: Lưu trữ và truy vấn chính xác trường `region` ('NORTH', 'CENTRAL', 'SOUTH', 'GENERAL') | PASS |
+| 2 | Invariants Gate P5: Lưu trữ và truy vấn trọn vẹn `kitchenStory` và `sourceAttribution` | PASS |
+| 3 | Liên kết biến thể (`variantOfId`): Tự động phát hiện liên kết hai chiều giữa món gốc và biến thể địa phương | PASS |
+| 4 | Invariants §5.1: Danh sách biến thể gợi ý chỉ chứa công thức `PUBLISHED`, loại bỏ 100% bản nháp `DRAFT` | PASS |
+| 5 | Đóng góp công thức qua API `/api/contribute/recipes`: Lưu trọn vẹn câu chuyện bếp nhà và nguồn gốc | PASS |
+| 6 | Giao diện: Component `KitchenStorySection` trình bày typography câu chuyện gia đình ấm cúng | PASS |
+| 7 | Giao diện: Component `RegionalVariants` hiển thị thẻ chuyển đổi nhanh giữa các phiên bản vùng miền | PASS |
+| 8 | `test_dish_variants_stories.ts`: 15 PASS, 0 FAIL (exit code 0) | PASS |
+| 9 | `test_recipe_moderation.ts`: 20 PASS, 0 FAIL (không hồi quy AG-32) | PASS |
+| 10 | `test_contributor_submissions.ts`: 19 PASS, 0 FAIL (không hồi quy AG-31) | PASS |
+| 11 | **TỔNG CỘNG CHUỖI P5 (AG-31, 32, 33): 54 PASS, 0 FAIL (100%)** | PASS |
+| 12 | `tsc --noEmit` sạch lỗi; `npm run build` thành công với 43 routes tối ưu (exit code 0) | PASS |
+| 13 | DECISIONS.md ghi nhận D53 | PASS |
+
+

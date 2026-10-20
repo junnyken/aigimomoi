@@ -3,7 +3,7 @@
 // AG-31: Contributor Recipe Edit & Resubmit Page
 // Cho phép tác giả cập nhật bản nháp hoặc chỉnh sửa theo góp ý của ban biên tập rồi nộp lại.
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
 import {
@@ -43,6 +43,20 @@ interface StepRow {
 }
 
 export default function ContributorEditRecipePage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[#FDFBF7] flex items-center justify-center">
+          <p className="text-sm font-medium text-[#7C6A59]">Đang tải dữ liệu công thức...</p>
+        </div>
+      }
+    >
+      <ContributorEditRecipeContent />
+    </Suspense>
+  );
+}
+
+function ContributorEditRecipeContent() {
   const router = useRouter();
   const params = useParams();
   const recipeId = params?.id as string;
