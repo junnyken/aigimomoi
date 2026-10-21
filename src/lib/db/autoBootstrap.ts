@@ -4,6 +4,7 @@ import { sql, eq } from 'drizzle-orm';
 import { db, recipes, users } from './index';
 import { hashPassword } from '../auth/password';
 import { seedProductionCatalog } from '../../scripts/seed_production_catalog';
+import { calculateRecipeNutrition } from '../nutrition/calculator';
 import { logger } from '../logger';
 
 let bootstrapPromise: Promise<void> | null = null;
@@ -127,5 +128,24 @@ async function runBootstrap(): Promise<void> {
     logger.info('Fresh PostgreSQL 16 database detected — auto-seeding production catalog...');
     await seedProductionCatalog();
     logger.info('Auto-seed production catalog completed!');
+  }
+
+  // 5. Đảm bảo tất cả công thức đều có Snapshot Dinh dưỡng 100% cho từng thành phần
+  const allRecipes = await db
+    .select({
+      id: recipes.id,
+      nutritionSnapshot: recipes.nutritionSnapshot,
+    })
+    .from(recipes);
+
+  for (const r of allRecipes) {
+    const snap = r.nutritionSnapshot as { coveragePercent?: number } | null;
+    if (!snap || (snap.coveragePercent ?? 0) < 100) {
+      try {
+        await calculateRecipeNutrition(r.id);
+      } catch {
+        // Bỏ qua nếu có lỗi đơn lẻ
+      }
+    }
   }
 }

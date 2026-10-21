@@ -7,6 +7,38 @@ interface Props {
   recipeName: string;
 }
 
+/** Làm nổi bật các thông số quan trọng (thời gian, độ lửa, định lượng) trong câu hướng dẫn nấu */
+function renderHighlightedInstruction(text: string) {
+  const pattern =
+    /(\b\d+(?:[.,–-]\d+)?\s*(?:phút|giây|giờ|tiếng|g|kg|ml|lít|muỗng canh|muỗng cà phê|muỗng|thìa|chén|bát|củ|trái|quả|nhánh|tép|lát|khúc|cm)\b|lửa lớn|lửa vừa|lửa nhỏ|lửa liu riu|sôi bùng)/gi;
+
+  const parts = text.split(pattern);
+  return parts.map((part, i) => {
+    if (!part) return null;
+    if (pattern.test(part)) {
+      pattern.lastIndex = 0;
+      const lower = part.toLowerCase();
+      const isHeat = lower.includes('lửa') || lower.includes('sôi');
+      const isTime = lower.includes('phút') || lower.includes('giây') || lower.includes('giờ') || lower.includes('tiếng');
+      return (
+        <strong
+          key={i}
+          className={
+            isHeat
+              ? 'font-bold text-rose-700 bg-rose-50 px-1.5 py-0.5 rounded-md'
+              : isTime
+              ? 'font-bold text-amber-800 bg-amber-50 px-1.5 py-0.5 rounded-md'
+              : 'font-bold text-[var(--color-brand-primary)] bg-[var(--color-brand-light)]/70 px-1.5 py-0.5 rounded-md'
+          }
+        >
+          {part}
+        </strong>
+      );
+    }
+    return part;
+  });
+}
+
 /** Gom các bước liên tiếp cùng giai đoạn, giữ nguyên thứ tự gốc. */
 function groupByPhase(steps: PublicRecipeStep[]) {
   const groups: Array<{ phase: string; steps: PublicRecipeStep[] }> = [];
@@ -125,7 +157,9 @@ export function StepList({ steps, recipeName }: Props) {
                           Bước {step.stepNumber} · {group.phase}
                         </span>
                       </div>
-                      <p className="whitespace-pre-line leading-relaxed text-[var(--color-text-primary)]">{step.instruction}</p>
+                      <p className="whitespace-pre-line leading-relaxed text-[var(--color-text-primary)]">
+                        {renderHighlightedInstruction(step.instruction)}
+                      </p>
 
                       {(step.timerSeconds || step.tipText) && (
                         <div className="mt-3 flex flex-col gap-2">

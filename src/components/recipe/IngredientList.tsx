@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ShoppingBasket } from 'lucide-react';
+import { ShoppingBasket, Flame } from 'lucide-react';
 import type { PublicRecipeIngredient } from '@/lib/recipes/publicQueries';
+import type { RecipeNutritionSnapshot, IngredientNutritionDetail } from '@/lib/nutrition/types';
 import { scaleRecipeIngredients, clampServings, type ScaledIngredient } from '@/lib/recipes/scaling';
 import { ServingSelector } from './ServingSelector';
 
@@ -10,12 +11,14 @@ interface IngredientListProps {
   ingredients: PublicRecipeIngredient[];
   baseServings: number;
   initialServings?: number;
+  nutritionSnapshot?: RecipeNutritionSnapshot | null;
 }
 
 export function IngredientList({
   ingredients,
   baseServings,
   initialServings,
+  nutritionSnapshot,
 }: IngredientListProps) {
   const safeBase = clampServings(baseServings, 4);
   const safeInitial = initialServings ? clampServings(initialServings, safeBase) : safeBase;
@@ -53,6 +56,16 @@ export function IngredientList({
   const hasManualAdjust = ingredients.some((i) => i.scalePolicy === 'MANUAL_ADJUST');
   const hasFixed = ingredients.some((i) => i.scalePolicy === 'FIXED');
 
+  // Map tra cứu thông số Calo & Dinh dưỡng của từng nguyên liệu từ nutritionSnapshot
+  const detailByName = new Map<string, IngredientNutritionDetail>();
+  if (nutritionSnapshot?.ingredientsDetail) {
+    for (const d of nutritionSnapshot.ingredientsDetail) {
+      detailByName.set(d.ingredientName.toLowerCase().trim(), d);
+    }
+  }
+
+  const scaleFactor = safeBase > 0 ? servings / safeBase : 1;
+
   return (
     <section
       aria-labelledby="ingredients-heading"
@@ -61,7 +74,7 @@ export function IngredientList({
       <div className="flex items-center justify-between gap-3">
         <h2 id="ingredients-heading" className="text-lg font-bold text-[var(--color-text-primary)] flex items-center gap-2">
           <ShoppingBasket className="w-5 h-5 text-[var(--color-brand-primary)]" aria-hidden="true" />
-          <span>Nguyên liệu</span>
+          <span>Nguyên liệu & Calo</span>
         </h2>
         <button
           type="button"
@@ -89,16 +102,26 @@ export function IngredientList({
         onChange={(val) => setServings(val)}
       />
 
-      {/* Danh sách nguyên liệu chính */}
+      {/* Danh sách nguyên liệu chính kèm Calo từng thành phần */}
       <div className="pt-2">
-        <IngredientRows items={required} isScaledDifferent={servings !== safeBase} />
+        <IngredientRows
+          items={required}
+          isScaledDifferent={servings !== safeBase}
+          detailByName={detailByName}
+          scaleFactor={scaleFactor}
+        />
 
         {optional.length > 0 && (
           <>
             <h3 className="mt-5 mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
               Tuỳ chọn thêm
             </h3>
-            <IngredientRows items={optional} isScaledDifferent={servings !== safeBase} />
+            <IngredientRows
+              items={optional}
+              isScaledDifferent={servings !== safeBase}
+              detailByName={detailByName}
+              scaleFactor={scaleFactor}
+            />
           </>
         )}
       </div>
@@ -123,42 +146,91 @@ export function IngredientList({
 function IngredientRows({
   items,
   isScaledDifferent,
+  detailByName,
+  scaleFactor,
 }: {
   items: ScaledIngredient[];
   isScaledDifferent: boolean;
+  detailByName: Map<string, IngredientNutritionDetail>;
+  scaleFactor: number;
 }) {
   return (
     <ul className="divide-y divide-[var(--color-border-subtle)]">
-      {items.map((ing) => (
-        <li key={ing.id} className="flex items-baseline justify-between gap-4 py-2.5">
-          <div className="min-w-0">
-            <span className="font-medium text-[var(--color-text-primary)]">{ing.name}</span>
-            {ing.scalePolicy === 'MANUAL_ADJUST' && (
-              <span className="text-[var(--color-accent-text)] font-semibold ml-0.5" title="Nêm theo khẩu vị">*</span>
-            )}
-            {ing.scalePolicy === 'FIXED' && isScaledDifferent && (
-              <span className="text-[var(--color-brand-primary)] text-[10px] font-semibold ml-1 px-1 py-0.2 rounded bg-[var(--color-brand-primary)]/10" title="Giữ nguyên định lượng">
-                cố định
-              </span>
-            )}
-            {ing.preparation && (
-              <span className="block text-xs text-[var(--color-text-muted)] mt-0.5">{ing.preparation}</span>
-            )}
-          </div>
+      {items.map((ing) => {
+        const nutDetail = detailByName.get(ing.name.toLowerCase().trim());
+        const effectiveFactor = ing.scalePolicy === 'FIXED' ? 1 : scaleFactor;
+        const scaledKcal =
+          nutDetail?.nutrients?.calories !== undefined
+            ? Math.round(nutDetail.nutrients.calories * effectiveFactor)
+            : null;
+        const scaledProtein =
+          nutDetail?.nutrients?.protein !== undefined
+            ? Math.round(nutDetail.nutrients.protein * effectiveFactor * 10) / 10
+            : null;
+        const scaledFat =
+          nutDetail?.nutrients?.fat !== undefined
+            ? Math.round(nutDetail.nutrients.fat * effectiveFactor * 10) / 10
+            : null;
+        const scaledEdibleG =
+          nutDetail?.edibleGrams !== undefined
+            ? Math.round(nutDetail.edibleGrams * effectiveFactor)
+            : null;
 
-          <div className="shrink-0 text-right">
-            <span
-              className={`tabular-nums text-sm font-semibold transition-colors ${
-                ing.isScaled
-                  ? 'text-[var(--color-brand-primary)]'
-                  : 'text-[var(--color-text-secondary)]'
-              }`}
-            >
-              {ing.formattedAmount} {ing.unit}
-            </span>
-          </div>
-        </li>
-      ))}
+        return (
+          <li key={ing.id} className="flex items-start justify-between gap-3 py-3">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center flex-wrap gap-1.5">
+                <span className="font-semibold text-[var(--color-text-primary)]">{ing.name}</span>
+                {ing.scalePolicy === 'MANUAL_ADJUST' && (
+                  <span className="text-[var(--color-accent-text)] font-semibold" title="Nêm theo khẩu vị">*</span>
+                )}
+                {ing.scalePolicy === 'FIXED' && isScaledDifferent && (
+                  <span className="text-[var(--color-brand-primary)] text-[10px] font-semibold px-1.5 py-0.5 rounded bg-[var(--color-brand-primary)]/10" title="Giữ nguyên định lượng">
+                    cố định
+                  </span>
+                )}
+              </div>
+
+              {ing.preparation && (
+                <span className="block text-xs text-[var(--color-text-muted)] mt-0.5">{ing.preparation}</span>
+              )}
+
+              {/* Hiển thị thông số dinh dưỡng chi tiết của từng thành phần */}
+              {scaledKcal !== null && (
+                <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-[var(--color-text-secondary)]">
+                  <span className="inline-flex items-center gap-0.5 font-semibold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded-md border border-amber-200/70">
+                    <Flame className="w-3 h-3 text-amber-500" aria-hidden="true" />
+                    {scaledKcal} kcal
+                  </span>
+                  {scaledProtein !== null && scaledProtein > 0 && (
+                    <span>Đạm {scaledProtein}g</span>
+                  )}
+                  {scaledFat !== null && scaledFat > 0 && (
+                    <span>· Béo {scaledFat}g</span>
+                  )}
+                  {scaledEdibleG !== null && scaledEdibleG > 0 && (
+                    <span className="text-[var(--color-text-muted)]">
+                      (thực ăn ~{scaledEdibleG}g)
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="shrink-0 text-right">
+              <span
+                className={`tabular-nums text-sm font-bold transition-colors ${
+                  ing.isScaled
+                    ? 'text-[var(--color-brand-primary)]'
+                    : 'text-[var(--color-text-primary)]'
+                }`}
+              >
+                {ing.formattedAmount} {ing.unit}
+              </span>
+            </div>
+          </li>
+        );
+      })}
     </ul>
   );
 }

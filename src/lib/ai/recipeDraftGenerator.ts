@@ -8,6 +8,7 @@ import { db } from '../db';
 import { ingredients, recipes, recipeIngredients, cookingSteps, dishes } from '../db/schema';
 import { eq, ilike } from 'drizzle-orm';
 import { aiGateway } from './gateway';
+import { calculateRecipeNutrition } from '../nutrition/calculator';
 
 export interface AiRecipeDraftParams {
   dishTitle?: string;
@@ -489,7 +490,7 @@ export async function saveAiDraftToDatabase(
     finalSlug = `${baseSlug}-${counter++}`;
   }
 
-  return await db.transaction(async (tx) => {
+  const saved = await db.transaction(async (tx) => {
     // 1. Tạo hoặc lấy dish
     let dishId: number | null = null;
     const dishSlug = slugify(draft.dishName) || finalSlug;
@@ -573,4 +574,13 @@ export async function saveAiDraftToDatabase(
       slug: insertedRecipe.slug,
     };
   });
+
+  // Tự động tính toán ngay thông số Calo & Dinh dưỡng cho từng thành phần của công thức mới
+  try {
+    await calculateRecipeNutrition(saved.recipeId);
+  } catch {
+    // Không chặn lưu bản nháp nếu có lỗi phụ
+  }
+
+  return saved;
 }

@@ -329,10 +329,14 @@ function FullRecipeBody({ recipe }: { recipe: PublicRecipe }) {
         </a>
       </nav>
 
-      <div className="grid gap-8 lg:grid-cols-[minmax(0,360px)_1fr] lg:items-start">
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,420px)_1fr] lg:items-start">
         <aside className="flex flex-col gap-4 lg:sticky lg:top-24">
           <PantryCheckWidget recipeId={recipe.id} />
-          <IngredientList ingredients={recipe.ingredients} baseServings={recipe.baseServings} />
+          <IngredientList
+            ingredients={recipe.ingredients}
+            baseServings={recipe.baseServings}
+            nutritionSnapshot={recipe.nutritionSnapshot}
+          />
           <NutritionNotice
             nutritionStatus={recipe.nutritionStatus}
             caloriesPerServing={recipe.caloriesPerServing}
