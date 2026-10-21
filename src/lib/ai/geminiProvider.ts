@@ -15,7 +15,7 @@ export class GeminiProvider implements AiProvider {
       process.env.GEMINI_API_KEY ||
       process.env.AI_GEMINI_API_KEY ||
       process.env.GOOGLE_GENERATIVE_AI_API_KEY;
-    this.modelName = modelName || process.env.GEMINI_MODEL || 'gemini-3.8-flash';
+    this.modelName = modelName || process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite';
   }
 
   isAvailable(): boolean {
@@ -42,9 +42,9 @@ export class GeminiProvider implements AiProvider {
       generationConfig: {
         temperature: options.temperature ?? 0.3,
         maxOutputTokens: maxTokens,
-        thinkingConfig: {
-          thinkingBudget: 0,
-        },
+        ...(!this.modelName.includes('lite')
+          ? { thinkingConfig: { thinkingBudget: 0 } }
+          : {}),
         ...(options.jsonMode ? { responseMimeType: 'application/json' } : {}),
       },
     };
