@@ -220,21 +220,21 @@ export default function HomePage() {
   return (
     <div className="flex flex-col gap-12">
       {/* TẦNG 1: Hero Section — Warm Kitchen */}
-      <section className="text-center py-8 sm:py-12 px-4 bg-gradient-to-b from-[var(--color-brand-light)]/70 via-[var(--color-accent-light)]/50 to-[var(--color-surface-white)] border border-[var(--color-border-subtle)] rounded-3xl shadow-xs">
-        <div className="max-w-2xl mx-auto flex flex-col items-center">
+      <section className="text-center py-8 sm:py-12 px-4 sm:px-8 lg:px-12 bg-gradient-to-b from-[var(--color-brand-light)]/70 via-[var(--color-accent-light)]/50 to-[var(--color-surface-white)] border border-[var(--color-border-subtle)] rounded-3xl shadow-xs">
+        <div className="max-w-5xl mx-auto flex flex-col items-center">
           <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-semibold bg-[var(--color-brand-light)] text-[var(--color-brand-primary)] border border-[var(--color-brand-border)]/70 mb-3">
             <ChefHat className="w-3.5 h-3.5 text-[var(--color-accent-primary)]" />
             <span>Cơm nhà chuẩn vị • Bớt nghĩ hôm nay ăn gì</span>
           </span>
-          <h1 className="text-3xl sm:text-4xl font-bold text-[var(--color-brand-primary)] tracking-tight mb-3">
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[var(--color-brand-primary)] tracking-tight mb-3">
             Hôm nay nhà mình ăn gì?
           </h1>
-          <p className="text-base text-[var(--color-text-secondary)] mb-6 max-w-lg leading-relaxed">
+          <p className="text-base sm:text-lg text-[var(--color-text-secondary)] mb-6 max-w-3xl leading-relaxed">
             Từ món mặn đưa cơm, canh thanh mát, rau xào xanh giòn đến nước chấm gia truyền và thực đơn chuẩn Calo — tất cả đã cân chỉnh định lượng rõ ràng cho bếp Việt.
           </p>
 
           {/* Quick search input leading to /mon-an */}
-          <form action="/mon-an" method="GET" className="w-full max-w-lg mb-4">
+          <form action="/mon-an" method="GET" className="w-full max-w-2xl mb-5">
             <div className="relative flex items-center">
               <input
                 type="text"
@@ -730,7 +730,7 @@ async function LowCalorieHighlightShelf() {
   const lowCalResult = await searchPublishedRecipes({
     maxCalories: 400,
     sort: "calories_asc",
-    limit: 3,
+    limit: 4,
   });
 
   if (lowCalResult.items.length === 0) return null;
@@ -754,7 +754,7 @@ async function LowCalorieHighlightShelf() {
           Xem thêm món giảm cân &rarr;
         </Link>
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         {lowCalResult.items.map((recipe) => (
           <RecipeCard key={recipe.slug} recipe={recipe} />
         ))}
@@ -766,10 +766,10 @@ async function LowCalorieHighlightShelf() {
 async function CategorizedShelvesShowcase() {
   await connection();
   const [allRecipes, mainRes, soupRes, sideRes] = await Promise.all([
-    listPublishedRecipes(9),
-    searchPublishedRecipes({ role: "MAIN", limit: 3 }),
-    searchPublishedRecipes({ role: "SOUP", limit: 3 }),
-    searchPublishedRecipes({ role: "SIDE", limit: 3 }),
+    listPublishedRecipes(12),
+    searchPublishedRecipes({ role: "MAIN", limit: 4 }),
+    searchPublishedRecipes({ role: "SOUP", limit: 4 }),
+    searchPublishedRecipes({ role: "SIDE", limit: 4 }),
   ]);
 
   if (allRecipes.length === 0) {
@@ -829,7 +829,7 @@ async function CategorizedShelvesShowcase() {
               <span aria-hidden="true">&rarr;</span>
             </Link>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
             {shelf.items.map((recipe) => (
               <RecipeCard key={recipe.slug} recipe={recipe} />
             ))}
@@ -857,7 +857,7 @@ async function CategorizedShelvesShowcase() {
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
           {allRecipes.map((recipe) => (
             <RecipeCard key={recipe.slug} recipe={recipe} />
           ))}

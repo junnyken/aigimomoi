@@ -208,7 +208,7 @@ export default function ReviewQueuePage() {
   return (
     <div className="min-h-screen bg-[#FAF7F0] text-[#2D2A26] pb-16">
       <header className="bg-white border-b border-[#EADBC8] sticky top-0 z-30 shadow-xs">
-        <div className="max-w-6xl mx-auto px-4 py-4 flex flex-wrap items-center justify-between gap-4">
+        <div className="w-full mx-auto px-4 py-4 flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <Link
               href="/editor/recipes"
@@ -229,7 +229,7 @@ export default function ReviewQueuePage() {
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-4 pt-6 space-y-4">
+      <main className="w-full mx-auto px-4 pt-6 space-y-4">
         {role && !isAdmin && (
           <div className="bg-amber-50 border border-amber-200 text-amber-900 p-4 rounded-2xl flex items-start gap-3 text-sm">
             <Lock className="w-5 h-5 shrink-0 text-amber-700 mt-0.5" />

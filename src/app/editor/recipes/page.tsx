@@ -172,7 +172,7 @@ export default function EditorRecipesPage() {
     <div className="min-h-screen bg-[#FAF7F0] text-[#2D2A26] pb-16">
       {/* Top Header */}
       <header className="bg-white border-b border-[#EADBC8] sticky top-0 z-30 shadow-xs">
-        <div className="max-w-6xl mx-auto px-4 py-4 flex flex-wrap items-center justify-between gap-4">
+        <div className="w-full mx-auto px-4 sm:px-6 py-4 flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <Link
               href="/"
@@ -236,7 +236,7 @@ export default function EditorRecipesPage() {
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-4 pt-6 space-y-6">
+      <main className="w-full mx-auto px-4 sm:px-6 pt-6 space-y-6">
         {/* Metric Cards */}
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
           <div className="bg-white p-4 rounded-2xl border border-[#EADBC8] shadow-xs">
@@ -345,7 +345,7 @@ export default function EditorRecipesPage() {
             </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             {recipes.map((recipe) => {
               const roleMeta = ROLE_LABELS[recipe.role] || {
                 label: recipe.role,

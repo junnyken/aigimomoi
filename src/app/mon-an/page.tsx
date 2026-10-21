@@ -48,7 +48,7 @@ export default function SearchPage({ searchParams }: SearchPageProps) {
     <div className="w-full flex flex-col gap-6">
       {/* 1. Page Header (Static Shell - Prerendered) */}
       <section className="bg-gradient-to-r from-[var(--color-brand-primary)]/10 to-[var(--color-accent-primary)]/10 p-6 md:p-8 rounded-3xl border border-[var(--color-border-subtle)]">
-        <div className="max-w-2xl flex flex-col gap-3">
+        <div className="max-w-4xl flex flex-col gap-3">
           <div className="inline-flex items-center gap-2 text-xs font-semibold text-[var(--color-brand-primary)] uppercase tracking-wider">
             <UtensilsCrossed className="w-4 h-4" />
             <span>Món ngon mỗi ngày</span>
@@ -62,7 +62,7 @@ export default function SearchPage({ searchParams }: SearchPageProps) {
         </div>
 
         {/* Thanh tìm kiếm chính */}
-        <div className="mt-5 max-w-xl">
+        <div className="mt-5 max-w-2xl">
           <Suspense fallback={<div className="h-10 bg-[var(--color-surface-white)] rounded-xl animate-pulse" />}>
             <SearchHeaderInput searchParams={searchParams} />
           </Suspense>

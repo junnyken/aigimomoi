@@ -241,7 +241,7 @@ export default function ContributorDashboardPage() {
     <div className="min-h-screen bg-[#FAF7F0] text-[#2D2A26] pb-24">
       {/* Header */}
       <header className="bg-white border-b border-[#EADBC8] sticky top-0 z-30 shadow-xs">
-        <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
+        <div className="w-full mx-auto px-4 py-4 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-[#3F6240]/10 text-[#3F6240] flex items-center justify-center">
               <ChefHat className="w-6 h-6" />
@@ -264,7 +264,7 @@ export default function ContributorDashboardPage() {
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-4 pt-6 space-y-6">
+      <main className="w-full mx-auto px-4 pt-6 space-y-6">
         {toastMsg && (
           <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs sm:text-sm font-semibold flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0" />

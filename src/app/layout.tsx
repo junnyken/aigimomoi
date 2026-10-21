@@ -31,7 +31,7 @@ export default function RootLayout({
         <ServiceWorkerRegister />
         {/* Sticky Header */}
         <header className="sticky top-0 z-40 bg-[var(--color-surface-white)] border-b border-[var(--color-border-base)] shadow-xs">
-          <div className="max-w-[1200px] mx-auto px-4 py-3 flex items-center justify-between gap-3">
+          <div className="max-w-[1680px] w-full mx-auto px-4 sm:px-6 lg:px-10 py-3 flex items-center justify-between gap-3">
             <Link href="/" className="flex flex-col no-underline shrink-0">
               <div className="text-2xl font-bold tracking-tight leading-none">
                 <span className="text-[var(--color-brand-primary)]">ĂN GÌ</span>
@@ -51,7 +51,7 @@ export default function RootLayout({
         </header>
 
         {/* Main Page Content (có padding bottom trên mobile để không cấn bottom bar) */}
-        <main className="flex-1 max-w-[1200px] w-full mx-auto px-4 py-6 pb-24 md:pb-6">
+        <main className="flex-1 max-w-[1680px] w-full mx-auto px-4 sm:px-6 lg:px-10 py-6 pb-24 md:pb-8">
           {children}
         </main>
 
@@ -60,7 +60,7 @@ export default function RootLayout({
 
         {/* Footer */}
         <footer className="bg-[var(--color-surface-white)] border-t border-[var(--color-border-base)] py-8 text-center mt-auto pb-28 md:pb-8">
-          <div className="max-w-[1200px] mx-auto px-4 space-y-4">
+          <div className="max-w-[1680px] w-full mx-auto px-4 sm:px-6 lg:px-10 space-y-4">
             <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs font-semibold text-[var(--color-text-secondary)]">
               <Link href="/" className="hover:text-[var(--color-brand-primary)]">Trang chủ</Link>
               <Link href="/mon-an" className="hover:text-[var(--color-brand-primary)]">Món ăn</Link>

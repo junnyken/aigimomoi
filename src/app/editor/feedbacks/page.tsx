@@ -104,7 +104,7 @@ export default function EditorialFeedbacksPage() {
     <div className="min-h-screen bg-[var(--color-surface-subtle)] pb-16">
       {/* Header */}
       <div className="bg-[var(--color-surface-white)] border-b border-[var(--color-border-base)] sticky top-0 z-20">
-        <div className="max-w-6xl mx-auto px-4 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="w-full mx-auto px-4 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <Link
               href="/editor/recipes"
@@ -142,7 +142,7 @@ export default function EditorialFeedbacksPage() {
         </div>
 
         {/* Filter Tabs */}
-        <div className="max-w-6xl mx-auto px-4 flex gap-2 border-t border-[var(--color-border-base)] pt-2 pb-2">
+        <div className="w-full mx-auto px-4 flex gap-2 border-t border-[var(--color-border-base)] pt-2 pb-2">
           {(['PENDING', 'APPROVED', 'REJECTED', 'ALL'] as const).map((tab) => (
             <button
               key={tab}
@@ -163,7 +163,7 @@ export default function EditorialFeedbacksPage() {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-6xl mx-auto px-4 mt-6">
+      <div className="w-full mx-auto px-4 mt-6">
         {loading ? (
           <div className="py-20 flex flex-col items-center justify-center text-[var(--color-text-secondary)]">
             <Loader2 className="w-8 h-8 animate-spin text-[var(--color-brand-primary)] mb-3" />

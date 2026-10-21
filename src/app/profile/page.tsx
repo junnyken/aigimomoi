@@ -172,8 +172,8 @@ export default function ProfilePage() {
   const userRole = roleLabels[user.role] || roleLabels.COOK;
 
   return (
-    <div className="min-h-screen bg-[#faf8f5] py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto space-y-6">
+    <div className="min-h-screen bg-[#faf8f5] py-6 px-2 sm:px-4">
+      <div className="w-full mx-auto space-y-6">
         {/* Header navigation bar */}
         <div className="flex items-center justify-between pb-4 border-b border-stone-200">
           <Link href="/" className="inline-flex items-center gap-2">
