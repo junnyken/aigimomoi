@@ -43,7 +43,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const isValid = await verifyPassword(password, user.passwordHash);
+    let isValid = await verifyPassword(password, user.passwordHash);
+    if (!isValid && typeof password === 'string' && password.trim() !== password) {
+      isValid = await verifyPassword(password.trim(), user.passwordHash);
+    }
     if (!isValid) {
       return NextResponse.json(
         { error: 'Email hoặc mật khẩu không chính xác' },
