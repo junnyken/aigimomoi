@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
 import { LogIn, ShieldCheck } from 'lucide-react';
 
 interface AuthUser {
@@ -13,7 +12,6 @@ interface AuthUser {
 }
 
 export function UserNavButton() {
-  const pathname = usePathname();
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -34,7 +32,7 @@ export function UserNavButton() {
       }
     }
     checkAuth();
-  }, [pathname]);
+  }, []);
 
   if (loading) {
     return (
