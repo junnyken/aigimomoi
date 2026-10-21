@@ -210,8 +210,13 @@ async function runDataHonestyTests() {
 
   const searchQueriesPath = path.join(rootDir, 'src/lib/recipes/searchQueries.ts');
   const searchQueriesContent = fs.readFileSync(searchQueriesPath, 'utf8');
+  // R7: tìm kiếm dùng chung mapPublicCardRow (publicQueries.ts) — hàm này phải tính isIllustration
+  const mapperComputesIllustration = /export function mapPublicCardRow[\s\S]*?isIllustrationImage\(r\.heroImage\)/.test(
+    publicQueriesContent
+  );
   assert(
-    searchQueriesContent.includes('isIllustrationImage(r.heroImage)'),
+    searchQueriesContent.includes('isIllustrationImage(r.heroImage)') ||
+      (searchQueriesContent.includes('rows.map(mapPublicCardRow)') && mapperComputesIllustration),
     'searchPublishedRecipes tính toán isIllustration tự động'
   );
   assert(

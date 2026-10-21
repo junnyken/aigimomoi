@@ -3,8 +3,9 @@
 // không id người duyệt (D35). Lớp cache Next.js nằm ở `public.ts`.
 import { and, asc, desc, eq, inArray } from 'drizzle-orm';
 import { db } from '@/lib/db';
-import { recipes, recipeIngredients, cookingSteps } from '@/lib/db/schema';
+import { recipes, recipeIngredients, cookingSteps, users, creatorProfiles } from '@/lib/db/schema';
 import { isIllustrationImage } from './labels';
+import { recipeSourceFromProvenance, type RecipeSource } from './source';
 import type { RecipeNutritionSnapshot } from '@/lib/nutrition/types';
 
 const SLUG_PATTERN = /^[a-z0-9]+(?:-+[a-z0-9]+)*$/;
@@ -94,6 +95,10 @@ export interface PublicRecipe {
   publishedAt: string | null;
   dish: { name: string; aliases: string[] } | null;
   authorName: string | null;
+  /** R7: Bếp Mom (biên tập) hay Chợ công thức (cộng đồng) */
+  source: RecipeSource;
+  /** R7: slug hồ sơ công khai người nấu (chỉ với món cộng đồng có hồ sơ) */
+  creatorSlug: string | null;
   ingredients: PublicRecipeIngredient[];
   steps: PublicRecipeStep[];
   tags: PublicRecipeTag[];
@@ -110,6 +115,74 @@ export interface PublicRecipeCard {
   heroImage: string | null;
   isIllustration: boolean;
   isCookTested: boolean;
+  source: RecipeSource;
+  creatorSlug: string | null;
+  authorName: string | null;
+}
+
+/** Cột dùng chung cho mọi truy vấn thẻ món (kèm leftJoin users + creator_profiles). */
+export const publicCardColumns = {
+  slug: recipes.slug,
+  name: recipes.name,
+  shortDescription: recipes.shortDescription,
+  role: recipes.role,
+  baseServings: recipes.baseServings,
+  prepTimeMinutes: recipes.prepTimeMinutes,
+  cookTimeMinutes: recipes.cookTimeMinutes,
+  difficulty: recipes.difficulty,
+  heroImage: recipes.heroImage,
+  isCookTested: recipes.isCookTested,
+  provenance: recipes.provenance,
+  authorName: users.displayName,
+  creatorSlug: creatorProfiles.slug,
+  creatorIsPublic: creatorProfiles.isPublic,
+};
+
+export interface PublicCardRow {
+  slug: string;
+  name: string;
+  shortDescription: string;
+  role: string;
+  baseServings: number;
+  prepTimeMinutes: number;
+  cookTimeMinutes: number;
+  difficulty: string;
+  heroImage: string | null;
+  isCookTested: boolean;
+  provenance: string;
+  authorName: string | null;
+  creatorSlug: string | null;
+  creatorIsPublic: boolean | null;
+}
+
+/** Truy vấn gốc cho thẻ món: recipes LEFT JOIN users LEFT JOIN creator_profiles. */
+export function selectPublicCards() {
+  return db
+    .select(publicCardColumns)
+    .from(recipes)
+    .leftJoin(users, eq(recipes.authorId, users.id))
+    .leftJoin(creatorProfiles, eq(creatorProfiles.userId, recipes.authorId));
+}
+
+export function mapPublicCardRow(r: PublicCardRow): PublicRecipeCard {
+  const source = recipeSourceFromProvenance(r.provenance);
+  return {
+    slug: r.slug,
+    name: r.name,
+    shortDescription: r.shortDescription,
+    role: r.role,
+    baseServings: r.baseServings,
+    totalTimeMinutes: (r.prepTimeMinutes ?? 0) + (r.cookTimeMinutes ?? 0),
+    difficulty: r.difficulty,
+    heroImage: safeImageSrc(r.heroImage),
+    isIllustration: isIllustrationImage(r.heroImage),
+    // Bất biến R7: món cộng đồng không bao giờ hiển thị "Đã nấu thử" của Bếp Mom
+    isCookTested: source === 'EDITORIAL' ? r.isCookTested : false,
+    source,
+    // Chỉ món cộng đồng mới dẫn về hồ sơ người nấu; hồ sơ phải đang công khai
+    creatorSlug: source === 'COMMUNITY' && r.creatorIsPublic ? r.creatorSlug : null,
+    authorName: source === 'COMMUNITY' ? r.authorName : null,
+  };
 }
 
 export async function queryPublishedRecipeBySlug(slug: string): Promise<PublicRecipe | null> {
@@ -140,10 +213,14 @@ export async function queryPublishedRecipeBySlug(slug: string): Promise<PublicRe
       kitchenStory: true,
       sourceAttribution: true,
       variantOfId: true,
+      provenance: true,
     },
     with: {
       dish: { columns: { name: true }, with: { aliases: { columns: { aliasName: true } } } },
-      author: { columns: { displayName: true } },
+      author: {
+        columns: { displayName: true },
+        with: { creatorProfile: { columns: { slug: true, isPublic: true } } },
+      },
       ingredients: {
         orderBy: [asc(recipeIngredients.sortOrder), asc(recipeIngredients.id)],
         columns: { id: true, amount: true, unit: true, scalePolicy: true, preparation: true, isOptional: true },
@@ -196,6 +273,9 @@ export async function queryPublishedRecipeBySlug(slug: string): Promise<PublicRe
     heroImage: safeImageSrc(v.heroImage),
   }));
 
+  const source = recipeSourceFromProvenance(row.provenance);
+  const creatorProfile = row.author?.creatorProfile;
+
   return {
     id: row.id,
     slug: row.slug,
@@ -217,12 +297,14 @@ export async function queryPublishedRecipeBySlug(slug: string): Promise<PublicRe
     heroImage: safeImageSrc(row.heroImage),
     isIllustration: isIllustrationImage(row.heroImage),
     isEditorialReviewed: row.isEditorialReviewed,
-    isCookTested: row.isCookTested,
+    isCookTested: source === 'EDITORIAL' ? row.isCookTested : false,
     isNutritionVerified: row.isNutritionVerified,
     versionNumber: row.versionNumber,
     publishedAt: row.publishedAt ? row.publishedAt.toISOString() : null,
     dish: row.dish ? { name: row.dish.name, aliases: row.dish.aliases.map((a) => a.aliasName) } : null,
     authorName: row.author?.displayName ?? null,
+    source,
+    creatorSlug: source === 'COMMUNITY' && creatorProfile?.isPublic ? creatorProfile.slug : null,
     ingredients: row.ingredients.map((ri) => ({
       id: ri.id,
       name: ri.ingredient.name,
@@ -297,57 +379,21 @@ export async function queryPublicSlugResolution(slug: string): Promise<PublicSlu
 
 export async function queryPublishedRecipeCards(limit = 12): Promise<PublicRecipeCard[]> {
   const safeLimit = Math.min(Math.max(Math.trunc(limit) || 12, 1), 48);
-  const rows = await db
-    .select({
-      slug: recipes.slug,
-      name: recipes.name,
-      shortDescription: recipes.shortDescription,
-      role: recipes.role,
-      baseServings: recipes.baseServings,
-      prepTimeMinutes: recipes.prepTimeMinutes,
-      cookTimeMinutes: recipes.cookTimeMinutes,
-      difficulty: recipes.difficulty,
-      heroImage: recipes.heroImage,
-      isCookTested: recipes.isCookTested,
-    })
-    .from(recipes)
+  const rows = await selectPublicCards()
     .where(eq(recipes.status, 'PUBLISHED'))
     .orderBy(desc(recipes.publishedAt), desc(recipes.id))
     .limit(safeLimit);
 
-  return rows.map(({ prepTimeMinutes, cookTimeMinutes, heroImage, ...rest }) => ({
-    ...rest,
-    totalTimeMinutes: prepTimeMinutes + cookTimeMinutes,
-    heroImage: safeImageSrc(heroImage),
-    isIllustration: isIllustrationImage(heroImage),
-  }));
+  return rows.map(mapPublicCardRow);
 }
 
 export async function queryPublishedRecipeCardsBySlugs(slugs: string[]): Promise<PublicRecipeCard[]> {
   const validSlugs = slugs.filter(isValidPublicSlug).slice(0, 100);
   if (validSlugs.length === 0) return [];
 
-  const rows = await db
-    .select({
-      slug: recipes.slug,
-      name: recipes.name,
-      shortDescription: recipes.shortDescription,
-      role: recipes.role,
-      baseServings: recipes.baseServings,
-      prepTimeMinutes: recipes.prepTimeMinutes,
-      cookTimeMinutes: recipes.cookTimeMinutes,
-      difficulty: recipes.difficulty,
-      heroImage: recipes.heroImage,
-      isCookTested: recipes.isCookTested,
-    })
-    .from(recipes)
+  const rows = await selectPublicCards()
     .where(and(inArray(recipes.slug, validSlugs), eq(recipes.status, 'PUBLISHED')));
 
-  return rows.map(({ prepTimeMinutes, cookTimeMinutes, heroImage, ...rest }) => ({
-    ...rest,
-    totalTimeMinutes: prepTimeMinutes + cookTimeMinutes,
-    heroImage: safeImageSrc(heroImage),
-    isIllustration: isIllustrationImage(heroImage),
-  }));
+  return rows.map(mapPublicCardRow);
 }
 

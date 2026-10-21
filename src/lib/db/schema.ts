@@ -11,8 +11,10 @@ import {
   index,
   uniqueIndex,
   jsonb,
+  check,
   type AnyPgColumn,
 } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 
 // ============================================================================
 // 1. ENUMS (Invariants §5.1, §5.2, §5.3, §5.4)
@@ -181,6 +183,11 @@ export const recipes = pgTable('recipes', {
   index('recipes_revision_of_idx').on(table.revisionOfId),
   index('recipes_variant_of_idx').on(table.variantOfId),
   index('recipes_region_idx').on(table.region),
+  // R7: nhãn "Đã nấu thử" (Bếp Mom) không bao giờ gắn cho món Chợ công thức
+  check(
+    'recipes_community_not_cook_tested',
+    sql`${table.provenance} <> 'COMMUNITY_SUBMITTED' OR ${table.isCookTested} = false`
+  ),
 ]);
 
 // Ingredients (Từ điển nguyên liệu chuẩn hóa)
@@ -318,6 +325,30 @@ export const recipeCookedFeedbacks = pgTable('recipe_cooked_feedbacks', {
   index('recipe_cooked_feedbacks_status_idx').on(table.status),
   index('recipe_cooked_feedbacks_created_at_idx').on(table.createdAt),
   index('recipe_cooked_feedbacks_user_recipe_idx').on(table.recipeId, table.userId),
+  // R7: mỗi người dùng đăng nhập chỉ có 1 đánh giá / công thức
+  uniqueIndex('recipe_cooked_feedbacks_user_recipe_uniq')
+    .on(table.recipeId, table.userId)
+    .where(sql`${table.userId} IS NOT NULL`),
+]);
+
+// Creator Profiles (Hồ sơ người nấu công khai — R7 Chợ công thức)
+// Bậc uy tín KHÔNG lưu cố định: tính động từ số món/đánh giá (src/lib/creators/tier.ts).
+export const creatorProfiles = pgTable('creator_profiles', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').notNull().unique().references(() => users.id, { onDelete: 'cascade' }),
+  slug: text('slug').notNull().unique(),
+  bio: text('bio'),
+  region: text('region').notNull().default('GENERAL'),
+  isPublic: boolean('is_public').notNull().default(true),
+  // Chỉ ADMIN được đặt (xác minh CCCD thủ công trong R7)
+  identityVerifiedAt: timestamp('identity_verified_at', { withTimezone: true }),
+  identityVerifiedById: integer('identity_verified_by_id').references(() => users.id, { onDelete: 'set null' }),
+  isProfessional: boolean('is_professional').notNull().default(false),
+  sellerTermsAcceptedAt: timestamp('seller_terms_accepted_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index('creator_profiles_slug_idx').on(table.slug),
 ]);
 
 // Ingredient Nutrition (Bảng thành phần dinh dưỡng nguyên liệu chuẩn Việt Nam - AG-35)

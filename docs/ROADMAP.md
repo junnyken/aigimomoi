@@ -104,12 +104,13 @@ Gate P7: Mở rộng thể loại món ăn không làm vỡ taxonomy và engine;
 | R4 | Migration Journal Sync & Production Deployment Hardening | R3 | `closed` (21/10/2026 - D62) — Đồng bộ 11 migrations, fail-closed deploy script |
 | R5 | User Registration, Zero Lint & VPS Setup Automation | R4 | `closed` (21/10/2026 - D63) — Trang & API đăng ký, lint 0 lỗi, script VPS Mắt Bão |
 | R6 | Password Reset, Mắt Bão Native SMTP & User Profile | R5 | `closed` (21/10/2026 - D64) — Quên/đổi mật khẩu, profile, native SMTP mailer |
+| R7 | Chợ công thức giai đoạn 1 (hồ sơ người nấu, nhãn nguồn, bậc uy tín, lọc nguồn) | R6 | `closed` (21/10/2026 - D65) — Miễn phí; R8 (giá/khóa nội dung) & R9–R10 (thanh toán) chờ pháp nhân |
 
 ## P8 — Kinh doanh và scale
 Chỉ sau dữ liệu sử dụng thật. Payment/subscription là phạm vi riêng.
 
 ## Mốc
-M1 scope/kiến trúc/prototype duyệt · M2 catalog + nội dung thật · M3 MVP pilot · M4 AI an toàn · M5+ mở rộng theo evidence · MR0 Secret Fail-Closed & Auth Hardening · MR1 Data Honesty & Badges · MR2 Core MVP Flows Verified · MR3 E2E trình duyệt + CI sẵn sàng · MR4 Drizzle Journal 11/11 & Fail-Closed Deploy · MR5 Zero Lint, Registration & VPS Vibe Host Ready · MR6 Password Reset, Mắt Bão SMTP & Profile Ready.
+M1 scope/kiến trúc/prototype duyệt · M2 catalog + nội dung thật · M3 MVP pilot · M4 AI an toàn · M5+ mở rộng theo evidence · MR0 Secret Fail-Closed & Auth Hardening · MR1 Data Honesty & Badges · MR2 Core MVP Flows Verified · MR3 E2E trình duyệt + CI sẵn sàng · MR4 Drizzle Journal 11/11 & Fail-Closed Deploy · MR5 Zero Lint, Registration & VPS Vibe Host Ready · MR6 Password Reset, Mắt Bão SMTP & Profile Ready · MR7 Chợ công thức giai đoạn 1 (miễn phí).
 
 
 

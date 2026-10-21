@@ -3,11 +3,11 @@
 // - CHỈ truy vấn công thức có status = 'PUBLISHED'
 // - Parameterized query với Drizzle ORM chống SQL Injection
 // - Allow-list trường dữ liệu công khai, tuyệt đối không lộ email hay reviewNotes
-import { and, asc, count, desc, eq, ilike, inArray, or, sql, type SQL } from 'drizzle-orm';
+import { and, asc, count, desc, eq, ilike, inArray, ne, or, sql, type SQL } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { recipes, dishes, recipeTags, taxonomies, type mealRoleEnum } from '@/lib/db/schema';
-import { safeImageSrc, type PublicRecipeCard } from './publicQueries';
-import { isIllustrationImage } from './labels';
+import { mapPublicCardRow, selectPublicCards, type PublicRecipeCard } from './publicQueries';
+import { COMMUNITY_PROVENANCE, type RecipeSourceFilter } from './source';
 
 export type MealRoleType = (typeof mealRoleEnum.enumValues)[number];
 
@@ -20,6 +20,8 @@ export interface RecipeSearchParams {
   nutritionOnly?: boolean;
   taxonomySlug?: string;
   sort?: 'newest' | 'quickest' | 'calories_asc';
+  /** R7: lọc nguồn — tất cả / Bếp Mom / Chợ công thức */
+  source?: RecipeSourceFilter;
   page?: number;
   limit?: number;
 }
@@ -106,6 +108,13 @@ export async function searchPublishedRecipes(params: RecipeSearchParams = {}): P
     );
   }
 
+  // 7. R7 — lọc nguồn công thức
+  if (params.source === 'bep-mom') {
+    conditions.push(ne(recipes.provenance, COMMUNITY_PROVENANCE));
+  } else if (params.source === 'cho') {
+    conditions.push(eq(recipes.provenance, COMMUNITY_PROVENANCE));
+  }
+
   const whereClause = and(...conditions);
 
   // Sắp xếp
@@ -137,37 +146,14 @@ export async function searchPublishedRecipes(params: RecipeSearchParams = {}): P
   const totalPages = Math.max(1, Math.ceil(totalCount / limit));
 
   // Lấy danh sách thẻ công thức
-  const rows = await db
-    .select({
-      slug: recipes.slug,
-      name: recipes.name,
-      shortDescription: recipes.shortDescription,
-      role: recipes.role,
-      baseServings: recipes.baseServings,
-      prepTimeMinutes: recipes.prepTimeMinutes,
-      cookTimeMinutes: recipes.cookTimeMinutes,
-      difficulty: recipes.difficulty,
-      heroImage: recipes.heroImage,
-      isCookTested: recipes.isCookTested,
-    })
-    .from(recipes)
+  // LEFT JOIN users/creator_profiles là 1-1 (userId unique) nên không nhân bản dòng.
+  const rows = await selectPublicCards()
     .where(whereClause)
     .orderBy(orderByClause, desc(recipes.id))
     .limit(limit)
     .offset(offset);
 
-  const items: PublicRecipeCard[] = rows.map((r) => ({
-    slug: r.slug,
-    name: r.name,
-    shortDescription: r.shortDescription,
-    role: r.role,
-    baseServings: r.baseServings,
-    totalTimeMinutes: (r.prepTimeMinutes ?? 0) + (r.cookTimeMinutes ?? 0),
-    difficulty: r.difficulty,
-    heroImage: safeImageSrc(r.heroImage),
-    isIllustration: isIllustrationImage(r.heroImage),
-    isCookTested: r.isCookTested,
-  }));
+  const items: PublicRecipeCard[] = rows.map(mapPublicCardRow);
 
   return {
     items,

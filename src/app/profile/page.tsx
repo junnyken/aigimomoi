@@ -18,6 +18,7 @@ import {
   Settings,
   ArrowRight
 } from 'lucide-react';
+import { CreatorProfileSection } from '@/components/creator/CreatorProfileSection';
 
 interface UserProfile {
   id: number;
@@ -229,7 +230,7 @@ export default function ProfilePage() {
               <span className="text-xs font-semibold">Giỏ đi chợ</span>
             </Link>
             <Link
-              href="/saved"
+              href="/da-luu"
               className="flex items-center gap-2.5 p-3 rounded-xl bg-stone-50 hover:bg-emerald-50 text-stone-700 hover:text-emerald-700 border border-stone-200 transition-colors"
             >
               <BookOpen className="w-4 h-4 text-emerald-600" />
@@ -388,6 +389,9 @@ export default function ProfilePage() {
             </form>
           </div>
         </div>
+
+        {/* R7: Hồ sơ người nấu (Chợ công thức) */}
+        <CreatorProfileSection displayName={user.displayName} />
       </div>
     </div>
   );

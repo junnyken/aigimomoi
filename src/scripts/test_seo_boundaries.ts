@@ -163,6 +163,8 @@ async function runTests() {
     publishedAt: new Date().toISOString(),
     dish: { name: 'Thịt Kho Tàu', aliases: ['Thịt kho trứng'] },
     authorName: 'Đầu Bếp Mom',
+    source: 'EDITORIAL',
+    creatorSlug: null,
     ingredients: [
       {
         id: 1,

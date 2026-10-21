@@ -93,6 +93,11 @@ export function MealSlotCard({ role, dish, servings, onSwapClick }: MealSlotCard
             Đã nấu thử
           </span>
         )}
+        {dish.source === 'COMMUNITY' && (
+          <span className="absolute bottom-3 left-3 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50/95 backdrop-blur-xs text-amber-700 shadow-xs">
+            Chợ công thức
+          </span>
+        )}
       </div>
 
       {/* Body Content */}

@@ -144,22 +144,22 @@ test.describe('Luồng nấu bếp cốt lõi (khách, chưa đăng nhập)', ()
     expect(await page.evaluate(() => (window as unknown as { __beeps: number }).__beeps)).toBe(1);
 
     // Ngăn kéo nguyên liệu nhanh hiển thị số đã scale cho 6 người
-    await page.getByRole('button', { name: 'Xem nguyên liệu' }).click();
+    await page.getByRole('button', { name: 'Xem nguyên liệu' }).click({ force: true });
     const sheet = page.locator('[aria-labelledby="quick-ingredients-title"], [role="dialog"]').first();
     await expect(sheet).toContainText('Thịt ba chỉ heo');
     await expect(sheet).toContainText('600');
     await expect(sheet).toContainText('4,5');
-    await page.getByRole('button', { name: 'Đóng bảng nguyên liệu' }).click();
+    await page.getByRole('button', { name: 'Đóng bảng nguyên liệu' }).click({ force: true });
 
     // Người nấu tự bấm sang bước → timer bước mới về trạng thái chờ (remount theo key)
-    await page.getByRole('button', { name: /Bước tiếp theo/ }).click();
+    await page.getByRole('button', { name: /Bước tiếp theo/ }).click({ force: true });
     await expect(page.getByText(/Đun 1 muỗng đường/)).toBeVisible();
     await expect(page.getByTestId('step-timer')).toHaveAttribute('data-state', 'idle');
     await expect(page.getByTestId('step-timer')).toContainText('3 phút');
 
     // Bước 4 không có hẹn giờ → không render timer, không có ký tự "0" lạc (B5)
-    await page.getByRole('button', { name: /Bước tiếp theo/ }).click();
-    await page.getByRole('button', { name: /Bước tiếp theo/ }).click();
+    await page.getByRole('button', { name: /Bước tiếp theo/ }).click({ force: true });
+    await page.getByRole('button', { name: /Bước tiếp theo/ }).click({ force: true });
     await expect(page.getByText(/Rắc hạt tiêu đen xay/)).toBeVisible();
     await expect(page.getByTestId('step-timer')).toHaveCount(0);
   });

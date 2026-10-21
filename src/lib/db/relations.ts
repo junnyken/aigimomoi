@@ -18,9 +18,10 @@ import {
   mealDiaryEntries,
   pantryItems,
   mealPlans,
+  creatorProfiles,
 } from './schema';
 
-export const usersRelations = relations(users, ({ many }) => ({
+export const usersRelations = relations(users, ({ one, many }) => ({
   recipes: many(recipes),
   meals: many(meals),
   savedRecipes: many(savedRecipes),
@@ -29,6 +30,19 @@ export const usersRelations = relations(users, ({ many }) => ({
   mealPlans: many(mealPlans),
   reportsSubmitted: many(recipeReports, { relationName: 'reporterUser' }),
   reportsResolved: many(recipeReports, { relationName: 'moderatorUser' }),
+  creatorProfile: one(creatorProfiles, {
+    fields: [users.id],
+    references: [creatorProfiles.userId],
+    relationName: 'creatorProfileOwner',
+  }),
+}));
+
+export const creatorProfilesRelations = relations(creatorProfiles, ({ one }) => ({
+  user: one(users, {
+    fields: [creatorProfiles.userId],
+    references: [users.id],
+    relationName: 'creatorProfileOwner',
+  }),
 }));
 
 export const dishesRelations = relations(dishes, ({ many }) => ({

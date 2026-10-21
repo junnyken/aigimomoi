@@ -170,6 +170,11 @@ function SwapDishModalContent({
                           Đã test
                         </span>
                       )}
+                      {dish.source === 'COMMUNITY' && (
+                        <span className="shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-700">
+                          Chợ
+                        </span>
+                      )}
                     </div>
                     <p className="text-xs text-[var(--color-text-secondary)] line-clamp-1 mt-0.5">
                       {dish.shortDescription}

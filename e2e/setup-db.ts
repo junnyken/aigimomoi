@@ -50,7 +50,7 @@ async function main() {
     await sql.end();
   }
 
-  for (const seed of ['src/scripts/seed_production_catalog.ts', 'src/scripts/seed_p7_catalog.ts']) {
+  for (const seed of ['src/scripts/seed_production_catalog.ts', 'src/scripts/seed_p7_catalog.ts', 'src/scripts/seed_e2e_creator.ts']) {
     console.log(`[e2e-db] Seed ${seed}…`);
     execFileSync('npx', ['tsx', seed], { stdio: 'inherit', env: process.env });
   }

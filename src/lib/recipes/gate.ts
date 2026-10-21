@@ -67,7 +67,7 @@ export function failedGateChecks(recipe: GateRecipeInput): GateCheckItem[] {
  */
 export function validateVerificationFlags(
   flags: VerificationFlags,
-  recipe: Pick<GateRecipeInput, 'caloriesPerServing'>
+  recipe: Pick<GateRecipeInput, 'caloriesPerServing'> & { provenance?: string | null }
 ): string[] {
   const errors: string[] = [];
   // D35: ADMIN phải xác nhận tường minh đã biên tập trước khi xuất bản.
@@ -77,6 +77,10 @@ export function validateVerificationFlags(
   // D23: không bật nhãn dinh dưỡng khi không có số liệu để kiểm chứng.
   if (flags.isNutritionVerified && (recipe.caloriesPerServing === null || recipe.caloriesPerServing === undefined)) {
     errors.push('Không thể bật "Đã kiểm chứng dinh dưỡng" khi công thức chưa có số liệu calo/khẩu phần.');
+  }
+  // R7: nhãn "Đã nấu thử" là cam kết của Bếp Mom — không gắn cho món Chợ công thức.
+  if (flags.isCookTested && recipe.provenance === 'COMMUNITY_SUBMITTED') {
+    errors.push('Không được bật "Đã nấu thử" (Bếp Mom) cho công thức cộng đồng.');
   }
   return errors;
 }

@@ -97,6 +97,9 @@ jobs:
       - name: Dựng DB test (migrate nghiêm ngặt + seed catalog thật)
         run: npm run test:e2e:db
 
+      - name: Test Chợ công thức R7 (DB + API)
+        run: npm run test:creator
+
       - name: Build production với dữ liệu test
         run: npm run build
 

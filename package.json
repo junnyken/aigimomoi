@@ -11,6 +11,7 @@
     "test:auth": "tsx src/scripts/test_auth_hardening.ts",
     "test:register": "tsx src/scripts/test_registration_flow.ts",
     "test:profile": "tsx src/scripts/test_profile_and_reset_flow.ts",
+    "test:creator": "tsx src/scripts/test_creator_marketplace.ts",
     "test:honesty": "tsx src/scripts/test_data_honesty.ts",
     "test:core": "tsx src/scripts/test_core_mvp_flows.ts",
     "test:e2e:db": "tsx e2e/setup-db.ts",

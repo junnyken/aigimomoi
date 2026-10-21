@@ -835,5 +835,26 @@ Kiểm tra tài liệu/skill (script read-only, 8 nhóm):
 | 12 | **Build Production**: `npm run build` thành công, biên dịch trọn vẹn 64/64 routes | PASS |
 | 13 | DECISIONS.md ghi nhận D64 | PASS |
 
+## R7 — Chợ Công Thức: Hồ Sơ Người Nấu, Nhãn Nguồn Minh Bạch & Bậc Uy Tín — 21/10/2026
+
+**Môi trường:** Postgres 16 (Docker, DB `angimom_db` & `angimom_test`), Node 20+, Next.js 16.4.2 App Router, Playwright 1.64.1.
+
+| # | Kiểm tra | Kết quả |
+|---|---|---|
+| 1 | **Nhãn Nguồn Minh Bạch (D23, D65)**: Phân biệt rõ "Bếp Mom" (editorial) và "Chợ công thức" (cộng đồng); CHECK constraint `recipes_community_not_cook_tested` bảo đảm món cộng đồng không bao giờ có nhãn "Đã nấu thử" | PASS |
+| 2 | **Hồ sơ Người nấu Công khai (`/nguoi-nau/[slug]`)**: Render thông tin người nấu, thống kê món, đánh giá sao, huy hiệu bậc uy tín; bảo vệ soft-404 với Proxy rewrite trả đúng HTTP 404 cho slug không tồn tại | PASS |
+| 3 | **Quản lý Hồ sơ Creator (`/profile` & `/api/creator/profile`)**: Tự cấu hình slug, bio, liên kết xã hội; chặn slug hệ thống; cấm tự ý nâng cờ xác minh danh tính/chuyên nghiệp | PASS |
+| 4 | **Admin Gate (`/api/editor/creators/[userId]`)**: Quyền ADMIN duyệt xác minh danh tính thủ công & gắn cờ đầu bếp/tiệm ăn chuyên nghiệp | PASS |
+| 5 | **Thang Bậc Uy Tín (0/1/2)**: Tính toán thuần theo công thức (số món, số người đánh giá phân biệt, điểm TB, điều khoản & xác minh admin) | PASS |
+| 6 | **Đánh giá Công thức An toàn (`/api/recipes/[id]/feedback`)**: 1 đánh giá/user/recipe, chặn tác giả tự chấm điểm (HTTP 403), upsert mượt mà khi trùng | PASS |
+| 7 | **Bộ lọc Nguồn trên Danh mục (`/mon-an?nguon=...`)**: Bộ lọc tab Tất cả / Bếp Mom / Chợ công thức; random meal & gợi ý mặc định giữ nguyên Bếp Mom chuẩn hóa | PASS |
+| 8 | **Test Suite Chợ Công Thức (`npm run test:creator`)**: Kiểm thử logic thuần (7/7) và tích hợp DB + API thực tế PASS 100% | PASS |
+| 9 | **Test Hồi Quy Toàn Bộ**: `test:auth` (45/45), `test:register` (13/13), `test:profile` (13/13), `test:honesty` (38/38), `test:core` (99/99) PASS 100% | PASS |
+| 10 | **E2E Playwright Suite (`e2e/creator-marketplace.spec.ts` & `core-flow.spec.ts`)**: 21 passed, 1 skipped (mobile only) trên cả Desktop Chromium và Mobile Pixel 7 | PASS |
+| 11 | **ESLint & Typecheck toàn repo**: `npx eslint --quiet src e2e` 0 errors; `npx tsc --noEmit` 0 errors | PASS |
+| 12 | **Build Production**: `npm run build` thành công, biên dịch trọn vẹn 67 routes | PASS |
+| 13 | DECISIONS.md ghi nhận D65, ROADMAP.md cập nhật R7 closed | PASS |
+
+
 
 

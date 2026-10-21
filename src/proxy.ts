@@ -2,7 +2,10 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { verifyToken, SESSION_COOKIE_NAME } from '@/lib/auth/session';
 import { queryPublicSlugResolution } from '@/lib/recipes/publicQueries';
+import { queryPublicCreatorSlugResolution } from '@/lib/creators/queries';
 import { PUBLIC_RECIPE_PREFIX, RECIPE_NOT_FOUND_PLACEHOLDER, recipePath } from '@/lib/recipes/labels';
+
+const CREATOR_PROFILE_PREFIX = '/nguoi-nau/';
 
 /**
  * AG-16: với Partial Prefetching, trang stream app shell (200) trước khi notFound()/redirect
@@ -45,6 +48,36 @@ async function gatePublicRecipe(request: NextRequest, pathname: string) {
   return NextResponse.rewrite(target);
 }
 
+async function gateCreatorProfile(request: NextRequest, pathname: string) {
+  const rawSlug = pathname.slice(CREATOR_PROFILE_PREFIX.length).replace(/\/$/, '');
+  if (!rawSlug || rawSlug.includes('/')) return NextResponse.next();
+
+  let slug: string;
+  try {
+    slug = decodeURIComponent(rawSlug);
+  } catch {
+    return new NextResponse('400 Bad Request', {
+      status: 400,
+      headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+    });
+  }
+
+  const target = request.nextUrl.clone();
+  target.search = '';
+
+  try {
+    const resolution = await queryPublicCreatorSlugResolution(slug);
+    if (resolution === 'published') return NextResponse.next();
+  } catch (err) {
+    const cause = err instanceof Error && err.cause instanceof Error ? err.cause.message : '';
+    console.error('Creator profile gate lookup failed:', cause || (err instanceof Error ? err.message : err));
+    return NextResponse.next();
+  }
+
+  target.pathname = recipePath(RECIPE_NOT_FOUND_PLACEHOLDER);
+  return NextResponse.rewrite(target);
+}
+
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -53,6 +86,10 @@ export async function proxy(request: NextRequest) {
 
   if (pathname.startsWith(PUBLIC_RECIPE_PREFIX)) {
     return gatePublicRecipe(request, pathname);
+  }
+
+  if (pathname.startsWith(CREATOR_PROFILE_PREFIX)) {
+    return gateCreatorProfile(request, pathname);
   }
 
   if (!isAdminRoute && !isEditorRoute) {
@@ -87,5 +124,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/admin/:path*', '/editor/:path*', '/cong-thuc/:path*'],
+  matcher: ['/admin/:path*', '/editor/:path*', '/cong-thuc/:path*', '/nguoi-nau/:path*'],
 };

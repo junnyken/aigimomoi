@@ -11,6 +11,8 @@ import { recipes, recipeCookedFeedbacks } from '@/lib/db/schema';
 import { getSessionUser } from '@/lib/auth/session';
 import { eq, and, desc, sql } from 'drizzle-orm';
 import { logger } from '@/lib/logger';
+import { isUniqueViolation } from '@/lib/db/errors';
+import { safeImageSrc } from '@/lib/recipes/publicQueries';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -86,7 +88,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
 
     // Kiểm tra công thức có tồn tại và đang PUBLISHED không
     const [recipe] = await db
-      .select({ id: recipes.id, status: recipes.status, name: recipes.name })
+      .select({ id: recipes.id, status: recipes.status, name: recipes.name, authorId: recipes.authorId })
       .from(recipes)
       .where(eq(recipes.id, recipeId))
       .limit(1);
@@ -115,7 +117,15 @@ export async function POST(request: NextRequest, context: RouteContext) {
     }
 
     // Kiểm tra session người dùng
-    const user = await getSessionUser();
+    const user = await getSessionUser(request);
+
+    // R7: chống tự đánh giá — tác giả không được chấm công thức của chính mình
+    if (user && recipe.authorId !== null && recipe.authorId === user.id) {
+      return NextResponse.json(
+        { error: 'Không thể tự đánh giá công thức của mình.' },
+        { status: 403 }
+      );
+    }
     const finalCookName = (cookName && String(cookName).trim()) || (user ? user.displayName : '');
 
     if (!finalCookName) {
@@ -126,7 +136,14 @@ export async function POST(request: NextRequest, context: RouteContext) {
     }
 
     const cleanNotes = notes ? String(notes).trim().slice(0, 1000) : null;
-    const cleanPhotoUrl = photoUrl ? String(photoUrl).trim().slice(0, 500) : null;
+    const rawPhotoUrl = photoUrl ? String(photoUrl).trim().slice(0, 500) : '';
+    const cleanPhotoUrl = rawPhotoUrl ? safeImageSrc(rawPhotoUrl) : null;
+    if (rawPhotoUrl && !cleanPhotoUrl) {
+      return NextResponse.json(
+        { error: 'Link ảnh phải bắt đầu bằng https://' },
+        { status: 400 }
+      );
+    }
     const cleanEmail = cookEmail ? String(cookEmail).trim().slice(0, 255) : (user ? user.email : null);
 
     // Invariant Gate P5: 
@@ -165,21 +182,42 @@ export async function POST(request: NextRequest, context: RouteContext) {
           .returning();
         resultFeedback = updated;
       } else {
-        // Tạo mới
-        const [inserted] = await db
-          .insert(recipeCookedFeedbacks)
-          .values({
-            recipeId,
-            userId: user.id,
-            cookName: finalCookName,
-            cookEmail: cleanEmail,
-            rating: numRating,
-            notes: cleanNotes,
-            photoUrl: cleanPhotoUrl,
-            status: initialStatus,
-          })
-          .returning();
-        resultFeedback = inserted;
+        // Tạo mới. Nếu 2 request đồng thời cùng chèn, unique index (recipe_id, user_id)
+        // chặn bản thứ hai → chuyển sang cập nhật thay vì lỗi 500.
+        const values = {
+          recipeId,
+          userId: user.id,
+          cookName: finalCookName,
+          cookEmail: cleanEmail,
+          rating: numRating,
+          notes: cleanNotes,
+          photoUrl: cleanPhotoUrl,
+          status: initialStatus,
+        } as const;
+        try {
+          const [inserted] = await db.insert(recipeCookedFeedbacks).values(values).returning();
+          resultFeedback = inserted;
+        } catch (insertError) {
+          if (!isUniqueViolation(insertError)) throw insertError;
+          const [updated] = await db
+            .update(recipeCookedFeedbacks)
+            .set({
+              cookName: finalCookName,
+              rating: numRating,
+              notes: cleanNotes,
+              photoUrl: cleanPhotoUrl,
+              status: initialStatus,
+              createdAt: new Date(),
+            })
+            .where(
+              and(
+                eq(recipeCookedFeedbacks.recipeId, recipeId),
+                eq(recipeCookedFeedbacks.userId, user.id)
+              )
+            )
+            .returning();
+          resultFeedback = updated;
+        }
       }
     } else {
       // Khách vãng lai

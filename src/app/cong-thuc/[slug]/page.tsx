@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound, permanentRedirect } from 'next/navigation';
-import { ArrowLeft, Clock, Flame, Gauge, Users, UtensilsCrossed, Tag } from 'lucide-react';
+import { ArrowLeft, Clock, Flame, Gauge, Users, UtensilsCrossed, Tag, Store } from 'lucide-react';
 import { getCurrentSlugForArchived, getPublishedRecipeBySlug } from '@/lib/recipes/public';
 import {
   ROLE_LABELS,
@@ -77,6 +77,7 @@ export default async function PublicRecipePage({ params }: PageParams) {
   const { slug } = await params;
   const recipe = await loadRecipe(slug);
   const totalMinutes = recipe.prepTimeMinutes + recipe.cookTimeMinutes;
+  const isCommunity = recipe.source === 'COMMUNITY';
 
   return (
     <article className="flex flex-col gap-8 pb-12">
@@ -117,7 +118,9 @@ export default async function PublicRecipePage({ params }: PageParams) {
           </div>
           {recipe.heroImage && recipe.isIllustration && (
             <p className="mt-2 text-xs text-[var(--color-text-muted)] italic">
-              * Ảnh minh họa. Bếp Ăn Gì Mom đang tiến hành nấu thử để cập nhật hình ảnh đĩa cơm thực tế.
+              {isCommunity
+                ? '* Ảnh minh họa, không phải ảnh thành phẩm thực tế.'
+                : '* Ảnh minh họa. Bếp Ăn Gì Mom đang tiến hành nấu thử để cập nhật hình ảnh đĩa cơm thực tế.'}
             </p>
           )}
         </div>
@@ -134,6 +137,29 @@ export default async function PublicRecipePage({ params }: PageParams) {
           </div>
 
           <p className="text-base leading-relaxed text-[var(--color-text-secondary)]">{recipe.shortDescription}</p>
+
+          {isCommunity && (
+            <div
+              className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+              data-testid="community-recipe-notice"
+            >
+              <p className="inline-flex items-center gap-1.5 font-semibold">
+                <Store className="w-4 h-4" aria-hidden="true" />
+                Chợ công thức
+              </p>
+              <p className="mt-1 leading-relaxed">
+                Công thức do{' '}
+                {recipe.creatorSlug ? (
+                  <Link href={`/nguoi-nau/${recipe.creatorSlug}`} className="font-semibold underline underline-offset-2">
+                    {recipe.authorName ?? 'người nấu'}
+                  </Link>
+                ) : (
+                  <span className="font-semibold">{recipe.authorName ?? 'người nấu cộng đồng'}</span>
+                )}{' '}
+                chia sẻ, chưa được Bếp Mom nấu thử kiểm nghiệm. Nội dung thuộc trách nhiệm của người chia sẻ.
+              </p>
+            </div>
+          )}
 
           <VerificationBadges
             isEditorialReviewed={recipe.isEditorialReviewed}
@@ -156,7 +182,7 @@ export default async function PublicRecipePage({ params }: PageParams) {
 
           <p className="text-xs text-[var(--color-text-muted)]">
             Tổng thời gian khoảng {formatDuration(totalMinutes)}
-            {recipe.authorName ? ` · Biên soạn bởi ${recipe.authorName}` : ''}
+            {recipe.authorName ? ` · ${isCommunity ? 'Chia sẻ bởi' : 'Biên soạn bởi'} ${recipe.authorName}` : ''}
             {recipe.versionNumber > 1 ? ` · Phiên bản ${recipe.versionNumber}` : ''}
           </p>
         </div>

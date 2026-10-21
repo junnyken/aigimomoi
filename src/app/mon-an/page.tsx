@@ -11,6 +11,8 @@ import { SearchFilterSheet } from '@/components/search/SearchFilterSheet';
 import { ActiveFilterChips } from '@/components/search/ActiveFilterChips';
 import { SearchEmptyState } from '@/components/search/SearchEmptyState';
 import { SearchPagination } from '@/components/search/SearchPagination';
+import { SourceFilterTabs } from '@/components/search/SourceFilterTabs';
+import { parseRecipeSourceFilter } from '@/lib/recipes/source';
 
 interface SearchPageProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
@@ -104,6 +106,7 @@ async function SearchContent({ searchParams }: { searchParams: Promise<{ [key: s
     ? (rawParams.sort as 'newest' | 'quickest' | 'calories_asc')
     : undefined;
   const page = typeof rawParams.page === 'string' ? Number(rawParams.page) : 1;
+  const source = parseRecipeSourceFilter(rawParams.nguon);
 
   // Thực hiện truy vấn dữ liệu song song (search + filter metadata)
   const [searchResult, filterMeta] = await Promise.all([
@@ -116,16 +119,20 @@ async function SearchContent({ searchParams }: { searchParams: Promise<{ [key: s
       nutritionOnly,
       taxonomySlug,
       sort,
+      source,
       page,
       limit: 12,
     }),
     getSearchFilterMeta(),
   ]);
 
-  const hasAnyFilter = Boolean(q || role || maxTime || difficulty || testedOnly || nutritionOnly || taxonomySlug || sort);
+  const hasAnyFilter = Boolean(q || role || maxTime || difficulty || testedOnly || nutritionOnly || taxonomySlug || sort || source !== 'all');
 
   return (
     <>
+      {/* R7: Lọc nguồn Bếp Mom / Chợ công thức */}
+      <SourceFilterTabs current={source} params={rawParams} />
+
       {/* Role Filter Tabs */}
       <section aria-label="Lọc nhanh vai trò món">
         <RoleFilterTabs

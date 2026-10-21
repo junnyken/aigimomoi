@@ -1,8 +1,9 @@
-import { and, desc, eq, inArray } from 'drizzle-orm';
+import { and, desc, eq, inArray, ne } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { recipes } from '@/lib/db/schema';
 import { safeImageSrc, isValidPublicSlug } from '@/lib/recipes/publicQueries';
 import { isIllustrationImage } from '@/lib/recipes/labels';
+import { COMMUNITY_PROVENANCE, recipeSourceFromProvenance, type RecipeSource } from '@/lib/recipes/source';
 
 export interface MealDishSummary {
   slug: string;
@@ -17,6 +18,8 @@ export interface MealDishSummary {
   heroImage: string | null;
   isCookTested: boolean;
   isIllustration?: boolean;
+  /** R7: Bếp Mom hay Chợ công thức */
+  source?: RecipeSource;
 }
 
 export interface MealSelection {
@@ -25,44 +28,78 @@ export interface MealSelection {
   side: MealDishSummary | null;
 }
 
+const mealColumns = {
+  slug: recipes.slug,
+  name: recipes.name,
+  shortDescription: recipes.shortDescription,
+  role: recipes.role,
+  baseServings: recipes.baseServings,
+  prepTimeMinutes: recipes.prepTimeMinutes,
+  cookTimeMinutes: recipes.cookTimeMinutes,
+  difficulty: recipes.difficulty,
+  heroImage: recipes.heroImage,
+  isCookTested: recipes.isCookTested,
+  provenance: recipes.provenance,
+};
+
+type MealRow = {
+  slug: string;
+  name: string;
+  shortDescription: string;
+  role: string;
+  baseServings: number;
+  prepTimeMinutes: number;
+  cookTimeMinutes: number;
+  difficulty: string;
+  heroImage: string | null;
+  isCookTested: boolean;
+  provenance: string;
+};
+
+function mapMealRow(row: MealRow): MealDishSummary {
+  const source = recipeSourceFromProvenance(row.provenance);
+  return {
+    slug: row.slug,
+    name: row.name,
+    shortDescription: row.shortDescription,
+    role: row.role as 'MAIN' | 'SOUP' | 'SIDE',
+    baseServings: row.baseServings,
+    prepTimeMinutes: row.prepTimeMinutes,
+    cookTimeMinutes: row.cookTimeMinutes,
+    totalTimeMinutes: row.prepTimeMinutes + row.cookTimeMinutes,
+    difficulty: row.difficulty,
+    heroImage: safeImageSrc(row.heroImage),
+    // Bất biến R7: món cộng đồng không mang nhãn "Đã nấu thử" của Bếp Mom
+    isCookTested: source === 'EDITORIAL' ? row.isCookTested : false,
+    isIllustration: isIllustrationImage(row.heroImage),
+    source,
+  };
+}
+
 /**
  * Lấy danh sách các món ăn đã PUBLISHED theo vai trò để hiển thị trong modal đổi món.
  * Invariants §5.1: Tuyệt đối chỉ lấy các công thức có status = 'PUBLISHED'.
+ * R7: `editorialOnly` giới hạn trong món Bếp Mom (dùng cho gợi ý ngẫu nhiên/mặc định).
  */
-export async function queryPublishedMealOptions(role?: 'MAIN' | 'SOUP' | 'SIDE'): Promise<MealDishSummary[]> {
+export async function queryPublishedMealOptions(
+  role?: 'MAIN' | 'SOUP' | 'SIDE',
+  options: { editorialOnly?: boolean } = {}
+): Promise<MealDishSummary[]> {
   const allowedRoles = role ? [role] : ['MAIN', 'SOUP', 'SIDE'];
 
   const rows = await db
-    .select({
-      slug: recipes.slug,
-      name: recipes.name,
-      shortDescription: recipes.shortDescription,
-      role: recipes.role,
-      baseServings: recipes.baseServings,
-      prepTimeMinutes: recipes.prepTimeMinutes,
-      cookTimeMinutes: recipes.cookTimeMinutes,
-      difficulty: recipes.difficulty,
-      heroImage: recipes.heroImage,
-      isCookTested: recipes.isCookTested,
-    })
+    .select(mealColumns)
     .from(recipes)
     .where(
       and(
         eq(recipes.status, 'PUBLISHED'),
-        inArray(recipes.role, allowedRoles as ('MAIN' | 'SOUP' | 'SIDE')[])
+        inArray(recipes.role, allowedRoles as ('MAIN' | 'SOUP' | 'SIDE')[]),
+        options.editorialOnly ? ne(recipes.provenance, COMMUNITY_PROVENANCE) : undefined
       )
     )
     .orderBy(desc(recipes.publishedAt), desc(recipes.id));
 
-  return rows.map(({ prepTimeMinutes, cookTimeMinutes, heroImage, role: r, ...rest }) => ({
-    ...rest,
-    role: r as 'MAIN' | 'SOUP' | 'SIDE',
-    prepTimeMinutes,
-    cookTimeMinutes,
-    totalTimeMinutes: prepTimeMinutes + cookTimeMinutes,
-    heroImage: safeImageSrc(heroImage),
-    isIllustration: isIllustrationImage(heroImage),
-  }));
+  return rows.map(mapMealRow);
 }
 
 /**
@@ -72,18 +109,7 @@ export async function querySingleMealDish(slug: string, expectedRole: 'MAIN' | '
   if (!isValidPublicSlug(slug)) return null;
 
   const [row] = await db
-    .select({
-      slug: recipes.slug,
-      name: recipes.name,
-      shortDescription: recipes.shortDescription,
-      role: recipes.role,
-      baseServings: recipes.baseServings,
-      prepTimeMinutes: recipes.prepTimeMinutes,
-      cookTimeMinutes: recipes.cookTimeMinutes,
-      difficulty: recipes.difficulty,
-      heroImage: recipes.heroImage,
-      isCookTested: recipes.isCookTested,
-    })
+    .select(mealColumns)
     .from(recipes)
     .where(
       and(
@@ -96,13 +122,7 @@ export async function querySingleMealDish(slug: string, expectedRole: 'MAIN' | '
 
   if (!row) return null;
 
-  return {
-    ...row,
-    role: row.role as 'MAIN' | 'SOUP' | 'SIDE',
-    totalTimeMinutes: row.prepTimeMinutes + row.cookTimeMinutes,
-    heroImage: safeImageSrc(row.heroImage),
-    isIllustration: isIllustrationImage(row.heroImage),
-  };
+  return mapMealRow(row);
 }
 
 /**
@@ -113,34 +133,37 @@ export async function resolveMealSelection(params: {
   soupSlug?: string | null;
   sideSlug?: string | null;
 }): Promise<MealSelection> {
+  // Mặc định khi thiếu slug: chỉ lấy món Bếp Mom (R7). Slug chỉ định rõ vẫn phân giải được món Chợ.
   const [mains, soups, sides] = await Promise.all([
     queryPublishedMealOptions('MAIN'),
     queryPublishedMealOptions('SOUP'),
     queryPublishedMealOptions('SIDE'),
   ]);
+  const firstEditorial = (list: MealDishSummary[]) =>
+    list.find((d) => d.source !== 'COMMUNITY') ?? null;
 
   let main: MealDishSummary | null = null;
   if (params.mainSlug) {
     main = mains.find((d) => d.slug === params.mainSlug) || null;
   }
-  if (!main && mains.length > 0) {
-    main = mains[0];
+  if (!main) {
+    main = firstEditorial(mains);
   }
 
   let soup: MealDishSummary | null = null;
   if (params.soupSlug) {
     soup = soups.find((d) => d.slug === params.soupSlug) || null;
   }
-  if (!soup && soups.length > 0) {
-    soup = soups[0];
+  if (!soup) {
+    soup = firstEditorial(soups);
   }
 
   let side: MealDishSummary | null = null;
   if (params.sideSlug) {
     side = sides.find((d) => d.slug === params.sideSlug) || null;
   }
-  if (!side && sides.length > 0) {
-    side = sides[0];
+  if (!side) {
+    side = firstEditorial(sides);
   }
 
   return { main, soup, side };
@@ -148,12 +171,13 @@ export async function resolveMealSelection(params: {
 
 /**
  * Thuật toán gợi ý ngẫu nhiên 1 mâm cơm 3 món từ kho công thức PUBLISHED.
+ * R7: chỉ gợi ý từ món Bếp Mom (đã qua biên tập).
  */
 export async function getRandomMealSlugs(): Promise<{ mainSlug: string; soupSlug: string; sideSlug: string } | null> {
   const [mains, soups, sides] = await Promise.all([
-    queryPublishedMealOptions('MAIN'),
-    queryPublishedMealOptions('SOUP'),
-    queryPublishedMealOptions('SIDE'),
+    queryPublishedMealOptions('MAIN', { editorialOnly: true }),
+    queryPublishedMealOptions('SOUP', { editorialOnly: true }),
+    queryPublishedMealOptions('SIDE', { editorialOnly: true }),
   ]);
 
   if (mains.length === 0 || soups.length === 0 || sides.length === 0) {

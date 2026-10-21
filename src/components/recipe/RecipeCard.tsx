@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Clock, Users, ChefHat, UtensilsCrossed } from 'lucide-react';
+import { Clock, Users, ChefHat, UtensilsCrossed, Store } from 'lucide-react';
 import type { PublicRecipeCard } from '@/lib/recipes/publicQueries';
 import { ROLE_LABELS, formatDuration, recipePath, isIllustrationImage } from '@/lib/recipes/labels';
 import { BookmarkButton } from './BookmarkButton';
@@ -48,6 +48,27 @@ export function RecipeCard({ recipe }: { recipe: PublicRecipeCard }) {
             {recipe.name}
           </Link>
         </h3>
+        {recipe.source === 'COMMUNITY' && (
+          <p className="mb-1.5 text-xs text-[var(--color-text-muted)] inline-flex items-center gap-1" data-testid="recipe-source-community">
+            <Store className="w-3.5 h-3.5 text-amber-600" aria-hidden="true" />
+            <span className="font-semibold text-amber-700">Chợ công thức</span>
+            {recipe.authorName && (
+              <>
+                <span aria-hidden="true">·</span>
+                {recipe.creatorSlug ? (
+                  <Link
+                    href={`/nguoi-nau/${recipe.creatorSlug}`}
+                    className="relative z-10 hover:underline text-[var(--color-text-secondary)]"
+                  >
+                    {recipe.authorName}
+                  </Link>
+                ) : (
+                  <span>{recipe.authorName}</span>
+                )}
+              </>
+            )}
+          </p>
+        )}
         <p className="text-sm text-[var(--color-text-secondary)] line-clamp-2 mb-4 flex-1">{recipe.shortDescription}</p>
 
         <div className="pt-3 border-t border-[var(--color-border-subtle)] flex items-center justify-between text-xs text-[var(--color-text-muted)]">
