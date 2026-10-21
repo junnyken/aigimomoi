@@ -8,6 +8,33 @@ import { sendPasswordResetEmail } from '@/lib/email/mailer';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+/**
+ * URL gốc tin cậy để dựng link đặt lại mật khẩu.
+ * Chỉ đọc từ cấu hình server. Production thiếu cấu hình → trả null (fail-closed).
+ */
+function getTrustedAppBaseUrl(): string | null {
+  const configured =
+    process.env.APP_URL ||
+    process.env.NEXT_PUBLIC_APP_URL ||
+    (process.env.DOMAIN_NAME ? `https://${process.env.DOMAIN_NAME}` : '');
+
+  if (configured) {
+    try {
+      const url = new URL(configured);
+      if (url.protocol !== 'https:' && url.protocol !== 'http:') return null;
+      return url.origin;
+    } catch {
+      console.error('[Forgot Password] APP_URL không hợp lệ');
+      return null;
+    }
+  }
+
+  if (process.env.NODE_ENV !== 'production') return 'http://localhost:3000';
+
+  console.error('[Forgot Password] Thiếu APP_URL trong production — không gửi link đặt lại mật khẩu');
+  return null;
+}
+
 export async function POST(request: Request) {
   // Fail-closed nếu AUTH_SECRET chưa hợp lệ
   if (!isAuthConfigurationValid()) {
@@ -59,13 +86,14 @@ export async function POST(request: Request) {
 
     let devResetUrl: string | undefined;
 
-    if (existingUser) {
+    const appBaseUrl = getTrustedAppBaseUrl();
+
+    if (existingUser && appBaseUrl) {
       const token = await createResetToken(existingUser);
-      
-      const origin = request.headers.get('origin') || 
-                     process.env.NEXT_PUBLIC_APP_URL || 
-                     'http://localhost:3000';
-      const resetUrl = `${origin}/reset-password?token=${encodeURIComponent(token)}`;
+
+      // Chỉ dùng URL cấu hình phía server — KHÔNG lấy từ header Origin/Host
+      // (chống password reset poisoning).
+      const resetUrl = `${appBaseUrl}/reset-password?token=${encodeURIComponent(token)}`;
 
       await sendPasswordResetEmail(existingUser.email, resetUrl);
 

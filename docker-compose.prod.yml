@@ -31,6 +31,8 @@ services:
         condition: service_healthy
     environment:
       NODE_ENV: production
+      # URL gốc tin cậy cho link trong email (chống reset poisoning)
+      APP_URL: ${APP_URL:-https://${DOMAIN_NAME:-localhost}}
       DATABASE_URL: "postgres://${POSTGRES_USER:-angimom}:${POSTGRES_PASSWORD:?Loi: Bien POSTGRES_PASSWORD la bat buoc cho Production}@postgres:5432/${POSTGRES_DB:-angimom_prod}"
       AUTH_SECRET: "${AUTH_SECRET:?Loi: Bien AUTH_SECRET la bat buoc cho Production}"
       # Cloudflare R2 Object Storage

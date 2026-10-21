@@ -12,6 +12,7 @@ import { POST as changePasswordHandler } from '../app/api/user/change-password/r
 
 process.env.AUTH_SECRET = 'test_valid_auth_secret_with_more_than_32_characters_for_angimom';
 process.env.ALLOW_DEV_RESET_URL = 'true';
+process.env.APP_URL = 'http://localhost:3000';
 
 async function runProfileAndResetTests() {
   console.log('--- Bắt đầu kiểm thử Luồng Quên Mật Khẩu, Đổi Mật Khẩu & Hồ Sơ Cá Nhân ---');
@@ -58,6 +59,24 @@ async function runProfileAndResetTests() {
   assert.equal(dataExistent.ok, true);
   assert.ok(dataExistent.devResetUrl, 'Môi trường dev trả về devResetUrl để kiểm thử');
   console.log('✓ Forgot Password: Tạo liên kết đặt lại mật khẩu thành công');
+
+  // 3b. Chống password reset poisoning: header Origin giả mạo không được đổi domain link
+  process.env.APP_URL = 'https://angimom.example';
+  const reqPoison = new Request('http://localhost:3000/api/auth/forgot-password', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Origin: 'https://evil.example' },
+    body: JSON.stringify({ email: testEmail }),
+  });
+  const resPoison = await forgotPasswordHandler(reqPoison);
+  const dataPoison = await resPoison.json();
+  assert.ok(
+    typeof dataPoison.devResetUrl === 'string' &&
+      dataPoison.devResetUrl.startsWith('https://angimom.example/reset-password?token='),
+    'Link reset phải dùng APP_URL cấu hình phía server'
+  );
+  assert.ok(!dataPoison.devResetUrl.includes('evil.example'), 'Không được dùng Origin do client gửi');
+  process.env.APP_URL = 'http://localhost:3000';
+  console.log('✓ Chống reset poisoning: bỏ qua header Origin giả mạo, chỉ dùng APP_URL');
 
   // 4. Kiểm thử Reset Token Helper trực tiếp
   const token = await createResetToken(createdUser);
