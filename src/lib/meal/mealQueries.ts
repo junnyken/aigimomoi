@@ -1,9 +1,11 @@
-import { and, desc, eq, inArray, ne } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, ne } from 'drizzle-orm';
 import { db } from '@/lib/db';
-import { recipes } from '@/lib/db/schema';
+import { recipes, recipeIngredients } from '@/lib/db/schema';
 import { safeImageSrc, isValidPublicSlug } from '@/lib/recipes/publicQueries';
 import { isIllustrationImage } from '@/lib/recipes/labels';
 import { COMMUNITY_PROVENANCE, recipeSourceFromProvenance, type RecipeSource } from '@/lib/recipes/source';
+import { canAccessRecipe } from '@/lib/gating/entitlements';
+import { getUserRecipeEntitlements } from '@/lib/gating/queries';
 
 export interface MealDishSummary {
   slug: string;
@@ -198,19 +200,27 @@ export async function getRandomMealSlugs(): Promise<{ mainSlug: string; soupSlug
 /**
  * Lấy danh sách các công thức PUBLISHED kèm bảng nguyên liệu đầy đủ để gộp nguyên liệu (AG-22).
  */
-export async function queryMealRecipesForAggregation(slugs: string[]) {
+export async function queryMealRecipesForAggregation(slugs: string[], viewerId?: number | null) {
   const validSlugs = slugs.filter(isValidPublicSlug).slice(0, 10);
   if (validSlugs.length === 0) return [];
+
+  const entitlements = viewerId ? await getUserRecipeEntitlements(viewerId) : new Set<number>();
 
   const rows = await db.query.recipes.findMany({
     where: and(inArray(recipes.slug, validSlugs), eq(recipes.status, 'PUBLISHED')),
     columns: {
+      id: true,
       slug: true,
       name: true,
       baseServings: true,
+      provenance: true,
+      price: true,
+      isFree: true,
+      authorId: true,
     },
     with: {
       ingredients: {
+        orderBy: [asc(recipeIngredients.sortOrder), asc(recipeIngredients.id)],
         columns: {
           id: true,
           amount: true,
@@ -231,20 +241,34 @@ export async function queryMealRecipesForAggregation(slugs: string[]) {
     },
   });
 
-  return rows.map((r) => ({
-    slug: r.slug,
-    name: r.name,
-    baseServings: r.baseServings,
-    ingredients: r.ingredients.map((ri) => ({
-      id: ri.id,
-      name: ri.ingredient?.name || 'Nguyên liệu',
-      category: ri.ingredient?.category || 'OTHER',
-      amount: ri.amount,
-      unit: ri.unit,
-      scalePolicy: ri.scalePolicy as 'LINEAR' | 'FIXED' | 'MANUAL_ADJUST',
-      preparation: ri.preparation,
-      isOptional: ri.isOptional,
-    })),
-  }));
+  return rows
+    .filter((r) =>
+      canAccessRecipe(
+        {
+          recipeId: r.id,
+          provenance: r.provenance,
+          price: r.price ?? 0,
+          isFree: r.isFree ?? true,
+          authorId: r.authorId,
+        },
+        viewerId ?? null,
+        entitlements
+      )
+    )
+    .map((r) => ({
+      slug: r.slug,
+      name: r.name,
+      baseServings: r.baseServings,
+      ingredients: r.ingredients.map((ri) => ({
+        id: ri.id,
+        name: ri.ingredient?.name || 'Nguyên liệu',
+        category: ri.ingredient?.category || 'OTHER',
+        amount: ri.amount,
+        unit: ri.unit,
+        scalePolicy: ri.scalePolicy as 'LINEAR' | 'FIXED' | 'MANUAL_ADJUST',
+        preparation: ri.preparation,
+        isOptional: ri.isOptional,
+      })),
+    }));
 }
 

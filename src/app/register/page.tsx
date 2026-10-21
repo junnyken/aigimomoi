@@ -99,12 +99,13 @@ function RegisterForm() {
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div>
-          <label className="block text-xs font-semibold text-[var(--color-text-primary)] mb-1.5">
+          <label htmlFor="register-displayName" className="block text-xs font-semibold text-[var(--color-text-primary)] mb-1.5">
             Họ và tên / Tên gọi bếp nhà
           </label>
           <div className="relative">
             <User className="w-4 h-4 text-[var(--color-text-muted)] absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
+              id="register-displayName"
               type="text"
               required
               value={displayName}
@@ -116,12 +117,13 @@ function RegisterForm() {
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-[var(--color-text-primary)] mb-1.5">
+          <label htmlFor="register-email" className="block text-xs font-semibold text-[var(--color-text-primary)] mb-1.5">
             Địa chỉ email
           </label>
           <div className="relative">
             <Mail className="w-4 h-4 text-[var(--color-text-muted)] absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
+              id="register-email"
               type="email"
               required
               value={email}
@@ -133,12 +135,13 @@ function RegisterForm() {
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-[var(--color-text-primary)] mb-1.5">
+          <label htmlFor="register-password" className="block text-xs font-semibold text-[var(--color-text-primary)] mb-1.5">
             Mật khẩu (tối thiểu 8 ký tự)
           </label>
           <div className="relative">
             <Lock className="w-4 h-4 text-[var(--color-text-muted)] absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
+              id="register-password"
               type="password"
               required
               minLength={8}
@@ -151,12 +154,13 @@ function RegisterForm() {
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-[var(--color-text-primary)] mb-1.5">
+          <label htmlFor="register-confirmPassword" className="block text-xs font-semibold text-[var(--color-text-primary)] mb-1.5">
             Xác nhận lại mật khẩu
           </label>
           <div className="relative">
             <Lock className="w-4 h-4 text-[var(--color-text-muted)] absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
+              id="register-confirmPassword"
               type="password"
               required
               minLength={8}

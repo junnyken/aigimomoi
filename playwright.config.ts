@@ -30,9 +30,9 @@ export default defineConfig({
   webServer: process.env.E2E_BASE_URL
     ? undefined
     : {
-        command: `npx next start -p ${PORT}`,
+        command: `PORT=${PORT} HOSTNAME=0.0.0.0 node .next/standalone/server.js`,
         url: `${BASE_URL}/api/health`,
-        reuseExistingServer: !isCI,
+        reuseExistingServer: false,
         timeout: 120_000,
         stdout: 'ignore',
         stderr: 'pipe',

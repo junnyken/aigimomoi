@@ -165,6 +165,10 @@ async function runTests() {
     authorName: 'Đầu Bếp Mom',
     source: 'EDITORIAL',
     creatorSlug: null,
+    price: 0,
+    isFree: true,
+    authorId: null,
+    provenance: 'EDITORIAL',
     ingredients: [
       {
         id: 1,

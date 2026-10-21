@@ -13,6 +13,9 @@ export const E2E_CREATOR = {
   slug: 'me-bap-e2e',
   recipeSlug: 'ga-kho-gung-me-bap-e2e',
   recipeName: 'Gà kho gừng Mẹ Bắp',
+  paidRecipeSlug: 'vit-kho-gung-me-bap-e2e',
+  paidRecipeName: 'Vịt kho gừng Mẹ Bắp',
+  paidPrice: 35000,
 };
 
 async function main() {
@@ -80,11 +83,51 @@ async function main() {
     ]);
   }
 
-  console.log('[seed-e2e-creator] ✓ Người nấu & công thức Chợ công thức cho E2E');
-  process.exit(0);
+  // R8: Seed công thức cộng đồng có phí
+  const existingPaid = await db.query.recipes.findFirst({ where: eq(recipes.slug, E2E_CREATOR.paidRecipeSlug) });
+  if (!existingPaid) {
+    const [paidRecipe] = await db
+      .insert(recipes)
+      .values({
+        dishId,
+        authorId: user.id,
+        slug: E2E_CREATOR.paidRecipeSlug,
+        name: E2E_CREATOR.paidRecipeName,
+        shortDescription: 'Vịt kho gừng gia truyền độc quyền của Mẹ Bắp.',
+        role: 'MAIN',
+        status: 'PUBLISHED',
+        provenance: 'COMMUNITY_SUBMITTED',
+        price: E2E_CREATOR.paidPrice,
+        isFree: false,
+        isEditorialReviewed: true,
+        isCookTested: false,
+        publishedAt: new Date(),
+        prepTimeMinutes: 20,
+        cookTimeMinutes: 40,
+      })
+      .returning();
+
+    const anyIngredient = await db.query.ingredients.findFirst({ columns: { id: true } });
+    if (anyIngredient) {
+      await db.insert(recipeIngredients).values({
+        recipeId: paidRecipe.id, ingredientId: anyIngredient.id, amount: 600, unit: 'g', sortOrder: 0,
+      });
+    }
+    await db.insert(cookingSteps).values([
+      { recipeId: paidRecipe.id, stepNumber: 1, phaseName: 'Sơ chế', instruction: 'Thịt vịt xát muối gừng khử mùi hôi đặc trưng.' },
+      { recipeId: paidRecipe.id, stepNumber: 2, phaseName: 'Kho', instruction: 'Kho thịt vịt với nước dừa tươi cho ngấm gia vị.' },
+    ]);
+  }
+
+  console.log('[seed-e2e-creator] ✓ Người nấu & công thức Chợ công thức (miễn phí & có phí) cho E2E');
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+if (process.argv[1]?.includes('seed_e2e_creator')) {
+  main().then(() => {
+    process.exit(0);
+  }).catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
+}
+

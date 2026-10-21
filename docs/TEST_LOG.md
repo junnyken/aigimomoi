@@ -855,6 +855,22 @@ Kiểm tra tài liệu/skill (script read-only, 8 nhóm):
 | 12 | **Build Production**: `npm run build` thành công, biên dịch trọn vẹn 67 routes | PASS |
 | 13 | DECISIONS.md ghi nhận D65, ROADMAP.md cập nhật R7 closed | PASS |
 
+## R8 — Khóa Nội Dung, Gói Công Thức & Quyền Sở Hữu (Server-Side Gating & Entitlements) — 21/10/2026
 
+**Môi trường:** Postgres 16 (Docker, DB `angimom_db` & `angimom_test`), Node 20+, Next.js 16.4.2 App Router, Playwright 1.64.1.
 
-
+| # | Kiểm tra | Kết quả |
+|---|---|---|
+| 1 | **Quy Tắc Đặt Giá Món Lẻ (D66)**: 0đ (miễn phí) hoặc từ 10.000đ – 200.000đ (bội số 1.000đ); CHECK constraint `recipes_price_range_check` ở DB; chỉ Bậc 2 hoặc ADMIN mới được phép đặt giá > 0 | PASS |
+| 2 | **Bộ Công Thức (Bundles / Combo)**: Gom 2–50 món, giá 30.000đ – 1.000.000đ (bội số 1.000đ); bảng `recipe_bundles` & `recipe_bundle_items`; chỉ Bậc 2 hoặc ADMIN được tạo bộ | PASS |
+| 3 | **Bảo Vệ Nội Dung Server-Side (Không CSS Masking)**: Khi chưa sở hữu, API và Server Component tuyệt đối không trả về `ingredients` và `steps` (trả về mảng rỗng `[]`), `tips` và `videoUrl` trả về `null` | PASS |
+| 4 | **Bảo Mật Bữa Ăn & Đi Chợ**: Món chưa sở hữu nếu được thêm vào mâm sẽ bị lọc sạch nguyên liệu khi xem `/shopping` (ngăn trích xuất công thức lậu qua giỏ chợ) | PASS |
+| 5 | **Chế Độ Nấu Bếp Bị Khóa**: `/cong-thuc/[slug]/nau` từ chối người xem chưa sở hữu (tự động chuyển hướng về trang chi tiết món) | PASS |
+| 6 | **Cơ Chế Trải Nghiệm Thử Nghiệm (Zero-Money Claiming)**: Người dùng đăng nhập có thể bấm "Mở khóa dùng thử" (`POST /api/recipes/[id]/claim` hoặc `/api/bundles/[id]/claim`) nhận quyền `PROMO_CLAIM` idempotent, không lỗi | PASS |
+| 7 | **SEO & PPR An Toàn**: Schema JSON-LD không chứa nguyên liệu/bước của món có phí; bọc dynamic gating trong `<Suspense>` giúp Next.js 16 Partial Prerendering không bị bailout lỗi | PASS |
+| 8 | **Test Suite R8 Tự Động (`npm run test:gating`)**: Logic thuần và tích hợp DB + API thực tế PASS 100% | PASS |
+| 9 | **Test E2E Playwright R8 (`e2e/content-gating.spec.ts`)**: 4/4 ca kiểm thử trên cả Desktop Chrome và Mobile Pixel 7 PASS 100% (14.1s) | PASS |
+| 10 | **Test Hồi Quy Toàn Bộ**: `test:creator` (PASS), `test:auth` (45/45), `test:register` (13/13), `test:profile` (13/13), `test:honesty` (38/38), `test:core` (99/99), `e2e/creator-marketplace.spec.ts` (8/8), `e2e/core-flow.spec.ts` (13/13) PASS 100% | PASS |
+| 11 | **ESLint & Typecheck Toàn Repo**: `npx eslint --quiet src e2e` 0 errors; `npx tsc --noEmit` 0 errors | PASS |
+| 12 | **Build Production**: `npm run build` thành công, biên dịch trọn vẹn 68 routes (kèm copy static assets vào standalone) | PASS |
+| 13 | DECISIONS.md ghi nhận D66, ROADMAP.md cập nhật R8 closed | PASS |

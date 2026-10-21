@@ -1,8 +1,10 @@
+import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound, permanentRedirect } from 'next/navigation';
 import { ArrowLeft, Clock, Flame, Gauge, Users, UtensilsCrossed, Tag, Store } from 'lucide-react';
 import { getCurrentSlugForArchived, getPublishedRecipeBySlug } from '@/lib/recipes/public';
+import type { PublicRecipe } from '@/lib/recipes/publicQueries';
 import {
   ROLE_LABELS,
   TAXONOMY_TYPE_LABELS,
@@ -23,6 +25,11 @@ import { CookedItSection } from '@/components/recipe/CookedItSection';
 import { RecipeJsonLd } from '@/components/seo/RecipeJsonLd';
 import { PantryCheckWidget } from '@/components/pantry/PantryCheckWidget';
 import { StartCookingButton } from '@/components/recipe/StartCookingButton';
+import { getSessionUser } from '@/lib/auth/session';
+import { getUserRecipeEntitlements } from '@/lib/gating/queries';
+import { canAccessRecipe, filterRecipeForViewer } from '@/lib/gating/entitlements';
+import { GatedRecipeBanner } from '@/components/recipe/GatedRecipeBanner';
+import { formatPriceVND } from '@/lib/gating/pricing';
 
 interface PageParams {
   params: Promise<{ slug: string }>;
@@ -75,13 +82,20 @@ export async function generateMetadata({ params }: PageParams): Promise<Metadata
 // 404 và 308 trả về đúng mã HTTP thay vì "soft 404" khi đã stream.
 export default async function PublicRecipePage({ params }: PageParams) {
   const { slug } = await params;
-  const recipe = await loadRecipe(slug);
-  const totalMinutes = recipe.prepTimeMinutes + recipe.cookTimeMinutes;
-  const isCommunity = recipe.source === 'COMMUNITY';
+  const rawRecipe = await loadRecipe(slug);
+  const isPaidCommunityRecipe =
+    rawRecipe.provenance === 'COMMUNITY_SUBMITTED' && !rawRecipe.isFree && rawRecipe.price > 0;
+  const totalMinutes = rawRecipe.prepTimeMinutes + rawRecipe.cookTimeMinutes;
+  const isCommunity = rawRecipe.source === 'COMMUNITY';
+
+  // Với công thức có phí, JSON-LD không chứa nguyên liệu/bước để tránh lộ bí quyết
+  const jsonLdRecipe = isPaidCommunityRecipe
+    ? { ...rawRecipe, ingredients: [], steps: [] }
+    : rawRecipe;
 
   return (
     <article className="flex flex-col gap-8 pb-12">
-      <RecipeJsonLd recipe={recipe} />
+      <RecipeJsonLd recipe={jsonLdRecipe} />
       <Link
         href="/"
         className="inline-flex w-fit items-center gap-1.5 text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-brand-primary)] transition-colors"
@@ -94,11 +108,11 @@ export default async function PublicRecipePage({ params }: PageParams) {
       <header className="grid gap-6 lg:grid-cols-[1.1fr_1fr] lg:items-center">
         <div className="flex flex-col">
           <div className="relative overflow-hidden rounded-3xl bg-[var(--color-surface-raised)] aspect-[4/3] shadow-sm">
-            {recipe.heroImage ? (
+            {rawRecipe.heroImage ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={recipe.heroImage}
-                alt={recipe.name}
+                src={rawRecipe.heroImage}
+                alt={rawRecipe.name}
                 className="h-full w-full object-cover"
                 fetchPriority="high"
               />
@@ -108,15 +122,15 @@ export default async function PublicRecipePage({ params }: PageParams) {
               </div>
             )}
             <span className="absolute top-4 left-4 px-3 py-1 rounded-full text-xs font-semibold bg-[var(--color-brand-primary)] text-white shadow-sm">
-              {ROLE_LABELS[recipe.role] ?? recipe.role}
+              {ROLE_LABELS[rawRecipe.role] ?? rawRecipe.role}
             </span>
-            {recipe.heroImage && recipe.isIllustration && (
+            {rawRecipe.heroImage && rawRecipe.isIllustration && (
               <span className="absolute bottom-4 right-4 px-3 py-1 rounded-full text-xs font-medium bg-black/60 text-white/95 backdrop-blur-xs shadow-sm">
                 Ảnh minh họa
               </span>
             )}
           </div>
-          {recipe.heroImage && recipe.isIllustration && (
+          {rawRecipe.heroImage && rawRecipe.isIllustration && (
             <p className="mt-2 text-xs text-[var(--color-text-muted)] italic">
               {isCommunity
                 ? '* Ảnh minh họa, không phải ảnh thành phẩm thực tế.'
@@ -127,34 +141,39 @@ export default async function PublicRecipePage({ params }: PageParams) {
 
         <div className="flex flex-col gap-4">
           <div>
-            {recipe.dish && recipe.dish.name !== recipe.name && (
-              <p className="text-sm font-semibold text-[var(--color-accent-text)]">{recipe.dish.name}</p>
+            {rawRecipe.dish && rawRecipe.dish.name !== rawRecipe.name && (
+              <p className="text-sm font-semibold text-[var(--color-accent-text)]">{rawRecipe.dish.name}</p>
             )}
-            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-[var(--color-text-primary)]">{recipe.name}</h1>
-            {recipe.dish && recipe.dish.aliases.length > 0 && (
-              <p className="mt-1 text-sm text-[var(--color-text-muted)]">Còn gọi là: {recipe.dish.aliases.join(', ')}</p>
+            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-[var(--color-text-primary)]">{rawRecipe.name}</h1>
+            {rawRecipe.dish && rawRecipe.dish.aliases.length > 0 && (
+              <p className="mt-1 text-sm text-[var(--color-text-muted)]">Còn gọi là: {rawRecipe.dish.aliases.join(', ')}</p>
             )}
           </div>
 
-          <p className="text-base leading-relaxed text-[var(--color-text-secondary)]">{recipe.shortDescription}</p>
+          <p className="text-base leading-relaxed text-[var(--color-text-secondary)]">{rawRecipe.shortDescription}</p>
 
           {isCommunity && (
             <div
               className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
               data-testid="community-recipe-notice"
             >
-              <p className="inline-flex items-center gap-1.5 font-semibold">
-                <Store className="w-4 h-4" aria-hidden="true" />
-                Chợ công thức
-              </p>
+              <div className="flex items-center justify-between gap-2">
+                <p className="inline-flex items-center gap-1.5 font-semibold">
+                  <Store className="w-4 h-4" aria-hidden="true" />
+                  Chợ công thức
+                </p>
+                <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${rawRecipe.isFree ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-200 text-amber-900'}`}>
+                  {formatPriceVND(rawRecipe.price)}
+                </span>
+              </div>
               <p className="mt-1 leading-relaxed">
                 Công thức do{' '}
-                {recipe.creatorSlug ? (
-                  <Link href={`/nguoi-nau/${recipe.creatorSlug}`} className="font-semibold underline underline-offset-2">
-                    {recipe.authorName ?? 'người nấu'}
+                {rawRecipe.creatorSlug ? (
+                  <Link href={`/nguoi-nau/${rawRecipe.creatorSlug}`} className="font-semibold underline underline-offset-2">
+                    {rawRecipe.authorName ?? 'người nấu'}
                   </Link>
                 ) : (
-                  <span className="font-semibold">{recipe.authorName ?? 'người nấu cộng đồng'}</span>
+                  <span className="font-semibold">{rawRecipe.authorName ?? 'người nấu cộng đồng'}</span>
                 )}{' '}
                 chia sẻ, chưa được Bếp Mom nấu thử kiểm nghiệm. Nội dung thuộc trách nhiệm của người chia sẻ.
               </p>
@@ -162,91 +181,189 @@ export default async function PublicRecipePage({ params }: PageParams) {
           )}
 
           <VerificationBadges
-            isEditorialReviewed={recipe.isEditorialReviewed}
-            isCookTested={recipe.isCookTested}
-            isNutritionVerified={recipe.isNutritionVerified}
+            isEditorialReviewed={rawRecipe.isEditorialReviewed}
+            isCookTested={rawRecipe.isCookTested}
+            isNutritionVerified={rawRecipe.isNutritionVerified}
           />
 
           <dl className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <Stat icon={Clock} label="Sơ chế" value={formatDuration(recipe.prepTimeMinutes)} />
-            <Stat icon={Flame} label="Nấu" value={formatDuration(recipe.cookTimeMinutes)} />
-            <Stat icon={Gauge} label="Độ khó" value={recipe.difficulty} />
-            <Stat icon={Users} label="Khẩu phần gốc" value={`${recipe.baseServings} người`} />
+            <Stat icon={Clock} label="Sơ chế" value={formatDuration(rawRecipe.prepTimeMinutes)} />
+            <Stat icon={Flame} label="Nấu" value={formatDuration(rawRecipe.cookTimeMinutes)} />
+            <Stat icon={Gauge} label="Độ khó" value={rawRecipe.difficulty} />
+            <Stat icon={Users} label="Khẩu phần gốc" value={`${rawRecipe.baseServings} người`} />
           </dl>
 
-          <div className="pt-1 flex flex-wrap items-center gap-3">
-            <StartCookingButton slug={recipe.slug} baseServings={recipe.baseServings} />
-            <BookmarkButton slug={recipe.slug} size="lg" showText={true} />
-            <LogToDiaryButton recipeId={recipe.id} recipeName={recipe.name} />
-          </div>
+          {isPaidCommunityRecipe ? (
+            <Suspense fallback={<BookmarkButton slug={rawRecipe.slug} size="lg" showText={true} />}>
+              <PaidRecipeActions rawRecipe={rawRecipe} />
+            </Suspense>
+          ) : (
+            <div className="pt-1 flex flex-wrap items-center gap-3">
+              <StartCookingButton slug={rawRecipe.slug} baseServings={rawRecipe.baseServings} />
+              <BookmarkButton slug={rawRecipe.slug} size="lg" showText={true} />
+              <LogToDiaryButton recipeId={rawRecipe.id} recipeName={rawRecipe.name} />
+            </div>
+          )}
 
           <p className="text-xs text-[var(--color-text-muted)]">
             Tổng thời gian khoảng {formatDuration(totalMinutes)}
-            {recipe.authorName ? ` · ${isCommunity ? 'Chia sẻ bởi' : 'Biên soạn bởi'} ${recipe.authorName}` : ''}
-            {recipe.versionNumber > 1 ? ` · Phiên bản ${recipe.versionNumber}` : ''}
+            {rawRecipe.authorName ? ` · ${isCommunity ? 'Chia sẻ bởi' : 'Biên soạn bởi'} ${rawRecipe.authorName}` : ''}
+            {rawRecipe.versionNumber > 1 ? ` · Phiên bản ${rawRecipe.versionNumber}` : ''}
           </p>
         </div>
       </header>
 
       {/* Body */}
-      <div className="grid gap-8 lg:grid-cols-[minmax(0,360px)_1fr] lg:items-start">
-        <aside className="flex flex-col gap-4 lg:sticky lg:top-24">
-          <PantryCheckWidget recipeId={recipe.id} />
-          <IngredientList ingredients={recipe.ingredients} baseServings={recipe.baseServings} />
-          <NutritionNotice
-            nutritionStatus={recipe.nutritionStatus}
-            caloriesPerServing={recipe.caloriesPerServing}
-            isNutritionVerified={recipe.isNutritionVerified}
-            nutritionSnapshot={recipe.nutritionSnapshot}
-          />
-        </aside>
+      {isPaidCommunityRecipe ? (
+        <Suspense fallback={<PaidRecipeBodySkeleton />}>
+          <PaidRecipeBody rawRecipe={rawRecipe} />
+        </Suspense>
+      ) : (
+        <FullRecipeBody recipe={rawRecipe} />
+      )}
+    </article>
+  );
+}
 
-        <div className="flex flex-col gap-8">
-          {/* AG-33: Câu chuyện bếp nhà & nguồn gốc */}
-          <KitchenStorySection
-            kitchenStory={recipe.kitchenStory}
-            sourceAttribution={recipe.sourceAttribution}
-            region={recipe.region}
-          />
+async function PaidRecipeActions({ rawRecipe }: { rawRecipe: PublicRecipe }) {
+  const sessionUser = await getSessionUser();
+  const entitlements = sessionUser ? await getUserRecipeEntitlements(sessionUser.id) : new Set<number>();
+  const hasAccess = canAccessRecipe(
+    {
+      recipeId: rawRecipe.id,
+      provenance: rawRecipe.provenance,
+      price: rawRecipe.price,
+      isFree: rawRecipe.isFree,
+      authorId: rawRecipe.authorId,
+    },
+    sessionUser?.id ?? null,
+    entitlements
+  );
 
-          <StepList steps={recipe.steps} recipeName={recipe.name} />
+  return (
+    <div className="pt-1 flex flex-wrap items-center gap-3">
+      {hasAccess && (
+        <StartCookingButton slug={rawRecipe.slug} baseServings={rawRecipe.baseServings} />
+      )}
+      <BookmarkButton slug={rawRecipe.slug} size="lg" showText={true} />
+      {hasAccess && (
+        <LogToDiaryButton recipeId={rawRecipe.id} recipeName={rawRecipe.name} />
+      )}
+    </div>
+  );
+}
 
-          {/* AG-33: Biến thể món ăn vùng miền */}
-          <RegionalVariants
-            currentDishName={recipe.dish?.name}
-            variants={recipe.variants}
-          />
+async function PaidRecipeBody({ rawRecipe }: { rawRecipe: PublicRecipe }) {
+  const sessionUser = await getSessionUser();
+  const entitlements = sessionUser ? await getUserRecipeEntitlements(sessionUser.id) : new Set<number>();
+  const hasAccess = canAccessRecipe(
+    {
+      recipeId: rawRecipe.id,
+      provenance: rawRecipe.provenance,
+      price: rawRecipe.price,
+      isFree: rawRecipe.isFree,
+      authorId: rawRecipe.authorId,
+    },
+    sessionUser?.id ?? null,
+    entitlements
+  );
 
-          {recipe.tags.length > 0 && (
-            <section aria-labelledby="tags-heading">
-              <h2 id="tags-heading" className="mb-3 text-sm font-semibold text-[var(--color-text-secondary)] flex items-center gap-1.5">
-                <Tag className="w-4 h-4" aria-hidden="true" />
-                Phân loại
-              </h2>
-              <ul className="flex flex-wrap gap-2">
-                {recipe.tags.map((tag) => (
-                  <li
-                    key={tag.slug}
-                    className="px-3 py-1 rounded-full text-xs font-medium bg-[var(--color-surface-white)] border border-[var(--color-border-base)] text-[var(--color-text-secondary)]"
-                    title={TAXONOMY_TYPE_LABELS[tag.type] ?? tag.type}
-                  >
-                    {tag.name}
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
+  if (!hasAccess) {
+    const recipe = filterRecipeForViewer(rawRecipe, false);
+    return (
+      <div className="flex flex-col gap-8">
+        <GatedRecipeBanner
+          recipeId={recipe.id}
+          recipeSlug={recipe.slug}
+          recipeName={recipe.name}
+          authorName={recipe.authorName}
+          price={recipe.price}
+          isLoggedIn={!!sessionUser}
+        />
 
-          {/* AG-34: Cộng đồng nấu thử & ảnh thành phẩm */}
-          <CookedItSection recipeId={recipe.id} recipeName={recipe.name} />
+        <KitchenStorySection
+          kitchenStory={recipe.kitchenStory}
+          sourceAttribution={recipe.sourceAttribution}
+          region={recipe.region}
+        />
 
-          {/* AG-32: Báo cáo vi phạm nội dung */}
-          <div className="pt-4 border-t border-[var(--color-border-base)] flex justify-end">
-            <ReportButton recipeId={recipe.id} recipeName={recipe.name} />
-          </div>
+        <CookedItSection recipeId={recipe.id} recipeName={recipe.name} />
+
+        <div className="pt-4 border-t border-[var(--color-border-base)] flex justify-end">
+          <ReportButton recipeId={recipe.id} recipeName={recipe.name} />
         </div>
       </div>
-    </article>
+    );
+  }
+
+  const recipe = filterRecipeForViewer(rawRecipe, true);
+  return <FullRecipeBody recipe={recipe} />;
+}
+
+function FullRecipeBody({ recipe }: { recipe: PublicRecipe }) {
+  return (
+    <div className="grid gap-8 lg:grid-cols-[minmax(0,360px)_1fr] lg:items-start">
+      <aside className="flex flex-col gap-4 lg:sticky lg:top-24">
+        <PantryCheckWidget recipeId={recipe.id} />
+        <IngredientList ingredients={recipe.ingredients} baseServings={recipe.baseServings} />
+        <NutritionNotice
+          nutritionStatus={recipe.nutritionStatus}
+          caloriesPerServing={recipe.caloriesPerServing}
+          isNutritionVerified={recipe.isNutritionVerified}
+          nutritionSnapshot={recipe.nutritionSnapshot}
+        />
+      </aside>
+
+      <div className="flex flex-col gap-8">
+        <KitchenStorySection
+          kitchenStory={recipe.kitchenStory}
+          sourceAttribution={recipe.sourceAttribution}
+          region={recipe.region}
+        />
+
+        <StepList steps={recipe.steps} recipeName={recipe.name} />
+
+        <RegionalVariants
+          currentDishName={recipe.dish?.name}
+          variants={recipe.variants}
+        />
+
+        {recipe.tags.length > 0 && (
+          <section aria-labelledby="tags-heading">
+            <h2 id="tags-heading" className="mb-3 text-sm font-semibold text-[var(--color-text-secondary)] flex items-center gap-1.5">
+              <Tag className="w-4 h-4" aria-hidden="true" />
+              Phân loại
+            </h2>
+            <ul className="flex flex-wrap gap-2">
+              {recipe.tags.map((tag) => (
+                <li
+                  key={tag.slug}
+                  className="px-3 py-1 rounded-full text-xs font-medium bg-[var(--color-surface-white)] border border-[var(--color-border-base)] text-[var(--color-text-secondary)]"
+                  title={TAXONOMY_TYPE_LABELS[tag.type] ?? tag.type}
+                >
+                  {tag.name}
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        <CookedItSection recipeId={recipe.id} recipeName={recipe.name} />
+
+        <div className="pt-4 border-t border-[var(--color-border-base)] flex justify-end">
+          <ReportButton recipeId={recipe.id} recipeName={recipe.name} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PaidRecipeBodySkeleton() {
+  return (
+    <div className="rounded-3xl border border-amber-200 bg-amber-50/50 p-8 text-center animate-pulse">
+      <div className="h-6 w-48 bg-amber-200/60 rounded-full mx-auto mb-3" />
+      <div className="h-4 w-72 bg-amber-200/40 rounded-full mx-auto" />
+    </div>
   );
 }
 
@@ -261,3 +378,4 @@ function Stat({ icon: Icon, label, value }: { icon: typeof Clock; label: string;
     </div>
   );
 }
+

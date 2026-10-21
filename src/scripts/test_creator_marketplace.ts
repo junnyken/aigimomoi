@@ -126,6 +126,7 @@ function testPureLogic() {
     slug: 'x', name: 'X', shortDescription: '', role: 'MAIN', baseServings: 4, prepTimeMinutes: 5,
     cookTimeMinutes: 10, difficulty: 'Dễ', heroImage: 'javascript:alert(1)', isCookTested: true,
     provenance: 'COMMUNITY_SUBMITTED', authorName: 'Mẹ Bắp', creatorSlug: 'me-bap', creatorIsPublic: false,
+    price: 0, isFree: true,
   };
   const card = mapPublicCardRow(row);
   assert.equal(card.isCookTested, false, 'Thẻ món cộng đồng không bao giờ "Đã nấu thử"');

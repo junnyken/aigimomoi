@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Clock, Users, ChefHat, UtensilsCrossed, Store } from 'lucide-react';
 import type { PublicRecipeCard } from '@/lib/recipes/publicQueries';
 import { ROLE_LABELS, formatDuration, recipePath, isIllustrationImage } from '@/lib/recipes/labels';
+import { formatPriceVND } from '@/lib/gating/pricing';
 import { BookmarkButton } from './BookmarkButton';
 
 export function RecipeCard({ recipe }: { recipe: PublicRecipeCard }) {
@@ -80,6 +81,14 @@ export function RecipeCard({ recipe }: { recipe: PublicRecipeCard }) {
             <Users className="w-3.5 h-3.5" aria-hidden="true" />
             {recipe.baseServings} người
           </span>
+          {recipe.source === 'COMMUNITY' && (
+            <span
+              className={`font-semibold ${recipe.isFree ? 'text-emerald-600' : 'text-amber-700'}`}
+              data-testid="recipe-price-tag"
+            >
+              {formatPriceVND(recipe.price)}
+            </span>
+          )}
         </div>
       </div>
     </article>

@@ -19,6 +19,9 @@ import {
   pantryItems,
   mealPlans,
   creatorProfiles,
+  recipeBundles,
+  recipeBundleItems,
+  userEntitlements,
 } from './schema';
 
 export const usersRelations = relations(users, ({ one, many }) => ({
@@ -224,6 +227,41 @@ export const mealPlansRelations = relations(mealPlans, ({ one }) => ({
     references: [recipes.id],
   }),
 }));
+
+export const recipeBundlesRelations = relations(recipeBundles, ({ one, many }) => ({
+  creator: one(users, {
+    fields: [recipeBundles.creatorId],
+    references: [users.id],
+  }),
+  items: many(recipeBundleItems),
+}));
+
+export const recipeBundleItemsRelations = relations(recipeBundleItems, ({ one }) => ({
+  bundle: one(recipeBundles, {
+    fields: [recipeBundleItems.bundleId],
+    references: [recipeBundles.id],
+  }),
+  recipe: one(recipes, {
+    fields: [recipeBundleItems.recipeId],
+    references: [recipes.id],
+  }),
+}));
+
+export const userEntitlementsRelations = relations(userEntitlements, ({ one }) => ({
+  user: one(users, {
+    fields: [userEntitlements.userId],
+    references: [users.id],
+  }),
+  recipe: one(recipes, {
+    fields: [userEntitlements.recipeId],
+    references: [recipes.id],
+  }),
+  bundle: one(recipeBundles, {
+    fields: [userEntitlements.bundleId],
+    references: [recipeBundles.id],
+  }),
+}));
+
 
 
 

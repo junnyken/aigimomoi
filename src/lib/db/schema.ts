@@ -173,6 +173,9 @@ export const recipes = pgTable('recipes', {
   nutritionSnapshot: jsonb('nutrition_snapshot'),
 
   authorId: integer('author_id').references(() => users.id, { onDelete: 'set null' }),
+  // R8: Pricing & Free flag (D66)
+  price: integer('price').notNull().default(0),
+  isFree: boolean('is_free').notNull().default(true),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [
@@ -187,6 +190,11 @@ export const recipes = pgTable('recipes', {
   check(
     'recipes_community_not_cook_tested',
     sql`${table.provenance} <> 'COMMUNITY_SUBMITTED' OR ${table.isCookTested} = false`
+  ),
+  // R8: ràng buộc khoảng giá món lẻ (0 hoặc 10k-200k)
+  check(
+    'recipes_price_range_check',
+    sql`${table.price} = 0 OR (${table.price} >= 10000 AND ${table.price} <= 200000)`
   ),
 ]);
 
@@ -349,6 +357,58 @@ export const creatorProfiles = pgTable('creator_profiles', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [
   index('creator_profiles_slug_idx').on(table.slug),
+]);
+
+// Recipe Bundles (Bộ công thức / Combo món — R8 D66)
+export const recipeBundles = pgTable('recipe_bundles', {
+  id: serial('id').primaryKey(),
+  creatorId: integer('creator_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  slug: text('slug').notNull().unique(),
+  title: text('title').notNull(),
+  description: text('description'),
+  coverImage: text('cover_image'),
+  price: integer('price').notNull().default(30000),
+  status: text('status').notNull().default('DRAFT'), // DRAFT, PUBLISHED, ARCHIVED
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index('recipe_bundles_creator_idx').on(table.creatorId),
+  index('recipe_bundles_slug_idx').on(table.slug),
+  check(
+    'recipe_bundles_price_check',
+    sql`${table.price} >= 30000 AND ${table.price} <= 1000000`
+  ),
+]);
+
+// Recipe Bundle Items (Món trong bộ combo — R8 D66)
+export const recipeBundleItems = pgTable('recipe_bundle_items', {
+  id: serial('id').primaryKey(),
+  bundleId: integer('bundle_id').notNull().references(() => recipeBundles.id, { onDelete: 'cascade' }),
+  recipeId: integer('recipe_id').notNull().references(() => recipes.id, { onDelete: 'cascade' }),
+  orderIndex: integer('order_index').notNull().default(0),
+}, (table) => [
+  index('recipe_bundle_items_bundle_idx').on(table.bundleId),
+  index('recipe_bundle_items_recipe_idx').on(table.recipeId),
+  uniqueIndex('recipe_bundle_items_bundle_recipe_uniq').on(table.bundleId, table.recipeId),
+]);
+
+// User Entitlements (Quyền sở hữu công thức / bộ công thức — R8 D66)
+export const userEntitlements = pgTable('user_entitlements', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  itemType: text('item_type').notNull(), // 'RECIPE' | 'BUNDLE'
+  recipeId: integer('recipe_id').references(() => recipes.id, { onDelete: 'cascade' }),
+  bundleId: integer('bundle_id').references(() => recipeBundles.id, { onDelete: 'cascade' }),
+  grantedReason: text('granted_reason').notNull().default('PROMO_CLAIM'), // 'CREATOR_OWNER' | 'PROMO_CLAIM' | 'BUNDLE_EXPANSION' | 'ADMIN_GRANT'
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index('user_entitlements_user_idx').on(table.userId),
+  uniqueIndex('user_entitlements_user_recipe_uniq')
+    .on(table.userId, table.recipeId)
+    .where(sql`${table.itemType} = 'RECIPE'`),
+  uniqueIndex('user_entitlements_user_bundle_uniq')
+    .on(table.userId, table.bundleId)
+    .where(sql`${table.itemType} = 'BUNDLE'`),
 ]);
 
 // Ingredient Nutrition (Bảng thành phần dinh dưỡng nguyên liệu chuẩn Việt Nam - AG-35)

@@ -99,6 +99,12 @@ export interface PublicRecipe {
   source: RecipeSource;
   /** R7: slug hồ sơ công khai người nấu (chỉ với món cộng đồng có hồ sơ) */
   creatorSlug: string | null;
+  price: number;
+  isFree: boolean;
+  authorId: number | null;
+  provenance: string;
+  isGated?: boolean;
+  gatedReason?: 'REQUIRES_PURCHASE';
   ingredients: PublicRecipeIngredient[];
   steps: PublicRecipeStep[];
   tags: PublicRecipeTag[];
@@ -118,6 +124,8 @@ export interface PublicRecipeCard {
   source: RecipeSource;
   creatorSlug: string | null;
   authorName: string | null;
+  price: number;
+  isFree: boolean;
 }
 
 /** Cột dùng chung cho mọi truy vấn thẻ món (kèm leftJoin users + creator_profiles). */
@@ -136,6 +144,8 @@ export const publicCardColumns = {
   authorName: users.displayName,
   creatorSlug: creatorProfiles.slug,
   creatorIsPublic: creatorProfiles.isPublic,
+  price: recipes.price,
+  isFree: recipes.isFree,
 };
 
 export interface PublicCardRow {
@@ -153,6 +163,8 @@ export interface PublicCardRow {
   authorName: string | null;
   creatorSlug: string | null;
   creatorIsPublic: boolean | null;
+  price: number;
+  isFree: boolean;
 }
 
 /** Truy vấn gốc cho thẻ món: recipes LEFT JOIN users LEFT JOIN creator_profiles. */
@@ -182,6 +194,8 @@ export function mapPublicCardRow(r: PublicCardRow): PublicRecipeCard {
     // Chỉ món cộng đồng mới dẫn về hồ sơ người nấu; hồ sơ phải đang công khai
     creatorSlug: source === 'COMMUNITY' && r.creatorIsPublic ? r.creatorSlug : null,
     authorName: source === 'COMMUNITY' ? r.authorName : null,
+    price: r.price ?? 0,
+    isFree: r.isFree ?? true,
   };
 }
 
@@ -214,6 +228,9 @@ export async function queryPublishedRecipeBySlug(slug: string): Promise<PublicRe
       sourceAttribution: true,
       variantOfId: true,
       provenance: true,
+      price: true,
+      isFree: true,
+      authorId: true,
     },
     with: {
       dish: { columns: { name: true }, with: { aliases: { columns: { aliasName: true } } } },
@@ -305,6 +322,10 @@ export async function queryPublishedRecipeBySlug(slug: string): Promise<PublicRe
     authorName: row.author?.displayName ?? null,
     source,
     creatorSlug: source === 'COMMUNITY' && creatorProfile?.isPublic ? creatorProfile.slug : null,
+    price: row.price ?? 0,
+    isFree: row.isFree ?? true,
+    authorId: row.authorId,
+    provenance: row.provenance,
     ingredients: row.ingredients.map((ri) => ({
       id: ri.id,
       name: ri.ingredient.name,

@@ -3,6 +3,7 @@ import { Suspense } from 'react';
 import { resolveMealSelection, queryMealRecipesForAggregation } from '@/lib/meal/mealQueries';
 import { aggregateMealIngredients } from '@/lib/recipes/aggregation';
 import { clampServings } from '@/lib/recipes/scaling';
+import { getSessionUser } from '@/lib/auth/session';
 import { ShoppingView } from '@/components/shopping/ShoppingView';
 
 interface ShoppingPageProps {
@@ -47,7 +48,8 @@ async function ShoppingPageContent({ searchParams }: ShoppingPageProps) {
     }));
 
   const slugs = dishes.map((d) => d.slug);
-  const recipesList = await queryMealRecipesForAggregation(slugs);
+  const sessionUser = await getSessionUser();
+  const recipesList = await queryMealRecipesForAggregation(slugs, sessionUser?.id ?? null);
   const result = aggregateMealIngredients(recipesList, servings);
 
   return <ShoppingView result={result} dishes={dishes} servings={servings} />;

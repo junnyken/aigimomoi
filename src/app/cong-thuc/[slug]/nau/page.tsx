@@ -1,8 +1,11 @@
 import { Suspense } from 'react';
 import type { Metadata } from 'next';
-import { notFound, permanentRedirect } from 'next/navigation';
+import { notFound, permanentRedirect, redirect } from 'next/navigation';
 import { getCurrentSlugForArchived, getPublishedRecipeBySlug } from '@/lib/recipes/public';
 import { RECIPE_NOT_FOUND_PLACEHOLDER, recipePath } from '@/lib/recipes/labels';
+import { getSessionUser } from '@/lib/auth/session';
+import { getUserRecipeEntitlements } from '@/lib/gating/queries';
+import { canAccessRecipe } from '@/lib/gating/entitlements';
 import { CookingModeView } from '@/components/cooking/CookingModeView';
 
 interface CookingPageProps {
@@ -60,6 +63,24 @@ async function CookingModeContent({
   recipe: NonNullable<Awaited<ReturnType<typeof getPublishedRecipeBySlug>>>;
   searchParams: Promise<{ step?: string; servings?: string }>;
 }) {
+  const sessionUser = await getSessionUser();
+  const entitlements = sessionUser ? await getUserRecipeEntitlements(sessionUser.id) : new Set<number>();
+  const hasAccess = canAccessRecipe(
+    {
+      recipeId: recipe.id,
+      provenance: recipe.provenance,
+      price: recipe.price,
+      isFree: recipe.isFree,
+      authorId: recipe.authorId,
+    },
+    sessionUser?.id ?? null,
+    entitlements
+  );
+
+  if (!hasAccess) {
+    redirect(recipePath(recipe.slug));
+  }
+
   const rawQuery = await searchParams;
 
   const initialServings = typeof rawQuery.servings === 'string' ? Number(rawQuery.servings) : undefined;
