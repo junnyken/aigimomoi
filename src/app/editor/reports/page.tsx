@@ -278,7 +278,7 @@ export default function EditorialReportsPage() {
                       </div>
                       {report.details ? (
                         <div className="text-xs text-stone-600 bg-white p-2.5 rounded-lg border border-[#EADBC8]">
-                          "{report.details}"
+                          &ldquo;{report.details}&rdquo;
                         </div>
                       ) : (
                         <div className="text-xs text-stone-400 italic">Không có mô tả chi tiết thêm.</div>

@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = request.nextUrl;
     const statusFilter = searchParams.get('status');
 
-    let query = db.query.recipes.findMany({
+    const query = db.query.recipes.findMany({
       where: (r, { eq, and }) => {
         const conditions = [eq(r.authorId, user.id)];
         if (statusFilter && statusFilter !== 'ALL') {

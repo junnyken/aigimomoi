@@ -2,6 +2,7 @@
 
 import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { Lock, Mail, AlertCircle, ArrowRight } from 'lucide-react';
 
 function LoginForm() {
@@ -107,6 +108,16 @@ function LoginForm() {
           <ArrowRight className="w-4 h-4" />
         </button>
       </form>
+
+      <div className="mt-6 pt-5 border-t border-[var(--color-border-subtle)] text-center text-sm text-[var(--color-text-secondary)]">
+        <span>Chưa có tài khoản? </span>
+        <Link
+          href={`/register?from=${encodeURIComponent(from)}`}
+          className="font-semibold text-[var(--color-brand-primary)] hover:underline"
+        >
+          Đăng ký thành viên ngay
+        </Link>
+      </div>
 
       {process.env.NODE_ENV !== 'production' && (
         <div className="mt-8 pt-6 border-t border-[var(--color-border-subtle)] text-xs text-[var(--color-text-muted)] space-y-1.5">

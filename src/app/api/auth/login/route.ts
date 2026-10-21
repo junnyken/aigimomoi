@@ -3,7 +3,7 @@ import { db } from '@/lib/db';
 import { users } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { verifyPassword } from '@/lib/auth/password';
-import { setSessionCookie, AuthConfigurationError, getAuthSecret } from '@/lib/auth/session';
+import { setSessionCookie, signToken, SESSION_COOKIE_NAME, SESSION_DURATION_MS, AuthConfigurationError, getAuthSecret } from '@/lib/auth/session';
 import { logger } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
@@ -43,14 +43,25 @@ export async function POST(request: NextRequest) {
     }
 
     // Set signed HttpOnly session cookie
-    await setSessionCookie({
+    const token = await signToken({
       id: user.id,
       email: user.email,
       displayName: user.displayName,
       role: user.role,
     });
 
-    return NextResponse.json({
+    try {
+      await setSessionCookie({
+        id: user.id,
+        email: user.email,
+        displayName: user.displayName,
+        role: user.role,
+      });
+    } catch {
+      // In case outside request scope
+    }
+
+    const response = NextResponse.json({
       ok: true,
       user: {
         id: user.id,
@@ -59,6 +70,16 @@ export async function POST(request: NextRequest) {
         role: user.role,
       },
     });
+
+    response.cookies.set(SESSION_COOKIE_NAME, token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: Math.floor(SESSION_DURATION_MS / 1000),
+    });
+
+    return response;
   } catch (error) {
     if (error instanceof AuthConfigurationError) {
       logger.error('Login configuration failure: AUTH_SECRET issue', {

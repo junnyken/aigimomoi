@@ -48,21 +48,18 @@ export function saveStoredMeal(state: StoredMealState) {
 }
 
 export function useMealState(initial: StoredMealState) {
-  const [meal, setMeal] = useState<StoredMealState>(initial);
-
-  useEffect(() => {
-    // Khi component mount, kiểm tra xem localStorage có state khác không
+  const [meal, setMeal] = useState<StoredMealState>(() => {
     const local = getStoredMeal();
     if (local) {
-      // Ưu tiên param từ URL nếu có, nếu URL không có param riêng biệt thì lấy từ local
-      setMeal((curr) => ({
-        mainSlug: curr.mainSlug || local.mainSlug,
-        soupSlug: curr.soupSlug || local.soupSlug,
-        sideSlug: curr.sideSlug || local.sideSlug,
-        servings: curr.servings || local.servings,
-      }));
+      return {
+        mainSlug: initial.mainSlug || local.mainSlug,
+        soupSlug: initial.soupSlug || local.soupSlug,
+        sideSlug: initial.sideSlug || local.sideSlug,
+        servings: initial.servings || local.servings,
+      };
     }
-  }, []);
+    return initial;
+  });
 
   const swapDish = useCallback((role: 'MAIN' | 'SOUP' | 'SIDE', newSlug: string) => {
     setMeal((prev) => {

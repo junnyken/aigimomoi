@@ -255,7 +255,7 @@ export default function EditorRecipesPage() {
             <div className="space-y-1">
               <h3 className="font-semibold text-[#3F6240]">Chưa có công thức nào phù hợp</h3>
               <p className="text-xs text-[#7C6A59]">
-                Bắt đầu bằng việc bấm "Soạn công thức mới" để đưa món ngon cơm nhà vào hệ thống.
+                Bắt đầu bằng việc bấm &ldquo;Soạn công thức mới&rdquo; để đưa món ngon cơm nhà vào hệ thống.
               </p>
             </div>
             <Link

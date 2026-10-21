@@ -19,20 +19,19 @@ export function IngredientList({
 }: IngredientListProps) {
   const safeBase = clampServings(baseServings, 4);
   const safeInitial = initialServings ? clampServings(initialServings, safeBase) : safeBase;
-  const [servings, setServings] = useState<number>(safeInitial);
-
-  // Đọc query param `?servings` khi trang mount trên client
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const url = new URL(window.location.href);
-    const param = url.searchParams.get('servings');
-    if (param) {
-      const parsed = Number(param);
-      if (Number.isFinite(parsed) && parsed >= 1 && parsed <= 20) {
-        setServings(parsed);
+  const [servings, setServings] = useState<number>(() => {
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      const param = url.searchParams.get('servings');
+      if (param) {
+        const parsed = Number(param);
+        if (Number.isFinite(parsed) && parsed >= 1 && parsed <= 20) {
+          return parsed;
+        }
       }
     }
-  }, []);
+    return safeInitial;
+  });
 
   // Đồng bộ số khẩu phần lên URL parameter `?servings=X` mà không reload trang
   useEffect(() => {

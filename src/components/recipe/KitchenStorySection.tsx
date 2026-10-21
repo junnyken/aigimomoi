@@ -59,7 +59,7 @@ export function KitchenStorySection({
         {/* Story content */}
         {kitchenStory && (
           <div className="text-sm text-[#4A3B32] leading-relaxed italic bg-white/70 backdrop-blur-2xs p-4 rounded-2xl border border-[#EADBC8]/50 shadow-2xs font-serif">
-            "{kitchenStory}"
+            &ldquo;{kitchenStory}&rdquo;
           </div>
         )}
 

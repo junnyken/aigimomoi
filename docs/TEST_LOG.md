@@ -796,3 +796,23 @@ Kiểm tra tài liệu/skill (script read-only, 8 nhóm):
 | 10 | **E2E Playwright trên Desktop Chrome & Mobile Pixel 7**: 13 passed, 1 skipped | PASS |
 | 11 | DECISIONS.md ghi nhận D62, hoàn tất tiêu chí Task R4 | PASS |
 
+## R5 — Zero Lint Toàn Repo, Luồng Đăng ký & Tự Động Hóa VPS Mắt Bão Vibe Host — 21/10/2026
+
+**Môi trường:** Postgres 16 (Docker, DB `angimom_test`), Node 20+, Next.js 16.4.2 App Router, Playwright 1.64.1.
+
+| # | Kiểm tra | Kết quả |
+|---|---|---|
+| 1 | **Dọn sạch Lint Toàn Repo**: `npm run lint -- --quiet` quét toàn bộ codebase (bao gồm editor, recipe, contribute, lib, v.v.), đạt **0 errors** (exit code 0) | PASS |
+| 2 | **API Đăng ký người dùng (`/api/auth/register`)**: Kiểm tra họ tên (2-50 ký tự), email chuẩn RFC, mật khẩu (≥8 ký tự); băm scrypt kèm salt bảo mật; gán role `COOK`; ngăn email trùng (HTTP 409 Conflict); tự động cấp phiên HttpOnly cookie an toàn | PASS |
+| 3 | **Giao diện Đăng ký (`/register`)**: Form giao diện chuẩn phong cách Bếp gia đình Ăn Gì Mom; kiểm tra khớp mật khẩu client-side; thông báo lỗi trực quan; tự động chuyển hướng sau đăng ký thành công | PASS |
+| 4 | **Bộ test đăng ký `npm run test:register`**: 13/13 ca kiểm thử bảo mật & chức năng PASS 100% | PASS |
+| 5 | **Bộ test xác thực & phiên đăng nhập (R0)**: `npm run test:auth` 45/45 PASS 100% | PASS |
+| 6 | **Bộ test trung thực dữ liệu (R1)**: `npm run test:honesty` 38/38 PASS 100% | PASS |
+| 7 | **Bộ test luồng cốt lõi (R2/R3)**: `npm run test:core` 99/99 PASS 100% | PASS |
+| 8 | **Typecheck toàn dự án**: `npx tsc --noEmit` exit code 0 | PASS |
+| 9 | **Build Production**: `npm run build` thành công, tạo 57 routes (bao gồm `/register` và `/api/auth/register`) | PASS |
+| 10 | **E2E Playwright**: 13 passed, 1 skipped (30.2s) | PASS |
+| 11 | **Cấu hình VPS / Mắt Bão Vibe Host**: Cập nhật Caddyfile với email `trieunt6@matbao.com`; cung cấp `.env.vps.template`; cung cấp script 1-chạm `scripts/setup_vps.sh` tự động sinh mã ngẫu nhiên an toàn cho `AUTH_SECRET` và Postgres | PASS |
+| 12 | DECISIONS.md ghi nhận D63 | PASS |
+
+

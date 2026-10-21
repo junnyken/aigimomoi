@@ -1,7 +1,7 @@
 import { cookies } from 'next/headers';
 
 export const SESSION_COOKIE_NAME = 'angimom_session_v1';
-const SESSION_DURATION_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+export const SESSION_DURATION_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 export class AuthConfigurationError extends Error {
   constructor(message: string) {

@@ -1,6 +1,6 @@
 # Caddy Production Reverse Proxy — Tự động cấp SSL HTTPS miễn phí và nén Zstandard/Gzip
 {
-    email admin@angimom.vn
+    email {$ACME_EMAIL:trieunt6@matbao.com}
     admin off
 }
 

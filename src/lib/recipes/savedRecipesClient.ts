@@ -29,17 +29,18 @@ function setLocalSlugs(slugs: string[]) {
  * Hook quản lý trạng thái các món đã lưu (hỗ trợ cả khách vãng lai và user đã đăng nhập).
  */
 export function useSavedRecipes() {
-  const [savedSlugs, setSavedSlugs] = useState<string[]>([]);
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [savedSlugs, setSavedSlugs] = useState<string[]>(() => {
+    if (typeof window !== 'undefined') {
+      return getLocalSlugs();
+    }
+    return [];
+  });
+  const [isLoaded, setIsLoaded] = useState<boolean>(() => typeof window !== 'undefined');
 
   const refresh = useCallback(async () => {
-    // 1. Lấy từ localStorage trước để render tức thì
-    const local = getLocalSlugs();
-    setSavedSlugs(local);
-    setIsLoaded(true);
-
-    // 2. Thử fetch từ server xem user có đăng nhập không
+    // Thử fetch từ server xem user có đăng nhập không
     try {
+      const local = getLocalSlugs();
       const res = await fetch('/api/saved-recipes');
       if (res.ok) {
         const data = await res.json();
@@ -62,6 +63,8 @@ export function useSavedRecipes() {
       }
     } catch {
       // Giữ local slugs nếu mất mạng hoặc chưa login
+    } finally {
+      setIsLoaded(true);
     }
   }, []);
 

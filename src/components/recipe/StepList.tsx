@@ -20,7 +20,14 @@ function groupByPhase(steps: PublicRecipeStep[]) {
 
 export function StepList({ steps, recipeName }: Props) {
   const groups = groupByPhase(steps);
-  let counter = 0;
+  let stepIndex = 0;
+  const numberedGroups = groups.map((group) => ({
+    ...group,
+    steps: group.steps.map((step) => ({
+      ...step,
+      stepNumber: ++stepIndex,
+    })),
+  }));
 
   return (
     <section aria-labelledby="steps-heading">
@@ -30,14 +37,13 @@ export function StepList({ steps, recipeName }: Props) {
       </h2>
 
       <div className="flex flex-col gap-8">
-        {groups.map((group, gi) => (
+        {numberedGroups.map((group, gi) => (
           <div key={`${group.phase}-${gi}`}>
             <h3 className="mb-3 inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide bg-[var(--color-accent-light)] text-[var(--color-accent-text)]">
               {group.phase}
             </h3>
             <ol className="flex flex-col gap-4">
               {group.steps.map((step) => {
-                counter += 1;
                 return (
                   <li
                     key={step.id}
@@ -47,10 +53,10 @@ export function StepList({ steps, recipeName }: Props) {
                       className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--color-brand-primary)] text-sm font-bold text-white transition-transform group-hover:scale-105"
                       aria-hidden="true"
                     >
-                      {counter}
+                      {step.stepNumber}
                     </span>
                     <div className="min-w-0 flex-1">
-                      <p className="sr-only">Bước {counter}</p>
+                      <p className="sr-only">Bước {step.stepNumber}</p>
                       <p className="whitespace-pre-line leading-relaxed text-[var(--color-text-primary)]">{step.instruction}</p>
 
                       {(step.timerSeconds || step.tipText) && (
@@ -74,7 +80,7 @@ export function StepList({ steps, recipeName }: Props) {
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
                           src={step.image}
-                          alt={`${recipeName} — bước ${counter}`}
+                          alt={`${recipeName} — bước ${step.stepNumber}`}
                           loading="lazy"
                           className="mt-3 w-full max-h-80 rounded-xl object-cover bg-[var(--color-surface-raised)]"
                         />
