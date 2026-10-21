@@ -9,9 +9,13 @@ export class GeminiProvider implements AiProvider {
   private readonly apiKey: string | undefined;
   private readonly modelName: string;
 
-  constructor(apiKey?: string, modelName = 'gemini-1.5-flash') {
-    this.apiKey = apiKey || process.env.GEMINI_API_KEY;
-    this.modelName = modelName;
+  constructor(apiKey?: string, modelName?: string) {
+    this.apiKey =
+      apiKey ||
+      process.env.GEMINI_API_KEY ||
+      process.env.AI_GEMINI_API_KEY ||
+      process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+    this.modelName = modelName || process.env.GEMINI_MODEL || 'gemini-2.5-flash';
   }
 
   isAvailable(): boolean {
