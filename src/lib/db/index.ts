@@ -5,10 +5,11 @@ import * as relations from './relations';
 
 const connectionString = process.env.DATABASE_URL || 'postgres://angimom:angimom_password@localhost:5432/angimom_db';
 
-const isLocalDatabase =
-  connectionString.includes('localhost') ||
-  connectionString.includes('127.0.0.1') ||
-  connectionString.includes('@postgres:');
+const requiresSsl =
+  connectionString.includes('supabase.co') ||
+  connectionString.includes('supabase.com') ||
+  connectionString.includes('neon.tech') ||
+  connectionString.includes('sslmode=require');
 
 const globalForDb = globalThis as unknown as {
   pgClient?: ReturnType<typeof postgres>;
@@ -17,10 +18,10 @@ const globalForDb = globalThis as unknown as {
 const client =
   globalForDb.pgClient ??
   postgres(connectionString, {
-    prepare: false, // Bắt buộc cho Supabase Transaction Pooler (Supavisor port 6543)
-    ssl: isLocalDatabase ? false : 'require', // Tự động bật SSL khi kết nối Supabase / Cloud DB
-    max: isLocalDatabase ? 10 : 5,
-    connect_timeout: isLocalDatabase ? 3 : 10,
+    prepare: false, // Tương thích cả PostgreSQL 16 chuẩn (Vibe Host / Docker) và Pooler
+    ssl: requiresSsl ? 'require' : false,
+    max: requiresSsl ? 5 : 10,
+    connect_timeout: 3,
     idle_timeout: 20,
     max_lifetime: 300,
   });

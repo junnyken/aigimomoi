@@ -4,6 +4,7 @@
 
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { ensureDatabaseBootstrapped } from '@/lib/db/autoBootstrap';
 import { sql } from 'drizzle-orm';
 import { logger } from '@/lib/logger';
 import { isAuthConfigurationValid } from '@/lib/auth/session';
@@ -28,8 +29,9 @@ export async function GET() {
   const authValid = isAuthConfigurationValid();
 
   try {
-    // Probe database connectivity
+    // Probe database connectivity & ensure schema/catalog bootstrapped on first live connection
     await db.execute(sql`SELECT 1`);
+    void ensureDatabaseBootstrapped();
 
     if (!authValid) {
       logger.warn('Healthcheck readiness probe failed: AUTH_SECRET is not configured or invalid');

@@ -1,0 +1,119 @@
+import fs from 'fs';
+import path from 'path';
+import { sql, eq } from 'drizzle-orm';
+import { db, recipes, users } from './index';
+import { hashPassword } from '../auth/password';
+import { seedProductionCatalog } from '../../scripts/seed_production_catalog';
+import { logger } from '../logger';
+
+let bootstrapPromise: Promise<void> | null = null;
+
+export function ensureDatabaseBootstrapped(): Promise<void> {
+  if (!bootstrapPromise) {
+    bootstrapPromise = runBootstrap().catch((err) => {
+      logger.warn('Auto-bootstrap database skipped or failed (fallback catalog remains active)', {
+        error: err instanceof Error ? err.message : String(err),
+      });
+      bootstrapPromise = null;
+    });
+  }
+  return bootstrapPromise;
+}
+
+async function runBootstrap(): Promise<void> {
+  if (!process.env.DATABASE_URL) {
+    return;
+  }
+
+  // 1. Kiểm tra kết nối DB
+  await db.execute(sql`SELECT 1`);
+
+  // 2. Đồng bộ toàn bộ file SQL migration trong thư mục drizzle/
+  const journalPath = path.join(process.cwd(), 'drizzle', 'meta', '_journal.json');
+  if (fs.existsSync(journalPath)) {
+    const journal = JSON.parse(fs.readFileSync(journalPath, 'utf8')) as {
+      entries: Array<{ idx: number; tag: string; when: number }>;
+    };
+
+    await db.execute(sql`
+      CREATE SCHEMA IF NOT EXISTS drizzle;
+      CREATE TABLE IF NOT EXISTS drizzle.__drizzle_migrations (
+        id SERIAL PRIMARY KEY,
+        hash text NOT NULL,
+        created_at bigint
+      );
+    `);
+
+    for (const entry of journal.entries) {
+      const checkRes = await db.execute(
+        sql`SELECT count(*)::int AS cnt FROM drizzle.__drizzle_migrations WHERE created_at = ${entry.when} OR hash = ${entry.tag}`
+      );
+      const cnt = Number((checkRes[0] as { cnt?: number } | undefined)?.cnt ?? 0);
+      if (cnt > 0) continue;
+
+      const sqlFilePath = path.join(process.cwd(), 'drizzle', `${entry.tag}.sql`);
+      if (!fs.existsSync(sqlFilePath)) continue;
+
+      const rawSql = fs.readFileSync(sqlFilePath, 'utf8');
+      const statements = rawSql
+        .split('--> statement-breakpoint')
+        .map((s) => s.trim())
+        .filter(Boolean);
+
+      logger.info(`Auto-applying migration ${entry.tag}.sql (${statements.length} statements)`);
+      for (const stmt of statements) {
+        await db.execute(sql.raw(stmt));
+      }
+
+      await db.execute(
+        sql`INSERT INTO drizzle.__drizzle_migrations (hash, created_at) VALUES (${entry.tag}, ${entry.when})`
+      );
+    }
+  }
+
+  // 3. Khởi tạo tài khoản Admin & Editor nếu có cấu hình SEED_ADMIN_PASSWORD / SEED_EDITOR_PASSWORD
+  const adminPass = process.env.SEED_ADMIN_PASSWORD;
+  if (adminPass && adminPass.length >= 8) {
+    const existingAdmin = await db.query.users.findFirst({
+      where: eq(users.email, 'admin@angimom.vn'),
+    });
+    if (!existingAdmin) {
+      const passwordHash = await hashPassword(adminPass);
+      await db.insert(users).values({
+        email: 'admin@angimom.vn',
+        displayName: 'Quản trị viên Ăn Gì Mom',
+        role: 'ADMIN',
+        passwordHash,
+      });
+    }
+  }
+
+  const editorPass = process.env.SEED_EDITOR_PASSWORD;
+  if (editorPass && editorPass.length >= 8) {
+    const existingEditor = await db.query.users.findFirst({
+      where: eq(users.email, 'editor@angimom.vn'),
+    });
+    if (!existingEditor) {
+      const passwordHash = await hashPassword(editorPass);
+      await db.insert(users).values({
+        email: 'editor@angimom.vn',
+        displayName: 'Biên tập viên Ăn Gì Mom',
+        role: 'EDITOR',
+        passwordHash,
+      });
+    }
+  }
+
+  // 4. Tự động seed bộ công thức món Việt chuẩn nếu DB mới tinh (chưa có công thức PUBLISHED nào)
+  const existingPublished = await db
+    .select({ id: recipes.id })
+    .from(recipes)
+    .where(eq(recipes.status, 'PUBLISHED'))
+    .limit(1);
+
+  if (existingPublished.length === 0) {
+    logger.info('Fresh PostgreSQL 16 database detected — auto-seeding production catalog...');
+    await seedProductionCatalog();
+    logger.info('Auto-seed production catalog completed!');
+  }
+}
