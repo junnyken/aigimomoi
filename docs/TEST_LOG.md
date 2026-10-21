@@ -815,4 +815,25 @@ Kiểm tra tài liệu/skill (script read-only, 8 nhóm):
 | 11 | **Cấu hình VPS / Mắt Bão Vibe Host**: Cập nhật Caddyfile với email `trieunt6@matbao.com`; cung cấp `.env.vps.template`; cung cấp script 1-chạm `scripts/setup_vps.sh` tự động sinh mã ngẫu nhiên an toàn cho `AUTH_SECRET` và Postgres | PASS |
 | 12 | DECISIONS.md ghi nhận D63 | PASS |
 
+## R6 — Quên/Đặt Lại Mật Khẩu, Native SMTP Mắt Bão & Trang Hồ Sơ Cá Nhân — 21/10/2026
+
+**Môi trường:** Postgres 16 (Docker, DB `angimom_test`), Node 20+, Next.js 16.4.2 App Router, Playwright 1.64.1.
+
+| # | Kiểm tra | Kết quả |
+|---|---|---|
+| 1 | **Chống rò rỉ User (Anti-Enumeration)**: `/api/auth/forgot-password` luôn trả về HTTP 200 `{ ok: true }` cho cả email tồn tại và không tồn tại | PASS |
+| 2 | **HMAC-SHA256 Token Bảo mật**: Token có thời hạn 15 phút, được ký bằng `AUTH_SECRET`; từ chối token bị sửa chữ ký | PASS |
+| 3 | **Bảo vệ Single-Use**: Token chứa `hashFrag` từ `passwordHash` hiện tại; ngay khi đổi mật khẩu thành công, token cũ lập tức bị vô hiệu hóa | PASS |
+| 4 | **Đặt lại mật khẩu (`/api/auth/reset-password`)**: Kiểm tra mật khẩu mới ≥ 8 ký tự, băm scrypt an toàn | PASS |
+| 5 | **Native SMTP Client ([mailer.ts](file:///home/coder/workspace/projects/angimom/src/lib/email/mailer.ts))**: Không thêm package ngoài; gửi thư qua socket TLS chuẩn RFC với máy chủ Mắt Bão, có fallback dev log | PASS |
+| 6 | **Bảo mật Profile API (`/api/user/profile`)**: Chặn truy cập chưa đăng nhập (HTTP 401); cập nhật tên hiển thị `displayName` an toàn và cấp lại cookie phiên | PASS |
+| 7 | **Đổi mật khẩu trong Profile (`/api/user/change-password`)**: Xác thực mật khẩu cũ bằng `timingSafeEqual`, yêu cầu mật khẩu mới khác mật khẩu cũ | PASS |
+| 8 | **Giao diện người dùng**: Trang `/forgot-password`, `/reset-password`, `/profile` chuẩn phong cách Bếp gia đình Ăn Gì Mom, responsive mobile & desktop | PASS |
+| 9 | **Bộ test tự động `npm run test:profile`**: 13/13 ca kiểm thử bảo mật & chức năng PASS 100% | PASS |
+| 10 | **Hồi quy toàn bộ test suites**: `test:auth` (45/45), `test:register` (13/13), `test:honesty` (38/38), `test:core` (99/99), `test:e2e` (13/13 passed) | PASS |
+| 11 | **ESLint & Typecheck toàn repo**: `npm run lint -- --quiet` 0 errors; `npx tsc --noEmit` 0 errors | PASS |
+| 12 | **Build Production**: `npm run build` thành công, biên dịch trọn vẹn 64/64 routes | PASS |
+| 13 | DECISIONS.md ghi nhận D64 | PASS |
+
+
 

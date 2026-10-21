@@ -153,9 +153,16 @@ export async function verifyToken(token: string): Promise<SessionUser | null> {
   }
 }
 
-export async function getSessionUser(tokenOrCookie?: string): Promise<SessionUser | null> {
-  if (tokenOrCookie) {
-    return verifyToken(tokenOrCookie);
+export async function getSessionUser(requestOrToken?: Request | string): Promise<SessionUser | null> {
+  if (typeof requestOrToken === 'string') {
+    return verifyToken(requestOrToken);
+  }
+  if (requestOrToken && 'headers' in requestOrToken && typeof requestOrToken.headers?.get === 'function') {
+    const cookieHeader = requestOrToken.headers.get('cookie') || '';
+    const match = cookieHeader.match(new RegExp(`(?:^|;\\s*)${SESSION_COOKIE_NAME}=([^;]+)`));
+    if (match?.[1]) {
+      return verifyToken(decodeURIComponent(match[1]));
+    }
   }
   try {
     const cookieStore = await cookies();
