@@ -47,8 +47,8 @@ export function RecipeCard({ recipe }: { recipe: PublicRecipeCard }) {
         </div>
       </div>
 
-      <div className="p-4 flex flex-col flex-1">
-        <h3 className="text-lg font-semibold text-[var(--color-text-primary)] mb-1">
+      <div className="p-5 flex flex-col flex-1">
+        <h3 className="text-lg font-bold text-[var(--color-text-primary)] mb-1.5 leading-snug">
           <Link href={recipePath(recipe.slug)} className="after:absolute after:inset-0 focus:outline-none">
             {recipe.name}
           </Link>

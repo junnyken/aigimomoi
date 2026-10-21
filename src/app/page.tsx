@@ -314,32 +314,32 @@ export default function HomePage() {
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {CULINARY_CATEGORIES.map((cat) => {
             const Icon = cat.icon;
             return (
               <Link
                 key={cat.title}
                 href={cat.href}
-                className="group p-4 rounded-2xl bg-[var(--color-surface-white)] border border-[var(--color-border-base)] hover:border-[var(--color-brand-border)] hover:shadow-sm transition-all flex flex-col justify-between gap-3"
+                className="group p-5 rounded-2xl bg-[var(--color-surface-white)] border border-[var(--color-border-base)] hover:border-[var(--color-brand-border)] hover:shadow-sm transition-all flex flex-col justify-between gap-3.5"
               >
                 <div className="flex items-start justify-between gap-2">
-                  <div className={`w-10 h-10 rounded-xl border flex items-center justify-center shrink-0 ${cat.tone}`}>
+                  <div className={`w-11 h-11 rounded-xl border flex items-center justify-center shrink-0 ${cat.tone}`}>
                     <Icon className="w-5 h-5" />
                   </div>
-                  <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-[var(--color-surface-raised)] text-[var(--color-text-secondary)]">
+                  <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-[var(--color-surface-raised)] text-[var(--color-text-secondary)]">
                     {cat.badge}
                   </span>
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-[var(--color-text-primary)] group-hover:text-[var(--color-brand-primary)] transition-colors">
+                  <h3 className="text-lg font-bold text-[var(--color-text-primary)] group-hover:text-[var(--color-brand-primary)] transition-colors">
                     {cat.title}
                   </h3>
-                  <p className="text-xs text-[var(--color-text-secondary)] mt-1 leading-relaxed line-clamp-2">
+                  <p className="text-sm text-[var(--color-text-secondary)] mt-1 leading-relaxed line-clamp-2">
                     {cat.subtitle}
                   </p>
                 </div>
-                <div className="pt-2 border-t border-[var(--color-border-subtle)] flex items-center justify-between text-xs font-semibold text-[var(--color-brand-primary)]">
+                <div className="pt-2.5 border-t border-[var(--color-border-subtle)] flex items-center justify-between text-sm font-semibold text-[var(--color-brand-primary)]">
                   <span>Khám phá ngay</span>
                   <span className="group-hover:translate-x-0.5 transition-transform">&rarr;</span>
                 </div>
