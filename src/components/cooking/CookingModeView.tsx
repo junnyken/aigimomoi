@@ -12,6 +12,9 @@ import {
   X,
   UtensilsCrossed,
   Sparkles,
+  Volume2,
+  VolumeX,
+  Square,
 } from 'lucide-react';
 import type { PublicRecipe, PublicRecipeStep } from '@/lib/recipes/publicQueries';
 import { scaleRecipeIngredients, clampServings } from '@/lib/recipes/scaling';
@@ -41,8 +44,83 @@ export function CookingModeView({
 
   const [isIngredientsOpen, setIsIngredientsOpen] = useState(false);
   const [isCompletedModalOpen, setIsCompletedModalOpen] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [autoReadStep, setAutoReadStep] = useState(false);
+  const [speechSupported, setSpeechSupported] = useState(false);
 
   const currentStep: PublicRecipeStep | undefined = steps[currentIdx];
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      setSpeechSupported(true);
+      // Warm up voices list on Chrome/Android/iOS
+      window.speechSynthesis.getVoices();
+    }
+    return () => {
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, []);
+
+  function stopSpeaking() {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+    setIsSpeaking(false);
+  }
+
+  function speakCurrentStep(stepToRead?: PublicRecipeStep, idxToRead?: number) {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+    const step = stepToRead ?? currentStep;
+    const idx = idxToRead ?? currentIdx;
+    if (!step) return;
+
+    window.speechSynthesis.cancel();
+
+    const parts: string[] = [
+      `Bước ${idx + 1}, giai đoạn ${step.phaseName || 'Chế biến'}.`,
+      step.instruction,
+    ];
+    if (step.tipText) {
+      parts.push(`Mẹo hay: ${step.tipText}`);
+    }
+    if ((step.timerSeconds ?? 0) > 0) {
+      const mins = Math.max(1, Math.round((step.timerSeconds ?? 0) / 60));
+      parts.push(`Bước này có hẹn giờ khoảng ${mins} phút.`);
+    }
+
+    const utterance = new SpeechSynthesisUtterance(parts.join(' '));
+    utterance.lang = 'vi-VN';
+    utterance.rate = 0.95;
+
+    const voices = window.speechSynthesis.getVoices();
+    const viVoice = voices.find(
+      (v) => v.lang.toLowerCase().startsWith('vi') || v.name.toLowerCase().includes('vietnam')
+    );
+    if (viVoice) {
+      utterance.voice = viVoice;
+    }
+
+    utterance.onstart = () => setIsSpeaking(true);
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => setIsSpeaking(false);
+
+    setIsSpeaking(true);
+    window.speechSynthesis.speak(utterance);
+  }
+
+  const triggerAutoRead = useEffectEvent((step: PublicRecipeStep | undefined, idx: number, enabled: boolean) => {
+    if (!enabled || !step) {
+      stopSpeaking();
+      return;
+    }
+    speakCurrentStep(step, idx);
+  });
+
+  useEffect(() => {
+    triggerAutoRead(currentStep, currentIdx, autoReadStep);
+  }, [currentIdx, autoReadStep, currentStep]);
 
   // Scale nguyên liệu theo servings
   const scaledIngredients = scaleRecipeIngredients(recipe.ingredients, recipe.baseServings, servings);
@@ -123,6 +201,31 @@ export function CookingModeView({
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
+          {speechSupported && (
+            <button
+              type="button"
+              onClick={() => {
+                const next = !autoReadStep;
+                setAutoReadStep(next);
+                if (next && currentStep) {
+                  speakCurrentStep(currentStep, currentIdx);
+                } else {
+                  stopSpeaking();
+                }
+              }}
+              aria-label={autoReadStep ? 'Tắt tự động đọc giọng nói' : 'Bật tự động đọc giọng nói'}
+              title="Tự động đọc to bước nấu bằng giọng nói khi chuyển bước (rảnh tay khi tay ướt)"
+              className={`min-h-11 min-w-11 justify-center inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border ${
+                autoReadStep
+                  ? 'bg-[var(--color-brand-primary)] text-white border-[var(--color-brand-primary)] shadow-2xs'
+                  : 'bg-[var(--color-surface-raised)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] border-[var(--color-border-base)]'
+              }`}
+            >
+              {autoReadStep ? <Volume2 className="w-4 h-4 animate-pulse" /> : <VolumeX className="w-4 h-4" />}
+              <span className="hidden sm:inline">{autoReadStep ? 'Tự động đọc: BẬT' : 'Tự động đọc'}</span>
+            </button>
+          )}
+
           <button
             type="button"
             onClick={() => setIsIngredientsOpen(true)}
@@ -201,14 +304,40 @@ export function CookingModeView({
         {currentStep ? (
           <div className="flex flex-col gap-6 my-auto">
             {/* Phase & Step Indicator */}
-            <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
               <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-[var(--color-surface-white)] border border-[var(--color-border-base)] text-[var(--color-text-secondary)]">
                 {currentStep.phaseName || 'Giai đoạn nấu'}
               </span>
 
-              <span className="text-xs font-bold text-[var(--color-brand-primary)]">
-                Bước {currentIdx + 1} / {totalSteps}
-              </span>
+              <div className="flex items-center gap-2.5">
+                {speechSupported && (
+                  <button
+                    type="button"
+                    onClick={() => (isSpeaking ? stopSpeaking() : speakCurrentStep(currentStep, currentIdx))}
+                    className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all shadow-2xs ${
+                      isSpeaking
+                        ? 'bg-rose-600 text-white hover:bg-rose-700 animate-pulse'
+                        : 'bg-[var(--color-brand-light)] text-[var(--color-brand-primary)] hover:opacity-90 border border-[var(--color-brand-primary)]/25'
+                    }`}
+                  >
+                    {isSpeaking ? (
+                      <>
+                        <Square className="w-3.5 h-3.5 fill-current" />
+                        <span>Dừng đọc</span>
+                      </>
+                    ) : (
+                      <>
+                        <Volume2 className="w-3.5 h-3.5" />
+                        <span>Đọc to bước này</span>
+                      </>
+                    )}
+                  </button>
+                )}
+
+                <span className="text-xs font-bold text-[var(--color-brand-primary)]">
+                  Bước {currentIdx + 1} / {totalSteps}
+                </span>
+              </div>
             </div>
 
             {/* Step Instruction (Big Typography) */}

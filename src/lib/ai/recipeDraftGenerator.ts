@@ -10,7 +10,9 @@ import { eq, ilike } from 'drizzle-orm';
 import { aiGateway } from './gateway';
 
 export interface AiRecipeDraftParams {
-  dishTitle: string;
+  dishTitle?: string;
+  sourceUrl?: string;
+  sourceText?: string;
   role?: 'MAIN' | 'SOUP' | 'SIDE' | 'ONE_DISH_MEAL';
   region?: string;
   styleNotes?: string;
@@ -50,6 +52,8 @@ export interface AiRecipeDraftPayload {
   isCookTested: false;
   isEditorialReviewed: false;
   isNutritionVerified: false;
+  heroImage?: string;
+  sourceUrl?: string;
   ingredients: AiRecipeIngredientDraft[];
   steps: AiRecipeStepDraft[];
 }
@@ -119,12 +123,124 @@ async function resolveOrRegisterIngredient(name: string, unit: string): Promise<
 }
 
 /**
- * Khởi tạo bản thảo công thức do AI hỗ trợ cho Biên tập viên
+ * Tải và trích xuất nội dung kiến thức nấu ăn từ một trang web bất kỳ (URL)
+ */
+export async function fetchExternalRecipeContent(url: string): Promise<{
+  title: string;
+  content: string;
+  image?: string;
+}> {
+  let parsedUrl: URL;
+  try {
+    parsedUrl = new URL(url.trim());
+    if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+      throw new Error('URL phải bắt đầu bằng http:// hoặc https://');
+    }
+  } catch {
+    throw new Error('Đường dẫn (URL) trang web không hợp lệ.');
+  }
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10000);
+
+  try {
+    const res = await fetch(parsedUrl.toString(), {
+      headers: {
+        'User-Agent':
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+        Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'vi-VN,vi;q=0.9,en-US;q=0.8,en;q=0.7',
+      },
+      signal: controller.signal,
+    });
+
+    if (!res.ok) {
+      throw new Error(`Không thể đọc trang web (HTTP ${res.status})`);
+    }
+
+    const html = await res.text();
+
+    // 1. Trích xuất tiêu đề trang / og:title
+    const ogTitleMatch =
+      html.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i) ||
+      html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:title["']/i);
+    const titleTagMatch = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+    const rawTitle = (ogTitleMatch?.[1] || titleTagMatch?.[1] || '')
+      .replace(/&amp;/g, '&')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    // 2. Trích xuất ảnh đại diện og:image
+    const ogImageMatch =
+      html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i) ||
+      html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i);
+    const extractedImage = ogImageMatch?.[1]?.trim();
+
+    // 3. Ưu tiên tìm JSON-LD Schema.org Recipe nếu trang web có nhúng
+    let jsonLdSummary = '';
+    const jsonLdMatches = html.matchAll(/<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi);
+    for (const match of jsonLdMatches) {
+      try {
+        const jsonText = match[1].trim();
+        if (jsonText.includes('Recipe') || jsonText.includes('recipeIngredient')) {
+          jsonLdSummary += `\n[Dữ liệu cấu trúc Recipe từ trang]:\n${jsonText.slice(0, 3500)}\n`;
+        }
+      } catch {
+        // ignore
+      }
+    }
+
+    // 4. Làm sạch HTML body để lấy văn bản thuần túy
+    const cleanedText = html
+      .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+      .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+      .replace(/<noscript[\s\S]*?<\/noscript>/gi, ' ')
+      .replace(/<header[\s\S]*?<\/header>/gi, ' ')
+      .replace(/<footer[\s\S]*?<\/footer>/gi, ' ')
+      .replace(/<nav[\s\S]*?<\/nav>/gi, ' ')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/&nbsp;/gi, ' ')
+      .replace(/&amp;/gi, '&')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 5500);
+
+    return {
+      title: rawTitle,
+      content: `${jsonLdSummary}\n[Nội dung bài viết]:\n${cleanedText}`.trim(),
+      image: extractedImage && extractedImage.startsWith('http') ? extractedImage : undefined,
+    };
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+/**
+ * Khởi tạo bản thảo công thức do AI hỗ trợ cho Biên tập viên (từ tên món, URL trang kiến thức nấu ăn, hoặc văn bản thô)
  */
 export async function generateRecipeDraft(params: AiRecipeDraftParams): Promise<AiRecipeDraftResult> {
-  const title = (params.dishTitle || '').trim();
-  if (!title) {
-    throw new Error('Vui lòng cung cấp tên món ăn cần tạo bản thảo.');
+  let title = (params.dishTitle || '').trim();
+  const sourceUrl = (params.sourceUrl || '').trim();
+  let sourceText = (params.sourceText || '').trim();
+  let extractedImage: string | undefined;
+
+  if (sourceUrl) {
+    const webData = await fetchExternalRecipeContent(sourceUrl);
+    if (!title && webData.title) {
+      title = webData.title.split('|')[0].split('-')[0].trim();
+    }
+    sourceText = `${sourceText}\n${webData.content}`.trim();
+    extractedImage = webData.image;
+  }
+
+  if (!title && !sourceText) {
+    throw new Error('Vui lòng cung cấp tên món ăn, đường dẫn (URL) bài viết, hoặc nội dung công thức.');
+  }
+
+  if (!title && sourceText) {
+    title = sourceText.split('\n')[0].slice(0, 80).trim() || 'Món ngon gia đình';
   }
 
   const role = params.role || 'MAIN';
@@ -170,7 +286,22 @@ QUY TẮC BẮT BUỘC:
 - 'MANUAL_ADJUST': Dành cho mắm, muối, tiêu, ớt cần nếm thử theo khẩu vị.
 3. Không trả về markdown code blocks, chỉ JSON hợp lệ.`;
 
-  const prompt = `YÊU CẦU SOẠN THẢO CÔNG THỨC:
+  const prompt = sourceText
+    ? `YÊU CẦU TRÍCH XUẤT & CHUẨN HÓA CÔNG THỨC TỪ NGUỒN KIẾN THỨC NẤU ĂN:
+- Tên gợi ý / Tiêu đề gốc: ${title}
+- Nguồn tham khảo: ${sourceUrl || 'Văn bản cung cấp trực tiếp'}
+- Vai trò dự kiến: ${role}
+- Vùng miền ẩm thực: ${region}
+- Khẩu phần ăn chuẩn cần quy đổi về: ${baseServings} người
+- Ghi chú phong cách: ${styleNotes}
+
+NỘI DUNG NGUỒN CẦN BÓC TÁCH:
+"""
+${sourceText.slice(0, 6000)}
+"""
+
+Hãy bóc tách nguyên liệu (quy đổi định lượng rõ ràng sang g, ml, muỗng canh, muỗng cà phê, củ, trái), chia các bước thành 3 giai đoạn (Sơ chế, Chế biến, Hoàn thành), ước tính timerSeconds cho các bước cần canh giờ, và diễn đạt lại bằng văn phong hướng dẫn nấu ăn ấm cúng, mạch lạc của Ăn Gì Mom.`
+    : `YÊU CẦU SOẠN THẢO CÔNG THỨC:
 - Tên món ăn: ${title}
 - Vai trò dự kiến: ${role}
 - Vùng miền ẩm thực: ${region}
@@ -325,6 +456,8 @@ Hãy phân tích và soạn thảo bản thảo công thức có cấu trúc ho�
       isCookTested: false, // INVARIANT: Không đánh dấu đã nấu thử
       isEditorialReviewed: false, // INVARIANT: Không đánh dấu đã biên tập kiểm chứng
       isNutritionVerified: false,
+      heroImage: extractedImage,
+      sourceUrl: sourceUrl || undefined,
       ingredients: processedIngredients,
       steps: processedSteps,
     },
@@ -397,6 +530,7 @@ export async function saveAiDraftToDatabase(
         prepTimeMinutes: draft.prepTimeMinutes,
         cookTimeMinutes: draft.cookTimeMinutes,
         difficulty: draft.difficulty,
+        heroImage: draft.heroImage || null,
         isEditorialReviewed: false,
         isCookTested: false,
         isNutritionVerified: false,

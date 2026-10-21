@@ -23,28 +23,83 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json().catch(() => ({}));
     const dishTitle = typeof body.dishTitle === 'string' ? body.dishTitle.trim() : '';
-
-    if (!dishTitle) {
-      return NextResponse.json(
-        { error: 'Vui lòng cung cấp tên món ăn cần tạo bản thảo.' },
-        { status: 400 }
-      );
-    }
+    const sourceUrl = typeof body.sourceUrl === 'string' ? body.sourceUrl.trim() : '';
+    const sourceText = typeof body.sourceText === 'string' ? body.sourceText.trim() : '';
+    const batchItems = Array.isArray(body.batchItems)
+      ? body.batchItems.map((i: unknown) => String(i || '').trim()).filter(Boolean).slice(0, 6)
+      : [];
 
     const role = ['MAIN', 'SOUP', 'SIDE', 'ONE_DISH_MEAL'].includes(body.role) ? body.role : 'MAIN';
     const region = typeof body.region === 'string' ? body.region.trim() : 'Toàn quốc';
     const styleNotes = typeof body.styleNotes === 'string' ? body.styleNotes.trim() : '';
     const baseServings = Number(body.baseServings) > 0 ? Number(body.baseServings) : 4;
-    const mode = body.mode === 'SAVE_DRAFT' ? 'SAVE_DRAFT' : 'GENERATE';
+    const mode =
+      body.mode === 'SAVE_DRAFT'
+        ? 'SAVE_DRAFT'
+        : body.mode === 'BATCH_SAVE_DRAFT'
+        ? 'BATCH_SAVE_DRAFT'
+        : 'GENERATE';
 
     const clientIp =
       req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
       req.headers.get('x-real-ip') ||
       `user-${user.id}`;
 
+    // Hỗ trợ nạp hàng loạt (Batch Import từ danh sách tên món hoặc danh sách link bài viết nấu ăn)
+    if (mode === 'BATCH_SAVE_DRAFT') {
+      if (batchItems.length === 0) {
+        return NextResponse.json(
+          { error: 'Vui lòng nhập ít nhất 1 tên món ăn hoặc đường dẫn (URL) bài viết.' },
+          { status: 400 }
+        );
+      }
+
+      const createdRecipes: Array<{ recipeId: number; slug: string; name: string; role: string }> = [];
+      const errors: string[] = [];
+
+      for (const item of batchItems) {
+        try {
+          const isUrl = item.startsWith('http://') || item.startsWith('https://');
+          const res = await generateRecipeDraft({
+            dishTitle: isUrl ? undefined : item,
+            sourceUrl: isUrl ? item : undefined,
+            role,
+            region,
+            styleNotes,
+            baseServings,
+            clientId: `${clientIp}-batch`,
+          });
+          const saved = await saveAiDraftToDatabase(res.draft, user.id);
+          createdRecipes.push({
+            recipeId: saved.recipeId,
+            slug: saved.slug,
+            name: res.draft.name,
+            role: res.draft.role,
+          });
+        } catch (e: unknown) {
+          errors.push(`${item}: ${e instanceof Error ? e.message : 'Lỗi không xác định'}`);
+        }
+      }
+
+      return NextResponse.json({
+        success: true,
+        createdRecipes,
+        errors,
+      });
+    }
+
+    if (!dishTitle && !sourceUrl && !sourceText) {
+      return NextResponse.json(
+        { error: 'Vui lòng cung cấp tên món ăn, đường dẫn (URL) trang web ẩm thực hoặc nội dung công thức.' },
+        { status: 400 }
+      );
+    }
+
     // 2. Gọi Engine sinh bản thảo AI
     const result = await generateRecipeDraft({
       dishTitle,
+      sourceUrl,
+      sourceText,
       role,
       region,
       styleNotes,

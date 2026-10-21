@@ -220,10 +220,10 @@ export default function EditorRecipesPage() {
               type="button"
               onClick={() => setIsAiModalOpen(true)}
               className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-amber-500 to-orange-600 text-white text-xs font-semibold rounded-xl hover:from-amber-600 hover:to-orange-700 transition-all shadow-xs"
-              title="Tự động tạo khung công thức bằng AI"
+              title="Nhập công thức từ Link Web ẩm thực, tạo hàng loạt hoặc soạn bằng AI"
             >
               <Sparkles className="w-4 h-4 text-amber-200" />
-              <span>Soạn bằng AI</span>
+              <span>Nhập từ Web / Tạo bằng AI</span>
             </button>
             <Link
               href="/editor/recipes/new"
@@ -487,6 +487,7 @@ export default function EditorRecipesPage() {
       <AiDraftModal
         isOpen={isAiModalOpen}
         onClose={() => setIsAiModalOpen(false)}
+        onBatchSaved={fetchRecipes}
       />
     </div>
   );
