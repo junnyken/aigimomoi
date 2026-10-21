@@ -65,9 +65,9 @@ export default function RootLayout({
               <Link href="/" className="hover:text-[var(--color-brand-primary)]">Trang chủ</Link>
               <Link href="/mon-an" className="hover:text-[var(--color-brand-primary)]">Món ăn</Link>
               <Link href="/meal" className="hover:text-[var(--color-brand-primary)]">Mâm cơm</Link>
-              <Link href="/contribute" className="hover:text-[var(--color-brand-primary)]">Góp món ngon</Link>
-              <Link href="/profile" className="hover:text-[var(--color-brand-primary)]">Tài khoản</Link>
-              <Link href="/editor/recipes" className="hover:text-[var(--color-brand-primary)]">Ban biên tập</Link>
+              <Link href="/contribute" prefetch={false} className="hover:text-[var(--color-brand-primary)]">Góp món ngon</Link>
+              <Link href="/profile" prefetch={false} className="hover:text-[var(--color-brand-primary)]">Tài khoản</Link>
+              <Link href="/editor/recipes" prefetch={false} className="hover:text-[var(--color-brand-primary)]">Ban biên tập</Link>
             </div>
             <p className="text-xs text-[var(--color-text-muted)]">
               ĂN GÌ MOM — Bữa cơm nhà, bớt nghĩ hôm nay ăn gì. Nền tảng Bếp gia đình Việt.

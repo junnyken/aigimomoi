@@ -71,36 +71,48 @@ async function runBootstrap(): Promise<void> {
     }
   }
 
-  // 3. Khởi tạo tài khoản Admin & Editor nếu có cấu hình SEED_ADMIN_PASSWORD / SEED_EDITOR_PASSWORD
+  // 3. Khởi tạo / đồng bộ tài khoản Admin & Editor từ SEED_ADMIN_PASSWORD / SEED_EDITOR_PASSWORD
   const adminPass = process.env.SEED_ADMIN_PASSWORD;
   if (adminPass && adminPass.length >= 8) {
-    const existingAdmin = await db.query.users.findFirst({
-      where: eq(users.email, 'admin@angimom.vn'),
-    });
-    if (!existingAdmin) {
-      const passwordHash = await hashPassword(adminPass);
-      await db.insert(users).values({
-        email: 'admin@angimom.vn',
-        displayName: 'Quản trị viên Ăn Gì Mom',
-        role: 'ADMIN',
-        passwordHash,
+    const passwordHash = await hashPassword(adminPass);
+    for (const adminEmail of ['admin@angimom.vn', 'trieunt6@matbao.com']) {
+      const existingAdmin = await db.query.users.findFirst({
+        where: eq(users.email, adminEmail),
       });
+      if (!existingAdmin) {
+        await db.insert(users).values({
+          email: adminEmail,
+          displayName: 'Quản trị viên Ăn Gì Mom',
+          role: 'ADMIN',
+          passwordHash,
+        });
+      } else {
+        await db
+          .update(users)
+          .set({ passwordHash, role: 'ADMIN' })
+          .where(eq(users.id, existingAdmin.id));
+      }
     }
   }
 
   const editorPass = process.env.SEED_EDITOR_PASSWORD;
   if (editorPass && editorPass.length >= 8) {
+    const passwordHash = await hashPassword(editorPass);
     const existingEditor = await db.query.users.findFirst({
       where: eq(users.email, 'editor@angimom.vn'),
     });
     if (!existingEditor) {
-      const passwordHash = await hashPassword(editorPass);
       await db.insert(users).values({
         email: 'editor@angimom.vn',
         displayName: 'Biên tập viên Ăn Gì Mom',
         role: 'EDITOR',
         passwordHash,
       });
+    } else {
+      await db
+        .update(users)
+        .set({ passwordHash, role: 'EDITOR' })
+        .where(eq(users.id, existingEditor.id));
     }
   }
 

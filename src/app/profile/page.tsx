@@ -142,8 +142,7 @@ export default function ProfilePage() {
   const handleLogout = async () => {
     try {
       await fetch('/api/auth/logout', { method: 'POST' });
-      router.push('/');
-      router.refresh();
+      window.location.assign('/');
     } catch (err) {
       console.error('Lỗi khi đăng xuất:', err);
     }

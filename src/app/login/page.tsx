@@ -42,8 +42,14 @@ function LoginForm() {
         throw new Error(data.error || 'Đăng nhập không thành công');
       }
 
-      router.push(from);
-      router.refresh();
+      const rawFrom = searchParams.get('from');
+      const role = data.user?.role;
+      const defaultTarget =
+        role === 'ADMIN' || role === 'EDITOR' ? '/editor/recipes' : '/profile';
+      const targetPath = rawFrom ? sanitizeRedirectPath(rawFrom) : defaultTarget;
+
+      // Dùng điều hướng toàn trang để xóa hoàn toàn Router Cache chưa đăng nhập của Next.js
+      window.location.assign(targetPath);
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);

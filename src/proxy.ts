@@ -102,7 +102,9 @@ export async function proxy(request: NextRequest) {
   if (!user) {
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('from', pathname);
-    return NextResponse.redirect(loginUrl);
+    const res = NextResponse.redirect(loginUrl);
+    res.headers.set('Cache-Control', 'private, no-store, no-cache, must-revalidate');
+    return res;
   }
 
   // Role check
@@ -120,9 +122,13 @@ export async function proxy(request: NextRequest) {
     });
   }
 
+  if (pathname === '/admin' || pathname === '/admin/' || pathname === '/editor' || pathname === '/editor/') {
+    return NextResponse.redirect(new URL('/editor/recipes', request.url));
+  }
+
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ['/admin/:path*', '/editor/:path*', '/cong-thuc/:path*', '/nguoi-nau/:path*'],
+  matcher: ['/admin', '/admin/:path*', '/editor', '/editor/:path*', '/cong-thuc/:path*', '/nguoi-nau/:path*'],
 };
