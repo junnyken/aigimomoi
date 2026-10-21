@@ -7,6 +7,7 @@ import { and, asc, count, desc, eq, ilike, inArray, or, sql, type SQL } from 'dr
 import { db } from '@/lib/db';
 import { recipes, dishes, recipeTags, taxonomies, type mealRoleEnum } from '@/lib/db/schema';
 import { safeImageSrc, type PublicRecipeCard } from './publicQueries';
+import { isIllustrationImage } from './labels';
 
 export type MealRoleType = (typeof mealRoleEnum.enumValues)[number];
 
@@ -164,6 +165,7 @@ export async function searchPublishedRecipes(params: RecipeSearchParams = {}): P
     totalTimeMinutes: (r.prepTimeMinutes ?? 0) + (r.cookTimeMinutes ?? 0),
     difficulty: r.difficulty,
     heroImage: safeImageSrc(r.heroImage),
+    isIllustration: isIllustrationImage(r.heroImage),
     isCookTested: r.isCookTested,
   }));
 

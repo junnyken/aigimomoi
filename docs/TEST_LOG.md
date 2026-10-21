@@ -684,4 +684,115 @@ Kiểm tra tài liệu/skill (script read-only, 8 nhóm):
 | 12 | `tsc --noEmit` sạch lỗi; `npm run build` thành công với 43 routes tối ưu (exit code 0) | PASS |
 | 13 | DECISIONS.md ghi nhận D53 | PASS |
 
+## R0 — Authentication Configuration & Secret Fail-Closed Hardening — 21/10/2026
+
+**App tests: `test_auth_hardening.ts` (45 assertions / 10 scenarios), `seed_users.ts` (auth unit test), TypeScript (`tsc --noEmit`), Next.js production build (`npm run build`).**
+
+| # | Kiểm tra | Kết quả |
+|---|---|---|
+| 1 | **T01 — Fail-Closed Negative Tests**: `AUTH_SECRET` undefined, rỗng, chỉ có khoảng trắng $\to$ `getAuthSecret()` và `signToken()` ném `AuthConfigurationError`; `verifyToken()` trả về null an toàn | PASS |
+| 2 | **T01 — Whitespace Guard**: Từ chối secret có khoảng trắng đầu hoặc cuối, bảo vệ tính trung thực không tự ý trim âm thầm | PASS |
+| 3 | **T01 — Length Policy**: Từ chối secret ngắn hơn 32 ký tự với thông điệp rõ ràng | PASS |
+| 4 | **T01 — Blacklist Placeholders**: Từ chối 100% 5 chuỗi placeholder và fallback cũ đã biết (`angimom_default_fallback_...`, `angimom_super_secret_...`, v.v.) | PASS |
+| 5 | **T02 — Legacy Name Rejection**: Khi chỉ có `JWT_SECRET`, runtime từ chối hoạt động (fail-closed), không nhận biến cũ | PASS |
+| 6 | **T03 — Positive Unit Test**: Khóa ngẫu nhiên mật mã 32+ ký tự ký và xác minh token thành công, khớp toàn vẹn `SessionUser` (`id`, `email`, `role`, `exp`) | PASS |
+| 7 | **T04 — Tampered & Expired Tokens**: Từ chối token bị sửa 1 ký tự signature, token malformed không đúng cấu trúc, và token hết hạn (`exp` quá khứ) | PASS |
+| 8 | **T05 — Old Fallback Token Rejection**: Token từng ký bằng fallback secret cũ bị từ chối 100% dưới runtime dùng secret mới | PASS |
+| 9 | **T06 — Edge Proxy Guarding**: Proxy Next.js redirect anonymous truy cập `/admin/*` về `/login`; chặn người dùng `COOK` truy cập `/admin/*` và `/editor/*` (HTTP 403 Forbidden); cho phép `ADMIN`/`EDITOR` truy cập đúng tuyến | PASS |
+| 10 | **T06 — API RBAC Boundary**: Endpoint `POST /api/recipes/[id]/publish` từ chối người dùng vai trò `COOK` với mã HTTP 403 Forbidden | PASS |
+| 11 | **T07 — Redaction & Leakage Verification**: API `/api/auth/login` khi lỗi cấu hình trả mã HTTP 500 kèm thông báo tiếng Việt tổng quát an toàn; response không lộ secret; `redactSensitiveData()` che giấu `auth_secret`, `token`, `database_url` và connection string | PASS |
+| 12 | **T08 — Infrastructure Config Validation**: `docker-compose.prod.yml` và `docker-compose.yml` bắt buộc truyền `AUTH_SECRET` qua cú pháp fail-fast `${VAR:?error}`; không còn fallback secret mặc định; loại bỏ hoàn toàn `JWT_SECRET` | PASS |
+| 13 | **T09 — Observability & Readiness Probe**: `/api/health` trả về HTTP 503 Service Unavailable (`status: "unhealthy", auth: "unconfigured"`) khi `AUTH_SECRET` thiếu hoặc không hợp lệ | PASS |
+| 14 | **T10 — Clean Build & Typecheck**: `npx tsc --noEmit` exit code 0; `npm run build` thực tế chạy thành công (exit code 0) không cần secret production | PASS |
+| 15 | **Regression Check**: `seed_users.ts` chạy độc lập với test secret riêng, 100% assertions PASS (exit code 0) | PASS |
+| 16 | **TỔNG CỘNG R0**: 45/45 assertions đạt PASS 100% (exit code 0) | PASS |
+| 17 | DECISIONS.md ghi nhận D58 | PASS |
+
+## R1 — Data Honesty & Verification Badges — 21/10/2026
+
+**App tests: `test_data_honesty.ts` (38 assertions / 6 groups), `test_auth_hardening.ts` (45 assertions / regression R0), TypeScript (`tsc --noEmit`), Next.js production build (`npm run build`).**
+
+| # | Kiểm tra | Kết quả |
+|---|---|---|
+| 1 | **Group 1 — isIllustrationImage Classification**: Nhận diện chính xác URL ảnh Unsplash chuẩn, domain Unsplash, Pexels, Pixabay, placeholder và HTTPS stock ngoài (`true`) | PASS |
+| 2 | **Group 1 — Local Uploads Identification**: Nhận diện chính xác đường dẫn ảnh nội bộ `/uploads/...` hoặc domain nội bộ là ảnh chụp thực tế (`false`) | PASS |
+| 3 | **Group 1 — Falsy Input Guard**: `null`, `undefined`, chuỗi rỗng và khoảng trắng trả về `false` an toàn | PASS |
+| 4 | **Group 2 — Seed Production Catalog**: `seed_production_catalog.ts` gán `isCookTested: false` cho toàn bộ 12 món ăn; không còn bất kỳ dòng `isCookTested: true` nào; giữ `isEditorialReviewed: true` | PASS |
+| 5 | **Group 2 — Seed P7 Catalog**: `seed_p7_catalog.ts` gán `isCookTested: false` cho toàn bộ 5 món ăn; không còn bất kỳ dòng `isCookTested: true` nào; giữ `isEditorialReviewed: true` | PASS |
+| 6 | **Group 2 — Unsplash Attribution**: 17/17 món hạt giống sử dụng ảnh Unsplash được phân loại chính xác là ảnh minh họa | PASS |
+| 7 | **Group 3 — Verification Badges Degradation**: `VerificationBadges` chỉ hiển thị "Đã nấu thử" khi `isCookTested === true`; khi `isCookTested === false` hiển thị trung thực nhãn `Chờ kiểm nghiệm bếp mẫu` | PASS |
+| 8 | **Group 4 — UI Image Badges (RecipeCard)**: `RecipeCard.tsx` hiển thị nhãn `Ảnh minh họa` cho ảnh stock; ẩn hoàn toàn huy hiệu `Đã nấu thử` khi chưa kiểm nghiệm | PASS |
+| 9 | **Group 4 — UI Image Badges (Detail Page)**: Trang chi tiết `/cong-thuc/[slug]` hiển thị nhãn `Ảnh minh họa` trên hero image và ghi chú chân thực dưới ảnh | PASS |
+| 10 | **Group 4 — UI Image Badges (Meal & Swap)**: `MealSlotCard.tsx` và `SwapDishModal.tsx` hiển thị nhãn `Ảnh minh họa` / `Minh họa`; ẩn nhãn `Đã nấu thử` / `Đã test` khi chưa nấu thật | PASS |
+| 11 | **Group 5 — Contracts & Queries**: `PublicRecipe` và `PublicRecipeCard` có trường `isIllustration: boolean`; query detail và card tự động suy diễn `isIllustration` | PASS |
+| 12 | **Group 5 — Search Filter Invariants**: `searchPublishedRecipes` lọc `testedOnly` theo đúng điều kiện parameterized `eq(recipes.isCookTested, true)` | PASS |
+| 13 | **Group 6 — Pilot Gate Invariant Guard**: `test_p3_pilot_gate.ts` được cập nhật, loại bỏ điều kiện ép buộc giả mạo `r.isCookTested === true` đối với catalog hạt giống | PASS |
+| 14 | **Regression R0**: `npm run test:auth` tiếp tục đạt 45/45 PASS 100% | PASS |
+| 15 | **Typecheck & Production Build**: `npx tsc --noEmit` exit code 0; `npm run build` thành công toàn bộ 55 routes | PASS |
+| 16 | **TỔNG CỘNG R1**: 38/38 assertions đạt PASS 100% (exit code 0) | PASS |
+| 17 | DECISIONS.md ghi nhận D59 | PASS |
+
+
+
+## R2 — Core MVP Verification & Real Cooking Flows — 21/10/2026
+
+**App tests: `test_core_mvp_flows.ts` (85 assertions / 7 nhóm, thuần — không cần DB), hồi quy `test:auth` (R0) & `test:honesty` (R1), script cũ không cần DB (`test_shopping_checklist.ts`, `test_serving_adjustment.ts`), TypeScript (`tsc --noEmit`), Next.js production build.** Nhóm ghi `[STATIC]` là kiểm tra tĩnh mã nguồn, không phải chạy trình duyệt.
+
+| # | Kiểm tra | Kết quả |
+|---|---|---|
+| 1 | **Nhóm 1 — Co giãn khẩu phần**: R=1.5 (400g→600g), R=0.5, R=4/3 (hiển thị ≤2 số thập phân, giá trị tính toán không bị làm tròn đè), FIXED/MANUAL_ADJUST giữ gốc, kẹp 1–20 (0, -3, NaN, null, "abc", 25, 2.6), định dạng vi-VN ("1,5", "1.500") | PASS |
+| 2 | **Nhóm 2 — Gộp đi chợ với nhãn quầy tiếng Việt thật (hồi quy B1)**: `normalizeMarketCategory` (NFC/NFD, hoa thường, mã cũ); seed thật không còn rơi vào "khác"; khác đơn vị tách dòng; cùng tên/đơn vị gộp + truy vết; FIXED không nhân; baseServings=0 an toàn | PASS |
+| 3 | **Nhóm 3 — Văn bản Zalo (hồi quy B2)**: có mục "GIA VỊ & ĐỒ KHÔ CẦN MUA"; 13/13 dòng cần mua xuất hiện kèm định lượng; không lộ NaN/undefined | PASS |
+| 4 | **Nhóm 4 — An toàn chế độ nấu [STATIC]**: StepTimer không có callback tự chuyển bước; chỉ nhận `initialSeconds`/`stepNumber`; hồi quy B5 `(timerSeconds ?? 0) > 0`; ngăn kéo nguyên liệu nhận `scaledIngredients` | PASS |
+| 5 | **Nhóm 5 — Giữ trạng thái giữa các chặng (hồi quy B3, B4)**: `buildCookingHref`, `buildMealQuery`, `mealQueryFromDishes`; trang chi tiết dùng `StartCookingButton`; `/shopping` quay lại `/meal` giữ đủ 3 món | PASS |
+| 6 | **Nhóm 6 — Mô phỏng mâm 3 món cho 6 người**: thịt 600g, cá lóc 600g, nước mắm (LINEAR, 2 món) 6 muỗng canh, hành tím 4,5 củ, dứa 0,75 quả, rau muống 1,5 bó, tỏi 9 tép, hành lá FIXED 2 cây, gia vị nêm tay tách riêng | PASS |
+| 7 | **Nhóm 7 — Guest-first [STATIC]**: món đã lưu / checklist / mâm hiện tại dùng localStorage, không gọi API phiên | PASS |
+| 8 | **Hồi quy R0/R1**: `test:auth` 45/45, `test:honesty` 38/38 | PASS |
+| 9 | **Script cũ không cần DB**: `test_shopping_checklist.ts` 22/22, `test_serving_adjustment.ts` 40/40 | PASS |
+| 10 | Script cũ cần Postgres (`test_ingredient_aggregation.ts`, `test_cooking_mode.ts`): ECONNREFUSED 127.0.0.1:5432 — **không chạy được trong môi trường này** | NOT RUN |
+| 11 | **Typecheck & Build**: `tsc --noEmit` exit 0; `npm run build` exit 0 (log lỗi kết nối DB khi pre-render là do môi trường không có Postgres, không làm build fail; R2 không thêm/bớt route) | PASS |
+| 12 | ESLint các file R2 chạm tới: 4 lỗi `react-hooks` trong `CookingModeView.tsx` (useCallback) và `shoppingClient.ts` (setState trong effect) — **có sẵn từ HEAD**, không do R2 gây ra, chưa sửa | KNOWN |
+| 13 | **TỔNG CỘNG R2**: 85/85 assertions PASS (exit 0) | PASS |
+| 14 | DECISIONS.md ghi nhận D60 | PASS |
+
+## R3 — E2E Playwright, CI & sửa lỗi tồn đọng R2 — 21/10/2026
+
+**Môi trường:** Postgres 16 (Docker, DB `angimom_test`), bản build production `next start`, Chromium 1248 (Playwright 1.64.1). Test do AI viết — không thay nghiệm thu độc lập.
+
+| # | Kiểm tra | Kết quả |
+|---|---|---|
+| 1 | `npm run test:e2e:db`: xóa schema, áp **toàn bộ 11** file `drizzle/*.sql` nghiêm ngặt (dừng khi lỗi), seed 12 + 5 công thức | PASS |
+| 2 | Guard: `setup-db` từ chối DB không kết thúc bằng `_test` (exit 2) | PASS |
+| 3 | E2E #1 Chi tiết → 6 người → "Bắt đầu nấu" giữ `?servings=6`, hiển thị 600 g (B3) — desktop & mobile | PASS |
+| 4 | E2E #2 Mâm 3 món 6 người → /shopping: đủ quầy thịt/rau/gia vị & đồ khô/nêm tay, không có "khác"; Tỏi khô **13,5 tép** (D61), nước mắm 6 muỗng canh, chip truy vết "4,5 tép" (B1, B2, B6) | PASS |
+| 5 | E2E #3 Sao chép gửi Zalo: clipboard có "🧄 GIA VỊ & ĐỒ KHÔ CẦN MUA:", "- Tỏi khô: 13,5 tép" | PASS |
+| 6 | E2E #4 Quay lại từ /shopping giữ đúng 3 món + 6 người (B4) | PASS |
+| 7 | E2E #5 Chế độ nấu (đồng hồ giả lập): hết 15 phút → báo "Hết giờ hẹn!", **vẫn ở bước 1**, chuông **1 lần**; ngăn kéo nguyên liệu hiện 600/4,5; sang bước 2 timer về trạng thái chờ "3 phút"; bước 4 không render timer (D39, B5) | PASS |
+| 8 | E2E #6 `/meal` không tham số khôi phục mâm đã chọn; link có tham số thắng localStorage | PASS |
+| 9 | E2E #7 (mobile Pixel 7): không tràn ngang ở 4 trang; nút chính ≥ 44px. Lần chạy đầu **phát hiện** nút ± khẩu phần chỉ 32px → đã sửa lên 44px | PASS (sau sửa) |
+| 10 | **Tổng E2E**: 13 passed, 1 skipped (kịch bản mobile bỏ qua trên desktop) | PASS |
+| 11 | `test:core` 99/99 (thêm nhóm 8: seed D61 + quét 10 nhãn quầy trong 4 file seed; nhóm 9: fix timer/khôi phục mâm) | PASS |
+| 12 | `test:auth` 45/45, `test:honesty` 38/38 | PASS |
+| 13 | `tsc --noEmit` exit 0; `npm run build` exit 0 (với DB test: không còn log lỗi kết nối) | PASS |
+| 14 | `npm run lint:scoped` (file R0–R3, trừ `SwapDishModal.tsx`): 0 lỗi, 7 cảnh báo có sẵn | PASS |
+| 15 | `.github/workflows/ci.yml` hợp lệ cú pháp (2 job: checks → e2e). **Chưa chạy trên GitHub runner** | NOT RUN |
+| 16 | Log server khi E2E: `/cong-thuc/[slug]/nau` báo `NEXT_STATIC_GEN_BAILOUT` lúc revalidate nền (trang vẫn hoạt động) — có sẵn, chưa sửa | KNOWN |
+
+## R4 — Migration Journal Sync & Production Deployment Hardening — 21/10/2026
+
+**Môi trường:** Postgres 16 (Docker, DB `angimom_test`), Node 20+, Next.js production build (`next build`), Playwright 1.64.1.
+
+| # | Kiểm tra | Kết quả |
+|---|---|---|
+| 1 | **Đồng bộ Drizzle Journal**: `drizzle/meta/_journal.json` đồng bộ đủ 11 migrations (`0000`–`0010`); kiểm chứng `npx drizzle-kit migrate` trên DB trắng tạo đủ 18 bảng CSDL và 11 hàng `__drizzle_migrations` | PASS |
+| 2 | **Script Deploy Production Fail-Closed**: `scripts/migrate_production.js` chạy tuần tự, ghi nhận vào `drizzle.__drizzle_migrations`, dừng khẩn cấp khi gặp lỗi SQL; kiểm chứng chạy lại lần 2 nhận diện 11/11 file đã áp dụng và bỏ qua an toàn | PASS |
+| 3 | **PostgreSQL Readiness Polling**: `scripts/deploy_production.sh` thay thế `sleep 5` bằng vòng lặp `pg_isready` (tối đa 30 lần / 60 giây) | PASS |
+| 4 | **Loại bỏ Prerender Bailout**: `/cong-thuc/[slug]/nau` bọc `searchParams` trong `<Suspense>`; `next build` đạt 55/55 static/partial-prerendered routes, hoàn toàn không còn log `NEXT_STATIC_GEN_BAILOUT` | PASS |
+| 5 | **ESLint Scoped Toàn diện**: Sửa lỗi `react-hooks/set-state-in-effect` ở `SwapDishModal.tsx`; đưa `SwapDishModal.tsx` và `cong-thuc/[slug]/nau/page.tsx` vào `lint:scoped`; dọn dẹp biến thừa đạt **0 errors, 0 warnings** | PASS |
+| 6 | **Typecheck**: `npx tsc --noEmit` exit 0, không có lỗi kiểu dữ liệu | PASS |
+| 7 | **Bộ test bảo mật & xác thực (R0)**: `npm run test:auth` 45/45 PASS 100% | PASS |
+| 8 | **Bộ test trung thực dữ liệu (R1)**: `npm run test:honesty` 38/38 PASS 100% | PASS |
+| 9 | **Bộ test luồng cốt lõi (R2/R3)**: `npm run test:core` 99/99 PASS 100% | PASS |
+| 10 | **E2E Playwright trên Desktop Chrome & Mobile Pixel 7**: 13 passed, 1 skipped | PASS |
+| 11 | DECISIONS.md ghi nhận D62, hoàn tất tiêu chí Task R4 | PASS |
 

@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
-import { ChefHat, RefreshCw } from 'lucide-react';
+
 import { resolveMealSelection } from '@/lib/meal/mealQueries';
 import { clampServings } from '@/lib/recipes/scaling';
 import { MealView } from '@/components/meal/MealView';
@@ -37,7 +37,14 @@ async function MealPageContent({ searchParams }: MealPageProps) {
     sideSlug,
   });
 
-  return <MealView initialSelection={initialSelection} initialServings={servings} />;
+  return (
+    <MealView
+      key={`${initialSelection.main?.slug ?? ''}|${initialSelection.soup?.slug ?? ''}|${initialSelection.side?.slug ?? ''}|${servings}`}
+      initialSelection={initialSelection}
+      initialServings={servings}
+      hasExplicitSelection={Boolean(mainSlug || soupSlug || sideSlug)}
+    />
+  );
 }
 
 function MealLoadingShell() {

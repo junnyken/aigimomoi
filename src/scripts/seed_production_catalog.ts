@@ -59,12 +59,14 @@ const PRODUCTION_RECIPES: RecipeSeedData[] = [
     ingredients: [
       { name: 'Thịt ba chỉ heo', slug: 'thit-ba-chi-heo', category: 'Thực phẩm tươi sống', standardUnit: 'g', amount: 400, unit: 'g', scalePolicy: 'LINEAR', preparation: 'thái con chì dày 1cm' },
       { name: 'Hành tím', slug: 'hanh-tim', category: 'Gia vị nêm nếm', standardUnit: 'củ', amount: 3, unit: 'củ', scalePolicy: 'LINEAR', preparation: 'băm nhỏ' },
+      // D61: kịch bản nấu có tỏi băm → seed phải có; dùng cùng slug/đơn vị với rau muống xào tỏi để gộp được khi đi chợ.
+      { name: 'Tỏi khô', slug: 'toi-kho', category: 'Gia vị nêm nếm', standardUnit: 'tép', amount: 3, unit: 'tép', scalePolicy: 'LINEAR', preparation: 'băm nhỏ' },
       { name: 'Hạt tiêu đen', slug: 'hat-tieu-den', category: 'Gia vị nêm nếm', standardUnit: 'g', amount: 1, unit: 'muỗng cà phê', scalePolicy: 'MANUAL_ADJUST', preparation: 'xay vỡ hạt' },
       { name: 'Nước mắm truyền thống', slug: 'nuoc-mam-truyen-thong', category: 'Gia vị nêm nếm', standardUnit: 'ml', amount: 2, unit: 'muỗng canh', scalePolicy: 'LINEAR' },
       { name: 'Đường cát', slug: 'duong-cat', category: 'Gia vị nêm nếm', standardUnit: 'g', amount: 1, unit: 'muỗng canh', scalePolicy: 'LINEAR', preparation: 'thắng nước màu' },
     ],
     steps: [
-      { stepNumber: 1, phaseName: 'Sơ chế & Ướp', instruction: 'Thịt chần qua nước sôi 1 phút rồi rửa sạch. Ướp với 1 muỗng canh nước mắm, hành tím băm và 1/2 muỗng tiêu trong 15 phút.', timerSeconds: 900, tipText: 'Chần thịt sơ giúp miếng thịt thơm sạch và nước kho trong hơn.' },
+      { stepNumber: 1, phaseName: 'Sơ chế & Ướp', instruction: 'Thịt chần qua nước sôi 1 phút rồi rửa sạch. Ướp với 1 muỗng canh nước mắm, hành tím và tỏi băm, 1/2 muỗng tiêu trong 15 phút.', timerSeconds: 900, tipText: 'Chần thịt sơ giúp miếng thịt thơm sạch và nước kho trong hơn.' },
       { stepNumber: 2, phaseName: 'Thắng nước màu', instruction: 'Đun 1 muỗng đường với chút dầu ăn đến màu cánh gián đậm thì cho thịt vào đảo săn đều.', timerSeconds: 180, tipText: 'Canh lửa nhỏ khi thắng đường để tránh bị cháy khét.' },
       { stepNumber: 3, phaseName: 'Kho liu riu', instruction: 'Thêm nước mắm và 50ml nước sôi xâm xấp mặt thịt, đậy vung đun nhỏ lửa 20 phút đến khi nước sốt keo sánh quyện.', timerSeconds: 1200 },
       { stepNumber: 4, phaseName: 'Hoàn thiện', instruction: 'Rắc hạt tiêu đen xay và hành hoa lên trên, tắt bếp và múc ra đĩa dùng nóng với cơm trắng.', tipText: 'Nên ăn cùng rau luộc chấm nước thịt kho rất đưa cơm.' },
@@ -426,7 +428,8 @@ export async function seedProductionCatalog() {
         difficulty: item.difficulty,
         heroImage: item.heroImage,
         isEditorialReviewed: true,
-        isCookTested: true,
+        // Invariants D23 & R1: Chưa nấu thử thực nghiệm trong bếp mẫu -> false (không giả mạo nhãn)
+        isCookTested: false,
         isNutritionVerified: false,
         versionNumber: 1,
         publishedAt: new Date(),

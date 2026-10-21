@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { Clock, RefreshCw, ChefHat, UtensilsCrossed, ArrowRight } from 'lucide-react';
 import type { MealDishSummary } from '@/lib/meal/mealQueries';
-import { formatDuration, recipePath } from '@/lib/recipes/labels';
+import { formatDuration, recipePath, isIllustrationImage } from '@/lib/recipes/labels';
 
 interface MealSlotCardProps {
   role: 'MAIN' | 'SOUP' | 'SIDE';
@@ -79,6 +79,12 @@ export function MealSlotCard({ role, dish, servings, onSwapClick }: MealSlotCard
           <div className="flex h-full items-center justify-center text-[var(--color-text-muted)]">
             <UtensilsCrossed className="w-12 h-12" aria-hidden="true" />
           </div>
+        )}
+
+        {dish.heroImage && (dish.isIllustration ?? isIllustrationImage(dish.heroImage)) && (
+          <span className="absolute bottom-3 right-3 px-2 py-0.5 rounded text-[10px] font-medium bg-black/60 text-white/95 backdrop-blur-xs shadow-xs z-10">
+            Ảnh minh họa
+          </span>
         )}
 
         {dish.isCookTested && (

@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { notFound, permanentRedirect } from 'next/navigation';
 import { getCurrentSlugForArchived, getPublishedRecipeBySlug } from '@/lib/recipes/public';
@@ -44,6 +45,21 @@ export async function generateMetadata({ params }: CookingPageProps): Promise<Me
 export default async function CookingModePage({ params, searchParams }: CookingPageProps) {
   const { slug } = await params;
   const recipe = await loadRecipe(slug);
+
+  return (
+    <Suspense fallback={<CookingLoadingShell />}>
+      <CookingModeContent recipe={recipe} searchParams={searchParams} />
+    </Suspense>
+  );
+}
+
+async function CookingModeContent({
+  recipe,
+  searchParams,
+}: {
+  recipe: NonNullable<Awaited<ReturnType<typeof getPublishedRecipeBySlug>>>;
+  searchParams: Promise<{ step?: string; servings?: string }>;
+}) {
   const rawQuery = await searchParams;
 
   const initialServings = typeof rawQuery.servings === 'string' ? Number(rawQuery.servings) : undefined;
@@ -55,5 +71,15 @@ export default async function CookingModePage({ params, searchParams }: CookingP
       initialServings={initialServings}
       initialStepIndex={initialStepIndex}
     />
+  );
+}
+
+function CookingLoadingShell() {
+  return (
+    <div className="min-h-screen bg-[var(--color-surface-white)] animate-pulse flex flex-col p-6 max-w-4xl mx-auto">
+      <div className="h-8 w-48 bg-[var(--color-border-subtle)] rounded-lg mb-6" />
+      <div className="h-64 bg-[var(--color-surface-raised)] rounded-2xl mb-6" />
+      <div className="h-32 bg-[var(--color-surface-raised)] rounded-2xl" />
+    </div>
   );
 }

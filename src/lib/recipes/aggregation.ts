@@ -4,6 +4,42 @@
 
 import { formatScaledAmount } from './scaling';
 
+export type MarketCategory = 'MEAT_SEAFOOD' | 'PRODUCE' | 'PANTRY' | 'OTHER';
+
+// R2: Dữ liệu thật (seed, /editor/ingredients, schema default) lưu nhãn tiếng Việt,
+// còn engine phân quầy theo mã. Chuẩn hóa cả hai bộ từ vựng về cùng một quầy chợ.
+const CATEGORY_ALIASES: Record<string, MarketCategory> = {
+  meat_seafood: 'MEAT_SEAFOOD',
+  'thực phẩm tươi sống': 'MEAT_SEAFOOD',
+  'thủy hải sản': 'MEAT_SEAFOOD',
+  'thuỷ hải sản': 'MEAT_SEAFOOD',
+  'thịt': 'MEAT_SEAFOOD',
+  'hải sản': 'MEAT_SEAFOOD',
+  produce: 'PRODUCE',
+  'rau củ quả': 'PRODUCE',
+  'rau củ': 'PRODUCE',
+  'rau thơm': 'PRODUCE',
+  'trái cây': 'PRODUCE',
+  'rau củ tươi': 'PRODUCE',
+  'rau thơm gia vị': 'PRODUCE',
+  pantry: 'PANTRY',
+  'gia vị nêm nếm': 'PANTRY',
+  'gia vị & đồ khô': 'PANTRY',
+  'gia vị': 'PANTRY',
+  'đồ khô': 'PANTRY',
+  // R3: các nhãn còn sót trong seed (trước đây rơi vào "khác")
+  'gia vị cơ bản': 'PANTRY',
+  'gia vị & hương liệu': 'PANTRY',
+  'gia vị & bột': 'PANTRY',
+  'bún miến mì khô': 'PANTRY',
+};
+
+export function normalizeMarketCategory(raw: string | null | undefined): MarketCategory {
+  if (!raw) return 'OTHER';
+  const key = raw.normalize('NFC').trim().toLowerCase();
+  return CATEGORY_ALIASES[key] ?? 'OTHER';
+}
+
 export interface RawRecipeIngredientForAggregation {
   id: number;
   name: string;
@@ -98,11 +134,12 @@ export function aggregateMealIngredients(
       if (ing.scalePolicy === 'MANUAL_ADJUST') {
         const seasoningKey = `${nameKey}__${unitKey}`;
         if (!seasoningsMap.has(seasoningKey)) {
+          const seasoningCategory = normalizeMarketCategory(ing.category);
           seasoningsMap.set(seasoningKey, {
             key: seasoningKey,
             name: cleanName,
             unit: cleanUnit,
-            category: ing.category || 'PANTRY',
+            category: seasoningCategory === 'OTHER' ? 'PANTRY' : seasoningCategory,
             scalePolicy: 'MANUAL_ADJUST',
             traces: [],
           });
@@ -127,7 +164,7 @@ export function aggregateMealIngredients(
         aggregatedMap.set(aggKey, {
           key: aggKey,
           name: cleanName,
-          category: ing.category || 'OTHER',
+          category: normalizeMarketCategory(ing.category),
           unit: cleanUnit,
           scalePolicy: ing.scalePolicy,
           totalAmount: 0,

@@ -225,7 +225,8 @@ async function seedP7() {
         baseServings: item.baseServings,
         heroImage: item.heroImage,
         isEditorialReviewed: true,
-        isCookTested: true,
+        // Invariants D23 & R1: Chưa nấu thử thực nghiệm trong bếp mẫu -> false
+        isCookTested: false,
         publishedAt: new Date(),
       }).returning();
       console.log(`+ Created recipe: ${recipe.name} [${recipe.role}]`);

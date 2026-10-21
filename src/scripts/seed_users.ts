@@ -1,6 +1,9 @@
 import { hashPassword, verifyPassword } from '../lib/auth/password';
 import { signToken, verifyToken } from '../lib/auth/session';
 
+// Cung cấp secret test chuyên biệt cho script kiểm thử cục bộ nếu chưa có
+process.env.AUTH_SECRET = process.env.AUTH_SECRET || 'angimom_test_auth_secret_for_seed_users_script_32c';
+
 async function testAuth() {
   console.log('=== Testing Password Hashing & Verification ===');
   const password = 'Admin@123456';

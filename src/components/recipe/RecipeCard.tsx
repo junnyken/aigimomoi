@@ -1,10 +1,12 @@
 import Link from 'next/link';
 import { Clock, Users, ChefHat, UtensilsCrossed } from 'lucide-react';
 import type { PublicRecipeCard } from '@/lib/recipes/publicQueries';
-import { ROLE_LABELS, formatDuration, recipePath } from '@/lib/recipes/labels';
+import { ROLE_LABELS, formatDuration, recipePath, isIllustrationImage } from '@/lib/recipes/labels';
 import { BookmarkButton } from './BookmarkButton';
 
 export function RecipeCard({ recipe }: { recipe: PublicRecipeCard }) {
+  const isIllustration = recipe.isIllustration ?? isIllustrationImage(recipe.heroImage);
+
   return (
     <article className="group relative bg-[var(--color-surface-white)] border border-[var(--color-border-base)] rounded-2xl overflow-hidden shadow-xs hover:shadow-md transition-all hover:-translate-y-1 flex flex-col focus-within:ring-2 focus-within:ring-[var(--color-brand-primary)]">
       <div className="relative w-full h-48 bg-[var(--color-surface-raised)] overflow-hidden">
@@ -24,6 +26,11 @@ export function RecipeCard({ recipe }: { recipe: PublicRecipeCard }) {
         <span className="absolute top-3 left-3 px-2.5 py-1 rounded-full text-xs font-semibold bg-[var(--color-brand-primary)] text-white">
           {ROLE_LABELS[recipe.role] ?? recipe.role}
         </span>
+        {recipe.heroImage && isIllustration && (
+          <span className="absolute bottom-2.5 left-2.5 px-2 py-0.5 rounded text-[10px] font-medium bg-black/60 text-white/95 backdrop-blur-xs shadow-xs z-10">
+            Ảnh minh họa
+          </span>
+        )}
         <div className="absolute top-3 right-3 flex items-center gap-1.5 z-20">
           {recipe.isCookTested && (
             <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-semibold bg-[var(--color-surface-white)] text-[var(--color-success-base)] shadow-xs">

@@ -62,3 +62,25 @@ export const RECIPE_NOT_FOUND_PLACEHOLDER = '_khong-tim-thay';
 export function recipePath(slug: string): string {
   return `${PUBLIC_RECIPE_PREFIX}${encodeURIComponent(slug)}`;
 }
+
+/**
+ * Phân biệt ảnh minh họa (stock / Unsplash) với ảnh chụp đĩa cơm thực tế tại bếp (D23, R1).
+ * - URL Unsplash hoặc kho ảnh ngoài -> true (Ảnh minh họa).
+ * - Kho ảnh tải lên nội bộ (/uploads/...) hoặc không có ảnh -> false.
+ */
+export function isIllustrationImage(src: string | null | undefined): boolean {
+  if (!src || typeof src !== 'string') return false;
+  const trimmed = src.trim();
+  if (trimmed.length === 0) return false;
+  if (trimmed.startsWith('/uploads/') || trimmed.includes('/uploads/')) return false;
+  if (
+    trimmed.includes('images.unsplash.com') ||
+    trimmed.includes('unsplash.com') ||
+    trimmed.includes('pexels.com') ||
+    trimmed.includes('pixabay.com') ||
+    trimmed.includes('placeholder')
+  ) {
+    return true;
+  }
+  return trimmed.startsWith('http://') || trimmed.startsWith('https://');
+}

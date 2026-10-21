@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { X, Search, Check, UtensilsCrossed, Clock, ChefHat } from 'lucide-react';
 import type { MealDishSummary } from '@/lib/meal/mealQueries';
-import { formatDuration } from '@/lib/recipes/labels';
+import { formatDuration, isIllustrationImage } from '@/lib/recipes/labels';
 
 interface SwapDishModalProps {
   isOpen: boolean;
@@ -26,16 +26,31 @@ export function SwapDishModal({
   onClose,
   onSelect,
 }: SwapDishModalProps) {
+  if (!isOpen) return null;
+
+  return (
+    <SwapDishModalContent
+      key={role}
+      role={role}
+      currentSlug={currentSlug}
+      onClose={onClose}
+      onSelect={onSelect}
+    />
+  );
+}
+
+function SwapDishModalContent({
+  role,
+  currentSlug,
+  onClose,
+  onSelect,
+}: Omit<SwapDishModalProps, 'isOpen'>) {
   const [options, setOptions] = useState<MealDishSummary[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (!isOpen) return;
-
     let isMounted = true;
-    setIsLoading(true);
-    setSearchQuery('');
 
     fetch(`/api/meal/options?role=${role}`)
       .then((res) => res.json())
@@ -48,15 +63,15 @@ export function SwapDishModal({
         console.error('Lỗi khi tải danh sách món thay thế:', err);
       })
       .finally(() => {
-        if (isMounted) setIsLoading(false);
+        if (isMounted) {
+          setIsLoading(false);
+        }
       });
 
     return () => {
       isMounted = false;
     };
-  }, [isOpen, role]);
-
-  if (!isOpen) return null;
+  }, [role]);
 
   const filteredOptions = options.filter((dish) =>
     dish.name.toLowerCase().includes(searchQuery.trim().toLowerCase())
@@ -128,7 +143,7 @@ export function SwapDishModal({
                       : 'border-[var(--color-border-base)] bg-[var(--color-surface-white)] hover:border-[var(--color-brand-primary)]/50 hover:bg-[var(--color-surface-raised)]'
                   }`}
                 >
-                  <div className="w-16 h-16 rounded-xl overflow-hidden bg-[var(--color-surface-raised)] shrink-0">
+                  <div className="relative w-16 h-16 rounded-xl overflow-hidden bg-[var(--color-surface-raised)] shrink-0">
                     {dish.heroImage ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={dish.heroImage} alt="" className="w-full h-full object-cover" />
@@ -136,6 +151,11 @@ export function SwapDishModal({
                       <div className="w-full h-full flex items-center justify-center text-[var(--color-text-muted)]">
                         <UtensilsCrossed className="w-6 h-6" />
                       </div>
+                    )}
+                    {dish.heroImage && (dish.isIllustration ?? isIllustrationImage(dish.heroImage)) && (
+                      <span className="absolute bottom-0 inset-x-0 bg-black/60 text-white/95 text-[9px] font-medium text-center py-0.5 leading-none">
+                        Minh họa
+                      </span>
                     )}
                   </div>
 

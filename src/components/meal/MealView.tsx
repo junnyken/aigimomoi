@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
-import { Shuffle, Sparkles, ChefHat, RefreshCw } from 'lucide-react';
+import { Shuffle, Sparkles, ChefHat } from 'lucide-react';
 import type { MealDishSummary, MealSelection } from '@/lib/meal/mealQueries';
 import { MealServingsSelector } from './MealServingsSelector';
 import { MealSlotCard } from './MealSlotCard';
@@ -9,13 +9,18 @@ import { SwapDishModal } from './SwapDishModal';
 import { MealSummaryBar } from './MealSummaryBar';
 import { saveStoredMeal, getStoredMeal } from '@/lib/meal/mealClient';
 import { AiMealSuggestionModal } from './AiMealSuggestionModal';
+import { useRouter } from 'next/navigation';
+import { buildMealQuery } from '@/lib/meal/flowUrls';
 
 interface MealViewProps {
   initialSelection: MealSelection;
   initialServings: number;
+  /** URL có main/soup/side (link chia sẻ hoặc điều hướng nội bộ) → không khôi phục từ localStorage. */
+  hasExplicitSelection?: boolean;
 }
 
-export function MealView({ initialSelection, initialServings }: MealViewProps) {
+export function MealView({ initialSelection, initialServings, hasExplicitSelection = false }: MealViewProps) {
+  const router = useRouter();
   const [main, setMain] = useState<MealDishSummary | null>(initialSelection.main);
   const [soup, setSoup] = useState<MealDishSummary | null>(initialSelection.soup);
   const [side, setSide] = useState<MealDishSummary | null>(initialSelection.side);
@@ -60,13 +65,42 @@ export function MealView({ initialSelection, initialServings }: MealViewProps) {
     []
   );
 
-  // Khi mount, nếu URL không có params nhưng localStorage có món đã lưu, có thể nạp lại
+  // R3: Khôi phục mâm đã chọn (trước đây effect này không làm gì).
+  // - URL có main/soup/side → luôn ưu tiên URL (link chia sẻ không bị ghi đè) và ghi nhớ mâm này.
+  // - URL trống mà localStorage có mâm hợp lệ khác mâm hiện tại → điều hướng sang URL của mâm đã lưu.
+  //   (Chạy 1 lần khi mount; dùng giá trị ban đầu nên cố ý không phụ thuộc state.)
+  const initialMainSlug = initialSelection.main?.slug ?? '';
+  const initialSoupSlug = initialSelection.soup?.slug ?? '';
+  const initialSideSlug = initialSelection.side?.slug ?? '';
   useEffect(() => {
-    const stored = getStoredMeal();
-    if (stored && (!main || !soup || !side)) {
-      // Chỉ can thiệp nếu initialSelection rỗng
+    if (hasExplicitSelection) {
+      if (initialMainSlug || initialSoupSlug || initialSideSlug) {
+        saveStoredMeal({
+          mainSlug: initialMainSlug,
+          soupSlug: initialSoupSlug,
+          sideSlug: initialSideSlug,
+          servings: initialServings,
+        });
+      }
+      return;
     }
-  }, [main, soup, side]);
+    const stored = getStoredMeal();
+    if (!stored || !(stored.mainSlug || stored.soupSlug || stored.sideSlug)) return;
+    const sameMeal =
+      stored.mainSlug === initialMainSlug &&
+      stored.soupSlug === initialSoupSlug &&
+      stored.sideSlug === initialSideSlug &&
+      stored.servings === initialServings;
+    if (sameMeal) return;
+    router.replace(
+      `/meal?${buildMealQuery({
+        mainSlug: stored.mainSlug,
+        soupSlug: stored.soupSlug,
+        sideSlug: stored.sideSlug,
+        servings: stored.servings,
+      })}`
+    );
+  }, [hasExplicitSelection, initialMainSlug, initialSoupSlug, initialSideSlug, initialServings, router]);
 
   // Xử lý đổi món ở 1 slot
   const handleSelectDish = useCallback(

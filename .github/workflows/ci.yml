@@ -1,0 +1,117 @@
+# R3 — CI tự động cho ĂN GÌ MOM.
+# - checks: lint (phạm vi R0–R3), typecheck, test thuần (R0/R1/R2-R3), production build — không cần DB.
+# - e2e: Postgres tạm + migrate nghiêm ngặt + seed thật + Playwright (desktop & mobile).
+# Không có secret thật nào trong workflow: AUTH_SECRET sinh ngẫu nhiên mỗi lần chạy, DB là container tạm.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '22'
+  NEXT_TELEMETRY_DISABLED: '1'
+
+jobs:
+  checks:
+    name: Lint · Typecheck · Unit · Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      # Toàn repo còn lỗi ESLint có sẵn từ trước R0 (ghi trong docs/reports/R3_report.md).
+      # Chặn CI trên các file đã được làm sạch trong R0–R3; mở rộng dần danh sách này.
+      - name: Lint (phạm vi R0–R3)
+        run: npm run lint:scoped
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: R0 — Auth hardening
+        run: npm run test:auth
+
+      - name: R1 — Data honesty
+        run: npm run test:honesty
+
+      - name: R2/R3 — Core MVP flows
+        run: npm run test:core
+
+      - name: Production build (không DB)
+        run: npm run build
+
+  e2e:
+    name: E2E Playwright (Postgres thật)
+    needs: checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: angimom
+          POSTGRES_PASSWORD: ci_ephemeral_only
+          POSTGRES_DB: angimom_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U angimom -d angimom_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgres://angimom:ci_ephemeral_only@localhost:5432/angimom_test
+      NODE_ENV: production
+      CI: 'true'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: Sinh AUTH_SECRET tạm (không lưu ở đâu)
+        run: |
+          SECRET=$(openssl rand -hex 32)
+          echo "::add-mask::$SECRET"
+          echo "AUTH_SECRET=$SECRET" >> "$GITHUB_ENV"
+
+      - name: Dựng DB test (migrate nghiêm ngặt + seed catalog thật)
+        run: npm run test:e2e:db
+
+      - name: Build production với dữ liệu test
+        run: npm run build
+
+      - name: Cài Chromium cho Playwright
+        run: npx playwright install --with-deps chromium
+
+      - name: Chạy E2E
+        run: npm run test:e2e
+
+      - name: Lưu báo cáo Playwright
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 14

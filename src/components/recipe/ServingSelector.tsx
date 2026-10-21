@@ -61,7 +61,7 @@ export function ServingSelector({
           type="button"
           onClick={handleDecrement}
           disabled={currentServings <= MIN_SERVINGS}
-          className="w-8 h-8 rounded-xl bg-[var(--color-surface-white)] border border-[var(--color-border-subtle)] text-[var(--color-text-primary)] hover:border-[var(--color-brand-primary)] disabled:opacity-30 disabled:pointer-events-none flex items-center justify-center transition-all shadow-2xs"
+          className="w-11 h-11 rounded-xl bg-[var(--color-surface-white)] border border-[var(--color-border-subtle)] text-[var(--color-text-primary)] hover:border-[var(--color-brand-primary)] disabled:opacity-30 disabled:pointer-events-none flex items-center justify-center transition-all shadow-2xs"
           aria-label="Giảm 1 người"
         >
           <Minus className="w-4 h-4" />
@@ -84,7 +84,7 @@ export function ServingSelector({
           type="button"
           onClick={handleIncrement}
           disabled={currentServings >= MAX_SERVINGS}
-          className="w-8 h-8 rounded-xl bg-[var(--color-surface-white)] border border-[var(--color-border-subtle)] text-[var(--color-text-primary)] hover:border-[var(--color-brand-primary)] disabled:opacity-30 disabled:pointer-events-none flex items-center justify-center transition-all shadow-2xs"
+          className="w-11 h-11 rounded-xl bg-[var(--color-surface-white)] border border-[var(--color-border-subtle)] text-[var(--color-text-primary)] hover:border-[var(--color-brand-primary)] disabled:opacity-30 disabled:pointer-events-none flex items-center justify-center transition-all shadow-2xs"
           aria-label="Tăng 1 người"
         >
           <Plus className="w-4 h-4" />

@@ -21,6 +21,10 @@
 
 ## Môi trường và secrets
 - Local/staging/production tách cấu hình và dữ liệu.
+- Tên biến duy nhất cho session authentication là `AUTH_SECRET`. Tuyệt đối không có fallback secret trong runtime hoặc docker-compose (Zero-Fallback policy, D58).
+- Mọi môi trường (kể cả local dev) phải tự sinh khóa ngẫu nhiên mật mã tối thiểu 32 ký tự vào tệp môi trường được gitignore (`.env`); cấm sử dụng các chuỗi mẫu hay placeholder mặc định.
+- Khi cấu hình secret thiếu hoặc không hợp lệ, hệ thống phải fail-closed (từ chối ký/xác thực phiên) và phản ánh trạng thái `unhealthy` (HTTP 503) trên endpoint `/api/health` readiness probe.
+- Tách bạch Build-time và Runtime: Lệnh build Docker image tuyệt đối không yêu cầu production secret.
 - Secrets không commit, không đưa vào tài liệu/report (`.gitignore` đã chặn `.env*`).
 - Không cần và không gửi mật khẩu, SSH private key, API key trong hội thoại.
 - Migration có review, backup/rollback; destructive migration, DNS/firewall cần plan và duyệt riêng.

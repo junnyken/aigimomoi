@@ -22,6 +22,62 @@
       "when": 1792504391738,
       "tag": "0002_ag15_publishing_revision",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1792504400000,
+      "tag": "0003_ag20_saved_recipes",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792504500000,
+      "tag": "0004_ag29_ai_provenance",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1792504600000,
+      "tag": "0005_ag32_recipe_reports",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792504700000,
+      "tag": "0006_ag33_dish_variants_stories",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1792504800000,
+      "tag": "0007_ag34_cooked_feedback",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1792504900000,
+      "tag": "0008_ag35_36_nutrition_engine",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1792505000000,
+      "tag": "0009_ag37_38_meal_diary",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1792505100000,
+      "tag": "0010_ag39_40_41_p7_catalog_pantry_planner",
+      "breakpoints": true
     }
   ]
 }

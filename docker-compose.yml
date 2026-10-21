@@ -30,6 +30,7 @@ services:
         condition: service_healthy
     environment:
       DATABASE_URL: postgres://${POSTGRES_USER:-angimom}:${POSTGRES_PASSWORD:-angimom_password}@db:5432/${POSTGRES_DB:-angimom_db}
+      AUTH_SECRET: "${AUTH_SECRET:?Loi: Can cung cap AUTH_SECRET trong .env (toi thieu 32 ky tu ngau nhien)}"
       NODE_ENV: production
       PORT: 3000
     ports:

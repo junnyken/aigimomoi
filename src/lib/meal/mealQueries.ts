@@ -1,7 +1,8 @@
-import { and, desc, eq, inArray, sql } from 'drizzle-orm';
+import { and, desc, eq, inArray } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { recipes } from '@/lib/db/schema';
 import { safeImageSrc, isValidPublicSlug } from '@/lib/recipes/publicQueries';
+import { isIllustrationImage } from '@/lib/recipes/labels';
 
 export interface MealDishSummary {
   slug: string;
@@ -15,6 +16,7 @@ export interface MealDishSummary {
   difficulty: string;
   heroImage: string | null;
   isCookTested: boolean;
+  isIllustration?: boolean;
 }
 
 export interface MealSelection {
@@ -59,13 +61,14 @@ export async function queryPublishedMealOptions(role?: 'MAIN' | 'SOUP' | 'SIDE')
     cookTimeMinutes,
     totalTimeMinutes: prepTimeMinutes + cookTimeMinutes,
     heroImage: safeImageSrc(heroImage),
+    isIllustration: isIllustrationImage(heroImage),
   }));
 }
 
 /**
  * Lấy chi tiết 1 món ăn cho slot mâm cơm theo slug.
  */
-async function querySingleMealDish(slug: string, expectedRole: 'MAIN' | 'SOUP' | 'SIDE'): Promise<MealDishSummary | null> {
+export async function querySingleMealDish(slug: string, expectedRole: 'MAIN' | 'SOUP' | 'SIDE'): Promise<MealDishSummary | null> {
   if (!isValidPublicSlug(slug)) return null;
 
   const [row] = await db
@@ -98,6 +101,7 @@ async function querySingleMealDish(slug: string, expectedRole: 'MAIN' | 'SOUP' |
     role: row.role as 'MAIN' | 'SOUP' | 'SIDE',
     totalTimeMinutes: row.prepTimeMinutes + row.cookTimeMinutes,
     heroImage: safeImageSrc(row.heroImage),
+    isIllustration: isIllustrationImage(row.heroImage),
   };
 }
 

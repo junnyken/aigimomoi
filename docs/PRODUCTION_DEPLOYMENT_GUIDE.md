@@ -64,8 +64,10 @@ POSTGRES_PASSWORD=MatKhauBaoMatCucManh2026!@#
 POSTGRES_DB=angimom_prod
 DATABASE_URL=postgres://angimom:MatKhauBaoMatCucManh2026!@#@postgres:5432/angimom_prod
 
-# 2. Khóa bảo mật JWT Session
-JWT_SECRET=TaoChuoiNgauNhienItNhat32KyTuChoProduction2026_JWT
+# 2. Khóa bảo mật Session (Web Crypto HMAC-SHA256)
+# Bắt buộc: Chuỗi ngẫu nhiên chuẩn mật mã tối thiểu 32 ký tự (tạo bằng: openssl rand -base64 32)
+# Tuyệt đối không dùng lại các chuỗi mẫu hay placeholder (hệ thống sẽ fail-closed)
+AUTH_SECRET=ThayBangChuoiSinhTuLenhTrenKhongDungPlaceholder
 
 # 3. Cloudflare R2 Object Storage (Lưu trữ ảnh món ăn)
 CLOUDFLARE_R2_ACCOUNT_ID=d9f48xxxxxxxxxxxxxxxxxxxxxxx

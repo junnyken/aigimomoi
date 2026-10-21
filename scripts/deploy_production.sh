@@ -16,12 +16,17 @@ if ! command -v docker &> /dev/null; then
 fi
 
 # 2. Kiểm tra file cấu hình môi trường
-if [ ! -f .env.production ] && [ ! -f .env ]; then
-    echo "⚠️  Cảnh báo: Không tìm thấy file .env.production hoặc .env."
-    echo "👉 Đang tạo file .env.production mẫu từ .env.example..."
-    cp .env.example .env.production
-    echo "✅ Đã tạo .env.production. Vui lòng cập nhật các khóa bí mật trước khi chạy lại."
+ENV_FILE=".env.production"
+if [ ! -f "$ENV_FILE" ]; then
+    if [ -f ".env" ]; then
+        ENV_FILE=".env"
+    else
+        echo "❌ Lỗi: Không tìm thấy file .env.production hoặc .env."
+        echo "👉 Vui lòng tạo file .env.production và điền các khóa bí mật thực tế trước khi chạy deploy."
+        exit 1
+    fi
 fi
+echo "✅ Đang sử dụng file cấu hình môi trường: $ENV_FILE"
 
 # 3. Tạo thư mục dữ liệu nếu chưa có
 mkdir -p data/postgres data/caddy_data data/caddy_config backups public/uploads
@@ -39,19 +44,33 @@ if command -v npx &> /dev/null; then
 fi
 
 # 6. Khởi động các container Docker
+echo "🐳 Đang kiểm tra cú pháp Docker Compose..."
+docker compose --env-file "$ENV_FILE" -f docker-compose.prod.yml config --quiet
+
 echo "🐳 Đang build và khởi động các container Production..."
-docker compose -f docker-compose.prod.yml up -d --build
+docker compose --env-file "$ENV_FILE" -f docker-compose.prod.yml up -d --build
 
 # 7. Đợi container Postgres sẵn sàng
 echo "⏳ Đang đợi PostgreSQL khởi động hoàn tất..."
-sleep 5
+DB_USER="${POSTGRES_USER:-angimom}"
+DB_NAME="${POSTGRES_DB:-angimom_prod}"
 
-# 8. Thực thi migrations vào cơ sở dữ liệu
-echo "🗄️ Đang đồng bộ hóa Database Schema..."
-for sql_file in $(ls drizzle/*.sql | sort); do
-    echo "   -> Đang chạy migration: $sql_file"
-    docker exec -i angimom_prod_postgres psql -U angimom -d angimom_prod < "$sql_file" 2>/dev/null || true
+RETRIES=30
+until docker exec angimom_prod_postgres pg_isready -U "$DB_USER" -d "$DB_NAME" > /dev/null 2>&1 || [ $RETRIES -eq 0 ]; do
+    echo "   ... đang chờ PostgreSQL sẵn sàng ($RETRIES lần thử còn lại) ..."
+    sleep 2
+    RETRIES=$((RETRIES - 1))
 done
+
+if [ $RETRIES -eq 0 ]; then
+    echo "❌ Lỗi: PostgreSQL không phản hồi sau thời gian chờ."
+    exit 1
+fi
+echo "✅ PostgreSQL đã sẵn sàng."
+
+# 8. Thực thi migrations vào cơ sở dữ liệu (Fail-closed & idempotent qua journal)
+echo "🗄️ Đang đồng bộ hóa Database Schema..."
+node scripts/migrate_production.js
 
 echo ""
 echo "=========================================================="

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback, useMemo, useSyncExternalStore } from 'react';
 import type { AggregationResult } from '@/lib/recipes/aggregation';
 
 const SHOPPING_CHECKED_KEY = 'angimom_shopping_checked_v1';
@@ -26,25 +26,41 @@ export function saveLocalCheckedKeys(keys: string[]) {
   }
 }
 
+function subscribeChecklist(onChange: () => void) {
+  window.addEventListener(SHOPPING_EVENT_NAME, onChange);
+  window.addEventListener('storage', onChange);
+  return () => {
+    window.removeEventListener(SHOPPING_EVENT_NAME, onChange);
+    window.removeEventListener('storage', onChange);
+  };
+}
+
+function readRawChecklist(): string {
+  try {
+    return localStorage.getItem(SHOPPING_CHECKED_KEY) ?? '[]';
+  } catch {
+    return '[]';
+  }
+}
+
+function parseChecklist(raw: string | null): string[] {
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.filter((k): k is string => typeof k === 'string') : [];
+  } catch {
+    return [];
+  }
+}
+
+const noopSubscribe = () => () => {};
+
+// R3: Đọc localStorage qua useSyncExternalStore thay vì setState trong effect
+// (đúng khuyến nghị React 19, đồng bộ giữa các tab qua sự kiện 'storage').
 export function useShoppingChecklist() {
-  const [checkedKeys, setCheckedKeys] = useState<string[]>([]);
-  const [isLoaded, setIsLoaded] = useState(false);
-
-  useEffect(() => {
-    setCheckedKeys(getLocalCheckedKeys());
-    setIsLoaded(true);
-
-    function onStorage() {
-      setCheckedKeys(getLocalCheckedKeys());
-    }
-
-    window.addEventListener(SHOPPING_EVENT_NAME, onStorage);
-    window.addEventListener('storage', onStorage);
-    return () => {
-      window.removeEventListener(SHOPPING_EVENT_NAME, onStorage);
-      window.removeEventListener('storage', onStorage);
-    };
-  }, []);
+  const raw = useSyncExternalStore(subscribeChecklist, readRawChecklist, () => null);
+  const isLoaded = useSyncExternalStore(noopSubscribe, () => true, () => false);
+  const checkedKeys = useMemo(() => parseChecklist(raw), [raw]);
 
   const isChecked = useCallback(
     (key: string) => checkedKeys.includes(key),
@@ -53,17 +69,14 @@ export function useShoppingChecklist() {
 
   const toggleCheck = useCallback(
     (key: string) => {
-      setCheckedKeys((prev) => {
-        const next = prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key];
-        saveLocalCheckedKeys(next);
-        return next;
-      });
+      const current = getLocalCheckedKeys();
+      const next = current.includes(key) ? current.filter((k) => k !== key) : [...current, key];
+      saveLocalCheckedKeys(next);
     },
     []
   );
 
   const resetAll = useCallback(() => {
-    setCheckedKeys([]);
     saveLocalCheckedKeys([]);
   }, []);
 
@@ -110,7 +123,16 @@ export function generateShoppingPlainText(
     lines.push('');
   }
 
-  // 3. Khác
+  // 3. Gia vị & đồ khô cần mua theo định lượng (R2: trước đây bị bỏ sót khỏi văn bản)
+  if (result.categories.pantry.length > 0) {
+    lines.push('🧄 GIA VỊ & ĐỒ KHÔ CẦN MUA:');
+    result.categories.pantry.forEach((item) => {
+      lines.push(`- ${item.name}: ${item.formattedTotal} ${item.unit}`);
+    });
+    lines.push('');
+  }
+
+  // 4. Khác
   if (result.categories.other.length > 0) {
     lines.push('📦 NGUYÊN LIỆU KHÁC:');
     result.categories.other.forEach((item) => {
@@ -119,7 +141,7 @@ export function generateShoppingPlainText(
     lines.push('');
   }
 
-  // 4. Gia vị bếp nhà
+  // 5. Gia vị bếp nhà
   if (result.seasoningItems.length > 0) {
     lines.push('🧂 GIA VỊ BẾP NHÀ (KIỂM TRA TRƯỚC KHI NẤU):');
     result.seasoningItems.forEach((item) => {

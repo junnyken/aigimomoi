@@ -94,8 +94,18 @@ Gate P6: nguồn truy vết, lượng đã ăn khác lượng đã nấu, dữ l
 
 Gate P7: Mở rộng thể loại món ăn không làm vỡ taxonomy và engine; kho tủ lạnh phân quyền chặt chẽ; kế hoạch tuần tích hợp thông suốt với giỏ đi chợ và nhật ký dinh dưỡng. — **GATE P7 ĐÃ ĐẠT (M7 MỞ RỘNG CATALOG, TỦ LẠNH VÀ KẾ HOẠCH TUẦN)**
 
+## Phase R — Recovery / Stabilization (Hardening trước khi triển khai thật)
+| ID | Capability | Dependency | Trạng thái |
+|---|---|---|---|
+| R0 | Authentication Configuration & Secret Fail-Closed Hardening | AG-11, AG-25 | `closed` (21/10/2026 - D58) |
+| R1 | Data Honesty & Verification Badges | R0, AG-15, AG-26 | `closed` (21/10/2026 - D59) |
+| R2 | Core MVP Verification & Real Cooking Flows | R1 | `closed` (21/10/2026 - D60) — E2E trình duyệt đã bổ sung ở R3; còn chờ kiểm thử trên điện thoại thật |
+| R3 | E2E Playwright, CI tự động & sửa lỗi tồn đọng R2 | R2 | `closed` (21/10/2026 - D61) — CI chạy tự động qua GitHub Actions |
+| R4 | Migration Journal Sync & Production Deployment Hardening | R3 | `closed` (21/10/2026 - D62) — Đồng bộ 11 migrations, fail-closed deploy script |
+
 ## P8 — Kinh doanh và scale
 Chỉ sau dữ liệu sử dụng thật. Payment/subscription là phạm vi riêng.
 
 ## Mốc
-M1 scope/kiến trúc/prototype duyệt · M2 catalog + nội dung thật · M3 MVP pilot · M4 AI an toàn · M5+ mở rộng theo evidence.
+M1 scope/kiến trúc/prototype duyệt · M2 catalog + nội dung thật · M3 MVP pilot · M4 AI an toàn · M5+ mở rộng theo evidence · MR0 Secret Fail-Closed & Auth Hardening · MR1 Data Honesty & Badges · MR2 Core MVP Flows Verified · MR3 E2E trình duyệt + CI sẵn sàng · MR4 Drizzle Journal 11/11 & Fail-Closed Deploy.
+

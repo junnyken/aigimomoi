@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound, permanentRedirect } from 'next/navigation';
-import { ArrowLeft, Clock, Flame, Gauge, Users, UtensilsCrossed, Tag, ChefHat } from 'lucide-react';
+import { ArrowLeft, Clock, Flame, Gauge, Users, UtensilsCrossed, Tag } from 'lucide-react';
 import { getCurrentSlugForArchived, getPublishedRecipeBySlug } from '@/lib/recipes/public';
 import {
   ROLE_LABELS,
@@ -22,6 +22,7 @@ import { RegionalVariants } from '@/components/recipe/RegionalVariants';
 import { CookedItSection } from '@/components/recipe/CookedItSection';
 import { RecipeJsonLd } from '@/components/seo/RecipeJsonLd';
 import { PantryCheckWidget } from '@/components/pantry/PantryCheckWidget';
+import { StartCookingButton } from '@/components/recipe/StartCookingButton';
 
 interface PageParams {
   params: Promise<{ slug: string }>;
@@ -90,23 +91,35 @@ export default async function PublicRecipePage({ params }: PageParams) {
 
       {/* Hero */}
       <header className="grid gap-6 lg:grid-cols-[1.1fr_1fr] lg:items-center">
-        <div className="relative overflow-hidden rounded-3xl bg-[var(--color-surface-raised)] aspect-[4/3] shadow-sm">
-          {recipe.heroImage ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={recipe.heroImage}
-              alt={recipe.name}
-              className="h-full w-full object-cover"
-              fetchPriority="high"
-            />
-          ) : (
-            <div className="flex h-full items-center justify-center text-[var(--color-text-muted)]">
-              <UtensilsCrossed className="w-16 h-16" aria-hidden="true" />
-            </div>
+        <div className="flex flex-col">
+          <div className="relative overflow-hidden rounded-3xl bg-[var(--color-surface-raised)] aspect-[4/3] shadow-sm">
+            {recipe.heroImage ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={recipe.heroImage}
+                alt={recipe.name}
+                className="h-full w-full object-cover"
+                fetchPriority="high"
+              />
+            ) : (
+              <div className="flex h-full items-center justify-center text-[var(--color-text-muted)]">
+                <UtensilsCrossed className="w-16 h-16" aria-hidden="true" />
+              </div>
+            )}
+            <span className="absolute top-4 left-4 px-3 py-1 rounded-full text-xs font-semibold bg-[var(--color-brand-primary)] text-white shadow-sm">
+              {ROLE_LABELS[recipe.role] ?? recipe.role}
+            </span>
+            {recipe.heroImage && recipe.isIllustration && (
+              <span className="absolute bottom-4 right-4 px-3 py-1 rounded-full text-xs font-medium bg-black/60 text-white/95 backdrop-blur-xs shadow-sm">
+                Ảnh minh họa
+              </span>
+            )}
+          </div>
+          {recipe.heroImage && recipe.isIllustration && (
+            <p className="mt-2 text-xs text-[var(--color-text-muted)] italic">
+              * Ảnh minh họa. Bếp Ăn Gì Mom đang tiến hành nấu thử để cập nhật hình ảnh đĩa cơm thực tế.
+            </p>
           )}
-          <span className="absolute top-4 left-4 px-3 py-1 rounded-full text-xs font-semibold bg-[var(--color-brand-primary)] text-white shadow-sm">
-            {ROLE_LABELS[recipe.role] ?? recipe.role}
-          </span>
         </div>
 
         <div className="flex flex-col gap-4">
@@ -136,13 +149,7 @@ export default async function PublicRecipePage({ params }: PageParams) {
           </dl>
 
           <div className="pt-1 flex flex-wrap items-center gap-3">
-            <Link
-              href={`${recipePath(recipe.slug)}/nau`}
-              className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl font-bold bg-[var(--color-brand-primary)] text-white hover:opacity-95 transition-all shadow-xs w-full sm:w-auto"
-            >
-              <ChefHat className="w-5 h-5" />
-              <span>Bắt đầu nấu món này</span>
-            </Link>
+            <StartCookingButton slug={recipe.slug} baseServings={recipe.baseServings} />
             <BookmarkButton slug={recipe.slug} size="lg" showText={true} />
             <LogToDiaryButton recipeId={recipe.id} recipeName={recipe.name} />
           </div>

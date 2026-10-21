@@ -155,6 +155,7 @@ async function runTests() {
     caloriesPerServing: 350,
     nutritionStatus: 'ESTIMATED',
     heroImage: 'https://images.angimom.vn/thit-kho.jpg',
+    isIllustration: false,
     isEditorialReviewed: true,
     isCookTested: true,
     isNutritionVerified: false,

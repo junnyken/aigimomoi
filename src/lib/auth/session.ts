@@ -3,7 +3,54 @@ import { cookies } from 'next/headers';
 export const SESSION_COOKIE_NAME = 'angimom_session_v1';
 const SESSION_DURATION_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
-const SECRET = process.env.AUTH_SECRET || 'angimom_default_fallback_secret_must_be_overridden_in_production_32chars';
+export class AuthConfigurationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'AuthConfigurationError';
+  }
+}
+
+export const BLACKLISTED_SECRETS = new Set([
+  'angimom_default_fallback_secret_must_be_overridden_in_production_32chars',
+  'angimom_super_secret_jwt_key_production_2026',
+  'super_secret_session_key_min_32_characters_long_angimom',
+  'TaoChuoiNgauNhienItNhat32KyTuChoProduction2026_JWT',
+  'angimom_dev_secret_only_for_local_development_32chars',
+]);
+
+export function validateAuthSecret(value: unknown): string {
+  if (typeof value !== 'string' || value.length === 0) {
+    throw new AuthConfigurationError('AUTH_SECRET is not configured or empty');
+  }
+
+  // Từ chối khoảng trắng đầu hoặc cuối: không sửa đổi âm thầm
+  if (value !== value.trim()) {
+    throw new AuthConfigurationError('AUTH_SECRET contains leading or trailing whitespace');
+  }
+
+  if (value.length < 32) {
+    throw new AuthConfigurationError('AUTH_SECRET is too short: minimum 32 characters required');
+  }
+
+  if (BLACKLISTED_SECRETS.has(value)) {
+    throw new AuthConfigurationError('AUTH_SECRET uses a known insecure placeholder');
+  }
+
+  return value;
+}
+
+export function getAuthSecret(): string {
+  return validateAuthSecret(process.env.AUTH_SECRET);
+}
+
+export function isAuthConfigurationValid(): boolean {
+  try {
+    getAuthSecret();
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 export interface SessionUser {
   id: number;
@@ -37,10 +84,11 @@ function base64UrlDecode(str: string): Uint8Array {
 }
 
 async function getHmacKey(): Promise<CryptoKey> {
+  const secret = getAuthSecret();
   const encoder = new TextEncoder();
   return crypto.subtle.importKey(
     'raw',
-    encoder.encode(SECRET),
+    encoder.encode(secret),
     { name: 'HMAC', hash: 'SHA-256' },
     false,
     ['sign', 'verify']
@@ -69,8 +117,17 @@ export async function verifyToken(token: string): Promise<SessionUser | null> {
     const [payloadB64, signatureB64] = token.split('.');
     if (!payloadB64 || !signatureB64) return null;
 
+    let key: CryptoKey;
+    try {
+      key = await getHmacKey();
+    } catch (err) {
+      if (err instanceof AuthConfigurationError) {
+        console.error('[Auth Configuration Error]', err.message);
+      }
+      return null;
+    }
+
     const encoder = new TextEncoder();
-    const key = await getHmacKey();
     const signatureBytes = base64UrlDecode(signatureB64);
 
     const isValid = await crypto.subtle.verify(
@@ -91,16 +148,23 @@ export async function verifyToken(token: string): Promise<SessionUser | null> {
     }
 
     return payload;
-  } catch (e) {
+  } catch {
     return null;
   }
 }
 
-export async function getSessionUser(): Promise<SessionUser | null> {
-  const cookieStore = await cookies();
-  const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
-  if (!token) return null;
-  return verifyToken(token);
+export async function getSessionUser(tokenOrCookie?: string): Promise<SessionUser | null> {
+  if (tokenOrCookie) {
+    return verifyToken(tokenOrCookie);
+  }
+  try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
+    if (!token) return null;
+    return verifyToken(token);
+  } catch {
+    return null;
+  }
 }
 
 export async function setSessionCookie(user: Omit<SessionUser, 'exp'>): Promise<void> {

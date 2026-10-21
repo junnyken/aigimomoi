@@ -7,7 +7,7 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-angimom}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-angimom_secure_password_2026}
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?Loi: Bien POSTGRES_PASSWORD la bat buoc cho Production}"
       POSTGRES_DB: ${POSTGRES_DB:-angimom_prod}
     volumes:
       - ./data/postgres:/var/lib/postgresql/data
@@ -31,8 +31,8 @@ services:
         condition: service_healthy
     environment:
       NODE_ENV: production
-      DATABASE_URL: postgres://${POSTGRES_USER:-angimom}:${POSTGRES_PASSWORD:-angimom_secure_password_2026}@postgres:5432/${POSTGRES_DB:-angimom_prod}
-      JWT_SECRET: ${JWT_SECRET:-angimom_super_secret_jwt_key_production_2026}
+      DATABASE_URL: "postgres://${POSTGRES_USER:-angimom}:${POSTGRES_PASSWORD:?Loi: Bien POSTGRES_PASSWORD la bat buoc cho Production}@postgres:5432/${POSTGRES_DB:-angimom_prod}"
+      AUTH_SECRET: "${AUTH_SECRET:?Loi: Bien AUTH_SECRET la bat buoc cho Production}"
       # Cloudflare R2 Object Storage
       CLOUDFLARE_R2_ACCOUNT_ID: ${CLOUDFLARE_R2_ACCOUNT_ID}
       CLOUDFLARE_R2_ACCESS_KEY_ID: ${CLOUDFLARE_R2_ACCESS_KEY_ID}

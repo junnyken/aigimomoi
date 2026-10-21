@@ -3,10 +3,14 @@ import { db } from '@/lib/db';
 import { users } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { verifyPassword } from '@/lib/auth/password';
-import { setSessionCookie } from '@/lib/auth/session';
+import { setSessionCookie, AuthConfigurationError, getAuthSecret } from '@/lib/auth/session';
+import { logger } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
+    // Kiểm tra cấu hình xác thực trước khi xử lý (fail-closed)
+    getAuthSecret();
+
     const body = await request.json();
     const { email, password } = body;
 
@@ -56,7 +60,16 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Login error:', error);
+    if (error instanceof AuthConfigurationError) {
+      logger.error('Login configuration failure: AUTH_SECRET issue', {
+        reason: error.message,
+      });
+      return NextResponse.json(
+        { error: 'Lỗi cấu hình xác thực hệ thống' },
+        { status: 500 }
+      );
+    }
+    logger.error('Login error', { error: error instanceof Error ? error.message : 'Unknown' });
     return NextResponse.json(
       { error: 'Đã có lỗi xảy ra trên hệ thống' },
       { status: 500 }

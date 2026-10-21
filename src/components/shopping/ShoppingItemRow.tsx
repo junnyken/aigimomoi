@@ -2,6 +2,7 @@
 
 import { Check } from 'lucide-react';
 import type { IngredientTrace } from '@/lib/recipes/aggregation';
+import { formatScaledAmount } from '@/lib/recipes/scaling';
 
 interface ShoppingItemRowProps {
   itemKey: string;
@@ -87,7 +88,7 @@ export function ShoppingItemRow({
                 key={idx}
                 className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-[var(--color-surface-raised)] text-[var(--color-text-secondary)] border border-[var(--color-border-subtle)]"
               >
-                {t.recipeName}: {t.scaledAmount} {t.unit}
+                {t.recipeName}: {formatScaledAmount(t.scaledAmount)} {t.unit}
                 {t.preparation ? ` (${t.preparation})` : ''}
               </span>
             ))}
@@ -101,7 +102,7 @@ export function ShoppingItemRow({
                 key={idx}
                 className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-[var(--color-surface-raised)] text-[var(--color-text-muted)] border border-[var(--color-border-subtle)]"
               >
-                {t.recipeName} ({t.scaledAmount} {t.unit})
+                {t.recipeName} ({formatScaledAmount(t.scaledAmount)} {t.unit})
               </span>
             ))}
           </div>

@@ -23,3 +23,9 @@ public/uploads/*
 # Backups
 backups/
 *.sql.gz
+
+# R3 — Playwright artifacts
+/playwright-report/
+/test-results/
+/blob-report/
+/playwright/.cache/

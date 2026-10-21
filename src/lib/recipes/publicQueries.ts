@@ -4,6 +4,8 @@
 import { and, asc, desc, eq, inArray } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { recipes, recipeIngredients, cookingSteps } from '@/lib/db/schema';
+import { isIllustrationImage } from './labels';
+import type { RecipeNutritionSnapshot } from '@/lib/nutrition/types';
 
 const SLUG_PATTERN = /^[a-z0-9]+(?:-+[a-z0-9]+)*$/;
 const SLUG_MAX_LENGTH = 200;
@@ -82,8 +84,9 @@ export interface PublicRecipe {
   difficulty: string;
   caloriesPerServing: number | null;
   nutritionStatus: 'NO_DATA' | 'INCOMPLETE' | 'ESTIMATED';
-  nutritionSnapshot?: any | null;
+  nutritionSnapshot?: RecipeNutritionSnapshot | null;
   heroImage: string | null;
+  isIllustration: boolean;
   isEditorialReviewed: boolean;
   isCookTested: boolean;
   isNutritionVerified: boolean;
@@ -105,6 +108,7 @@ export interface PublicRecipeCard {
   totalTimeMinutes: number;
   difficulty: string;
   heroImage: string | null;
+  isIllustration: boolean;
   isCookTested: boolean;
 }
 
@@ -209,8 +213,9 @@ export async function queryPublishedRecipeBySlug(slug: string): Promise<PublicRe
     difficulty: row.difficulty,
     caloriesPerServing: row.caloriesPerServing,
     nutritionStatus: row.nutritionStatus,
-    nutritionSnapshot: row.nutritionSnapshot,
+    nutritionSnapshot: (row.nutritionSnapshot ?? null) as RecipeNutritionSnapshot | null,
     heroImage: safeImageSrc(row.heroImage),
+    isIllustration: isIllustrationImage(row.heroImage),
     isEditorialReviewed: row.isEditorialReviewed,
     isCookTested: row.isCookTested,
     isNutritionVerified: row.isNutritionVerified,
@@ -314,6 +319,7 @@ export async function queryPublishedRecipeCards(limit = 12): Promise<PublicRecip
     ...rest,
     totalTimeMinutes: prepTimeMinutes + cookTimeMinutes,
     heroImage: safeImageSrc(heroImage),
+    isIllustration: isIllustrationImage(heroImage),
   }));
 }
 
@@ -341,6 +347,7 @@ export async function queryPublishedRecipeCardsBySlugs(slugs: string[]): Promise
     ...rest,
     totalTimeMinutes: prepTimeMinutes + cookTimeMinutes,
     heroImage: safeImageSrc(heroImage),
+    isIllustration: isIllustrationImage(heroImage),
   }));
 }
 

@@ -69,12 +69,14 @@ async function runGateVerification() {
     if (steps.length < 2) {
       qualityIssues++;
     }
-    if (!r.isCookTested || !r.isEditorialReviewed) {
+    // Invariants D23 & R1: Công thức hạt giống phải được biên tập (isEditorialReviewed = true),
+    // nhưng không được giả mạo cờ nấu thử (isCookTested không ép buộc true khi chưa có nghiệm thu bếp thật).
+    if (!r.isEditorialReviewed) {
       qualityIssues++;
     }
   }
 
-  assert(qualityIssues === 0, '100% công thức đạt tiêu chuẩn chất lượng (ảnh, mô tả, >= 3 nguyên liệu, >= 2 bước, đã kiểm duyệt)');
+  assert(qualityIssues === 0, '100% công thức đạt tiêu chuẩn chất lượng (ảnh, mô tả, >= 3 nguyên liệu, >= 2 bước, đã biên tập chuẩn)');
 
   // ==========================================================
   // GROUP 2: Core E2E Flow 1 — Discovery -> Details -> Scaling -> Cooking

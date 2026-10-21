@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useEffectEvent } from 'react';
 import Link from 'next/link';
 import {
   ArrowLeft,
@@ -46,36 +46,38 @@ export function CookingModeView({
   // Scale nguyên liệu theo servings
   const scaledIngredients = scaleRecipeIngredients(recipe.ingredients, recipe.baseServings, servings);
 
-  const goToNext = useCallback(() => {
+  // R3: Bỏ useCallback thủ công — React Compiler tự memo (trước đây lint báo không giữ được memo).
+  function goToNext() {
     if (currentIdx < totalSteps - 1) {
-      setCurrentIdx((prev) => prev + 1);
+      setCurrentIdx(currentIdx + 1);
     } else {
       setIsCompletedModalOpen(true);
     }
-  }, [currentIdx, totalSteps]);
+  }
 
-  const goToPrev = useCallback(() => {
+  function goToPrev() {
     if (currentIdx > 0) {
-      setCurrentIdx((prev) => prev - 1);
+      setCurrentIdx(currentIdx - 1);
     }
-  }, [currentIdx]);
+  }
 
-  // Hỗ trợ phím tắt bàn phím
+  // Hỗ trợ phím tắt bàn phím (useEffectEvent: luôn đọc state mới nhất, chỉ đăng ký listener 1 lần)
+  const handleKeyDown = useEffectEvent((e: KeyboardEvent) => {
+    if (isIngredientsOpen || isCompletedModalOpen) return;
+    if (e.key === 'ArrowRight' || e.key === 'PageDown') {
+      e.preventDefault();
+      goToNext();
+    } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+      e.preventDefault();
+      goToPrev();
+    }
+  });
+
   useEffect(() => {
-    function handleKeyDown(e: KeyboardEvent) {
-      if (isIngredientsOpen || isCompletedModalOpen) return;
-      if (e.key === 'ArrowRight' || e.key === 'PageDown') {
-        e.preventDefault();
-        goToNext();
-      } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
-        e.preventDefault();
-        goToPrev();
-      }
-    }
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [goToNext, goToPrev, isIngredientsOpen, isCompletedModalOpen]);
+    const listener = (e: KeyboardEvent) => handleKeyDown(e);
+    window.addEventListener('keydown', listener);
+    return () => window.removeEventListener('keydown', listener);
+  }, []);
 
   // Tỷ lệ tiến độ (%)
   const progressPercent = totalSteps > 0 ? Math.round(((currentIdx + 1) / totalSteps) * 100) : 0;
@@ -108,7 +110,8 @@ export function CookingModeView({
           <button
             type="button"
             onClick={() => setIsIngredientsOpen(true)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-[var(--color-brand-light)] text-[var(--color-brand-primary)] hover:opacity-90 transition-opacity border border-[var(--color-brand-primary)]/20"
+            aria-label="Xem nguyên liệu"
+            className="min-h-11 min-w-11 justify-center inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-[var(--color-brand-light)] text-[var(--color-brand-primary)] hover:opacity-90 transition-opacity border border-[var(--color-brand-primary)]/20"
           >
             <ShoppingBasket className="w-4 h-4" />
             <span className="hidden sm:inline">Xem nguyên liệu</span>
@@ -169,9 +172,10 @@ export function CookingModeView({
               )}
 
               {/* Cooking Timer if available (Invariants §6.7) */}
-              {currentStep.timerSeconds && currentStep.timerSeconds > 0 && (
+              {(currentStep.timerSeconds ?? 0) > 0 && (
                 <StepTimer
-                  initialSeconds={currentStep.timerSeconds}
+                  key={`${currentStep.id}-${currentIdx}`}
+                  initialSeconds={currentStep.timerSeconds ?? 0}
                   stepNumber={currentStep.stepNumber}
                 />
               )}

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { ShoppingCart, Sparkles, Clock, CheckCircle2 } from 'lucide-react';
 import type { MealDishSummary } from '@/lib/meal/mealQueries';
 import { formatDuration } from '@/lib/recipes/labels';
+import { buildMealQuery } from '@/lib/meal/flowUrls';
 
 interface MealSummaryBarProps {
   main: MealDishSummary | null;
@@ -20,7 +21,12 @@ export function MealSummaryBar({ main, soup, side, servings }: MealSummaryBarPro
   const maxTime = dishes.length > 0 ? Math.max(...dishes.map((d) => d.totalTimeMinutes)) : 0;
   const totalTime = dishes.reduce((acc, d) => acc + d.totalTimeMinutes, 0);
 
-  const shoppingUrl = `/shopping?main=${main?.slug || ''}&soup=${soup?.slug || ''}&side=${side?.slug || ''}&servings=${servings}`;
+  const shoppingUrl = `/shopping?${buildMealQuery({
+    mainSlug: main?.slug,
+    soupSlug: soup?.slug,
+    sideSlug: side?.slug,
+    servings,
+  })}`;
 
   return (
     <section className="bg-gradient-to-br from-[var(--color-surface-white)] to-[var(--color-surface-raised)] border border-[var(--color-border-base)] rounded-3xl p-6 md:p-8 shadow-sm flex flex-col md:flex-row items-center justify-between gap-6">

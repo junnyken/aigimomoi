@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import type { AggregationResult } from '@/lib/recipes/aggregation';
 import { useShoppingChecklist, generateShoppingPlainText } from '@/lib/shopping/shoppingClient';
+import { mealQueryFromDishes } from '@/lib/meal/flowUrls';
 import { ShoppingProgressBar } from './ShoppingProgressBar';
 import { ShoppingItemRow } from './ShoppingItemRow';
 
@@ -69,8 +70,8 @@ export function ShoppingView({ result, dishes, servings }: ShoppingViewProps) {
           {/* Action Buttons */}
           <div className="flex flex-wrap items-center gap-2.5">
             <Link
-              href={`/meal?servings=${servings}`}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-[var(--color-border-base)] bg-[var(--color-surface-white)] hover:bg-[var(--color-surface-raised)] text-xs font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-all shadow-xs"
+              href={`/meal?${mealQueryFromDishes(dishes, servings)}`}
+              className="min-h-11 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-[var(--color-border-base)] bg-[var(--color-surface-white)] hover:bg-[var(--color-surface-raised)] text-xs font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-all shadow-xs"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
               <span>Đổi món / khẩu phần</span>
@@ -79,7 +80,7 @@ export function ShoppingView({ result, dishes, servings }: ShoppingViewProps) {
             <button
               type="button"
               onClick={handleCopy}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-[var(--color-brand-primary)]/30 bg-[var(--color-brand-light)] hover:bg-[var(--color-brand-primary)] text-[var(--color-brand-primary)] hover:text-white text-xs font-semibold transition-all shadow-xs"
+              className="min-h-11 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-[var(--color-brand-primary)]/30 bg-[var(--color-brand-light)] hover:bg-[var(--color-brand-primary)] text-[var(--color-brand-primary)] hover:text-white text-xs font-semibold transition-all shadow-xs"
               title="Sao chép danh sách dạng văn bản để gửi qua Zalo/tin nhắn"
             >
               {copied ? <Check className="w-3.5 h-3.5 stroke-[3]" /> : <Copy className="w-3.5 h-3.5" />}
@@ -89,7 +90,7 @@ export function ShoppingView({ result, dishes, servings }: ShoppingViewProps) {
             <button
               type="button"
               onClick={resetAll}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-[var(--color-border-base)] bg-[var(--color-surface-white)] hover:bg-red-50 hover:border-red-200 hover:text-red-600 text-xs font-semibold text-[var(--color-text-muted)] transition-all shadow-xs"
+              className="min-h-11 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-[var(--color-border-base)] bg-[var(--color-surface-white)] hover:bg-red-50 hover:border-red-200 hover:text-red-600 text-xs font-semibold text-[var(--color-text-muted)] transition-all shadow-xs"
               title="Đặt lại toàn bộ danh sách đã tick"
             >
               <RotateCcw className="w-3.5 h-3.5" />
@@ -198,7 +199,36 @@ export function ShoppingView({ result, dishes, servings }: ShoppingViewProps) {
             </section>
           )}
 
-          {/* 3. Nguyên Liệu Khác (Đậu hũ, trứng...) */}
+          {/* 3. Gia vị & đồ khô cần mua (R2: trước đây không được render) */}
+          {result.categories.pantry.length > 0 && (
+            <section aria-labelledby="heading-pantry" className="flex flex-col gap-3">
+              <div className="flex items-center justify-between px-1">
+                <h2 id="heading-pantry" className="text-base sm:text-lg font-bold text-[var(--color-text-primary)] flex items-center gap-2">
+                  <span>🧄</span>
+                  <span>Gia vị &amp; đồ khô cần mua</span>
+                </h2>
+                <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800">
+                  {result.categories.pantry.length} món
+                </span>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {result.categories.pantry.map((item) => (
+                  <ShoppingItemRow
+                    key={item.key}
+                    itemKey={item.key}
+                    name={item.name}
+                    formattedAmount={item.formattedTotal}
+                    unit={item.unit}
+                    isChecked={isChecked(item.key)}
+                    onToggle={toggleCheck}
+                    traces={item.traces}
+                  />
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* 4. Nguyên Liệu Khác (Đậu hũ, trứng...) */}
           {result.categories.other.length > 0 && (
             <section aria-labelledby="heading-other" className="flex flex-col gap-3">
               <div className="flex items-center justify-between px-1">
