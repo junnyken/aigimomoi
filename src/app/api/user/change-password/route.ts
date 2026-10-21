@@ -2,10 +2,14 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { users } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
-import { getSessionUser } from '@/lib/auth/session';
+import { getSessionUser, setSessionCookie } from '@/lib/auth/session';
 import { verifyPassword, hashPassword } from '@/lib/auth/password';
+import { isCrossSiteRequest } from '@/lib/http/sameOrigin';
 
 export async function POST(request: Request) {
+  if (isCrossSiteRequest(request)) {
+    return NextResponse.json({ error: 'Yêu cầu bị từ chối do khác nguồn gốc (CSRF).' }, { status: 403 });
+  }
   const sessionUser = await getSessionUser(request);
   if (!sessionUser) {
     return NextResponse.json(

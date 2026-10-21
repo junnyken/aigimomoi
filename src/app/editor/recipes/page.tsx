@@ -17,6 +17,8 @@ import {
   Tag,
   ShieldCheck,
   Sparkles,
+  Flame,
+  Flag,
 } from 'lucide-react';
 import { AiDraftModal } from '@/components/editor/AiDraftModal';
 
@@ -25,13 +27,15 @@ interface Recipe {
   slug: string;
   name: string;
   shortDescription: string;
-  role: 'MAIN' | 'SOUP' | 'SIDE' | 'ONE_DISH_MEAL' | 'DESSERT' | 'BEVERAGE';
+  role: 'MAIN' | 'SOUP' | 'SIDE' | 'DIPPING_SAUCE' | 'ONE_DISH_MEAL' | 'DESSERT' | 'BEVERAGE';
   status: 'DRAFT' | 'SUBMITTED' | 'PUBLISHED' | 'NEEDS_CHANGES' | 'ARCHIVED';
   baseServings: number;
   prepTimeMinutes: number;
   cookTimeMinutes: number;
   difficulty: string;
   caloriesPerServing: number | null;
+  isCookTested?: boolean;
+  isNutritionVerified?: boolean;
   dish?: { id: number; name: string };
   author?: { displayName: string; email: string };
   tags?: Array<{ taxonomy: { id: number; name: string; type: string } }>;
@@ -45,6 +49,7 @@ const ROLE_LABELS: Record<string, { label: string; color: string }> = {
   MAIN: { label: 'Món chính (Mặn)', color: 'bg-emerald-50 text-emerald-800 border-emerald-200' },
   SOUP: { label: 'Món canh', color: 'bg-blue-50 text-blue-800 border-blue-200' },
   SIDE: { label: 'Món phụ / Rau', color: 'bg-amber-50 text-amber-800 border-amber-200' },
+  DIPPING_SAUCE: { label: 'Nước chấm / Sốt', color: 'bg-orange-50 text-orange-800 border-orange-200' },
   ONE_DISH_MEAL: { label: 'Món ăn một đĩa', color: 'bg-purple-50 text-purple-800 border-purple-200' },
   DESSERT: { label: 'Tráng miệng', color: 'bg-pink-50 text-pink-800 border-pink-200' },
   BEVERAGE: { label: 'Đồ uống', color: 'bg-cyan-50 text-cyan-800 border-cyan-200' },
@@ -115,9 +120,53 @@ export default function EditorRecipesPage() {
     }
   };
 
+  const [calculatingNutId, setCalculatingNutId] = useState<number | null>(null);
+  const [calculatingAllNut, setCalculatingAllNut] = useState(false);
+
+  const handleCalculateNutrition = async (id: number) => {
+    try {
+      setCalculatingNutId(id);
+      const res = await fetch(`/api/recipes/${id}/nutrition`, { method: 'POST' });
+      const data = await res.json();
+      if (res.ok && data.nutrition?.perServing) {
+        setRecipes((prev) =>
+          prev.map((r) =>
+            r.id === id
+              ? {
+                  ...r,
+                  caloriesPerServing: data.nutrition.perServing.calories,
+                  isNutritionVerified: data.nutrition.isVerified,
+                }
+              : r
+          )
+        );
+      } else {
+        alert(data.error || 'Không thể tính toán dinh dưỡng cho công thức này.');
+      }
+    } catch {
+      alert('Lỗi kết nối khi tính toán dinh dưỡng.');
+    } finally {
+      setCalculatingNutId(null);
+    }
+  };
+
+  const handleCalculateAllNutrition = async () => {
+    if (recipes.length === 0) return;
+    try {
+      setCalculatingAllNut(true);
+      for (const r of recipes) {
+        await fetch(`/api/recipes/${r.id}/nutrition`, { method: 'POST' }).catch(() => null);
+      }
+      await fetchRecipes();
+    } finally {
+      setCalculatingAllNut(false);
+    }
+  };
+
   const draftCount = recipes.filter((r) => r.status === 'DRAFT').length;
   const submittedCount = recipes.filter((r) => r.status === 'SUBMITTED').length;
   const publishedCount = recipes.filter((r) => r.status === 'PUBLISHED').length;
+  const nutritionVerifiedCount = recipes.filter((r) => r.caloriesPerServing !== null).length;
 
   return (
     <div className="min-h-screen bg-[#FAF7F0] text-[#2D2A26] pb-16">
@@ -135,11 +184,11 @@ export default function EditorRecipesPage() {
             <div className="h-4 w-px bg-[#EADBC8]" />
             <h1 className="text-xl font-bold text-[#3F6240] flex items-center gap-2">
               <ChefHat className="w-6 h-6 text-[#B75B35]" />
-              Kho Công Thức Bữa Cơm
+              Kho Công Thức & Trung Tâm Quản Trị
             </h1>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Link
               href="/editor/ingredients"
               className="px-3 py-2 text-xs font-medium text-[#5C4A3A] hover:bg-[#FAF7F0] border border-[#EADBC8] rounded-xl transition-colors"
@@ -151,6 +200,13 @@ export default function EditorRecipesPage() {
               className="px-3 py-2 text-xs font-medium text-[#5C4A3A] hover:bg-[#FAF7F0] border border-[#EADBC8] rounded-xl transition-colors"
             >
               Hệ phân loại
+            </Link>
+            <Link
+              href="/editor/reports"
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-rose-800 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-xl transition-colors"
+            >
+              <Flag className="w-3.5 h-3.5" />
+              Báo cáo vi phạm
             </Link>
             <Link
               id="review-queue-link"
@@ -182,7 +238,7 @@ export default function EditorRecipesPage() {
 
       <main className="max-w-6xl mx-auto px-4 pt-6 space-y-6">
         {/* Metric Cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
           <div className="bg-white p-4 rounded-2xl border border-[#EADBC8] shadow-xs">
             <p className="text-xs font-medium text-[#7C6A59]">Tổng công thức</p>
             <p className="text-2xl font-bold text-[#3F6240] mt-1">{recipes.length}</p>
@@ -198,6 +254,25 @@ export default function EditorRecipesPage() {
           <div className="bg-white p-4 rounded-2xl border border-[#EADBC8] shadow-xs">
             <p className="text-xs font-medium text-[#7C6A59]">Đã xuất bản (Live)</p>
             <p className="text-2xl font-bold text-emerald-700 mt-1">{publishedCount}</p>
+          </div>
+          <div className="bg-white p-4 rounded-2xl border border-[#EADBC8] shadow-xs col-span-2 sm:col-span-1 flex flex-col justify-between">
+            <div>
+              <p className="text-xs font-medium text-[#7C6A59] flex items-center gap-1">
+                <Flame className="w-3.5 h-3.5 text-amber-500" />
+                Đã tính Calo FCT
+              </p>
+              <p className="text-2xl font-bold text-amber-700 mt-1">
+                {nutritionVerifiedCount}/{recipes.length}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleCalculateAllNutrition}
+              disabled={calculatingAllNut || recipes.length === 0}
+              className="mt-2 w-full px-2 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 text-[10px] font-bold transition-colors cursor-pointer disabled:opacity-50"
+            >
+              {calculatingAllNut ? 'Đang tính tất cả...' : '⚡ Đồng bộ toàn bộ'}
+            </button>
           </div>
         </div>
 
@@ -225,7 +300,10 @@ export default function EditorRecipesPage() {
                 <option value="MAIN">Món chính (Mặn)</option>
                 <option value="SOUP">Món canh</option>
                 <option value="SIDE">Món phụ / Rau</option>
+                <option value="DIPPING_SAUCE">Nước chấm / Sốt</option>
                 <option value="ONE_DISH_MEAL">Món một đĩa</option>
+                <option value="DESSERT">Tráng miệng</option>
+                <option value="BEVERAGE">Đồ uống</option>
               </select>
 
               <select
@@ -331,6 +409,14 @@ export default function EditorRecipesPage() {
                       <span className="text-[11px] font-medium px-1.5 py-0.5 bg-[#FAF7F0] rounded text-[#5C4A3A]">
                         {recipe.difficulty}
                       </span>
+                      {recipe.caloriesPerServing !== null && recipe.caloriesPerServing > 0 ? (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-900 border border-amber-200">
+                          <Flame className="w-3 h-3 text-amber-500" />
+                          ~{recipe.caloriesPerServing} kcal/phần
+                        </span>
+                      ) : (
+                        <span className="text-[11px] text-stone-400 italic">Chưa tính Calo</span>
+                      )}
                     </div>
 
                     {/* Taxonomy Tags */}
@@ -361,6 +447,16 @@ export default function EditorRecipesPage() {
                     </span>
 
                     <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleCalculateNutrition(recipe.id)}
+                        disabled={calculatingNutId === recipe.id}
+                        className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 text-[11px] font-semibold rounded-lg border border-amber-200 transition-colors cursor-pointer disabled:opacity-50"
+                        title="Tính chuẩn Dinh dưỡng theo Bảng Thành phần Thực phẩm Viện Dinh Dưỡng"
+                      >
+                        <Flame className="w-3 h-3 text-amber-600" />
+                        {calculatingNutId === recipe.id ? 'Đang tính...' : 'Tính Calo FCT'}
+                      </button>
                       {recipe.status === 'DRAFT' && (
                         <button
                           onClick={() => handleDelete(recipe.id, recipe.name)}

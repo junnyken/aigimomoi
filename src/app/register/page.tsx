@@ -5,10 +5,19 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Lock, Mail, User, AlertCircle, ArrowRight, CheckCircle2 } from 'lucide-react';
 
+function sanitizeRedirectPath(raw: string | null): string {
+  if (!raw) return '/';
+  const trimmed = raw.trim();
+  if (trimmed.startsWith('/') && !trimmed.startsWith('//') && !trimmed.startsWith('/\\')) {
+    return trimmed;
+  }
+  return '/';
+}
+
 function RegisterForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const from = searchParams.get('from') || '/';
+  const from = sanitizeRedirectPath(searchParams.get('from'));
 
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');

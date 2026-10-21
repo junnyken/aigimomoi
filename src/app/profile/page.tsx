@@ -16,9 +16,14 @@ import {
   ShoppingCart, 
   UtensilsCrossed, 
   Settings,
-  ArrowRight
+  ArrowRight,
+  Refrigerator,
+  CalendarDays,
+  Flame,
+  ChefHat
 } from 'lucide-react';
 import { CreatorProfileSection } from '@/components/creator/CreatorProfileSection';
+import { PersonalHealthBmrCalculator } from '@/components/profile/PersonalHealthBmrCalculator';
 
 interface UserProfile {
   id: number;
@@ -213,40 +218,100 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {/* Quick Shortcuts */}
-          <div className="mt-6 pt-6 border-t border-stone-100 grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <Link
-              href="/meal"
-              className="flex items-center gap-2.5 p-3 rounded-xl bg-stone-50 hover:bg-emerald-50 text-stone-700 hover:text-emerald-700 border border-stone-200 transition-colors"
-            >
-              <UtensilsCrossed className="w-4 h-4 text-emerald-600" />
-              <span className="text-xs font-semibold">Mâm cơm nhà</span>
-            </Link>
-            <Link
-              href="/shopping"
-              className="flex items-center gap-2.5 p-3 rounded-xl bg-stone-50 hover:bg-emerald-50 text-stone-700 hover:text-emerald-700 border border-stone-200 transition-colors"
-            >
-              <ShoppingCart className="w-4 h-4 text-emerald-600" />
-              <span className="text-xs font-semibold">Giỏ đi chợ</span>
-            </Link>
-            <Link
-              href="/da-luu"
-              className="flex items-center gap-2.5 p-3 rounded-xl bg-stone-50 hover:bg-emerald-50 text-stone-700 hover:text-emerald-700 border border-stone-200 transition-colors"
-            >
-              <BookOpen className="w-4 h-4 text-emerald-600" />
-              <span className="text-xs font-semibold">Món đã lưu</span>
-            </Link>
-            {(user.role === 'ADMIN' || user.role === 'EDITOR') && (
+          {/* Quick Shortcuts: Hệ sinh thái Bếp Gia Đình Cá Nhân */}
+          <div className="mt-6 pt-6 border-t border-stone-100">
+            <p className="text-xs font-bold uppercase tracking-wider text-stone-500 mb-3">
+              Không Gian Bếp Gia Đình Của Bạn
+            </p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <Link
-                href="/editor/recipes"
-                className="flex items-center gap-2.5 p-3 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 transition-colors"
+                href="/meal"
+                className="flex items-center gap-2.5 p-3 rounded-xl bg-stone-50 hover:bg-emerald-50 text-stone-700 hover:text-emerald-700 border border-stone-200 transition-colors"
               >
-                <Settings className="w-4 h-4 text-purple-600" />
-                <span className="text-xs font-semibold">Biên tập viên</span>
+                <UtensilsCrossed className="w-4 h-4 text-emerald-600 shrink-0" />
+                <div>
+                  <span className="text-xs font-bold block">Mâm cơm 4 ô</span>
+                  <span className="text-[10px] text-stone-500">Mặn • Canh • Rau • Chấm</span>
+                </div>
               </Link>
-            )}
+              <Link
+                href="/tu-lanh"
+                className="flex items-center gap-2.5 p-3 rounded-xl bg-stone-50 hover:bg-emerald-50 text-stone-700 hover:text-emerald-700 border border-stone-200 transition-colors"
+              >
+                <Refrigerator className="w-4 h-4 text-sky-600 shrink-0" />
+                <div>
+                  <span className="text-xs font-bold block">Tủ lạnh gia đình</span>
+                  <span className="text-[10px] text-stone-500">Quản lý hạn dùng</span>
+                </div>
+              </Link>
+              <Link
+                href="/ke-hoach-tuan"
+                className="flex items-center gap-2.5 p-3 rounded-xl bg-stone-50 hover:bg-emerald-50 text-stone-700 hover:text-emerald-700 border border-stone-200 transition-colors"
+              >
+                <CalendarDays className="w-4 h-4 text-amber-600 shrink-0" />
+                <div>
+                  <span className="text-xs font-bold block">Thực đơn 7 ngày</span>
+                  <span className="text-[10px] text-stone-500">Lịch ăn cả tuần</span>
+                </div>
+              </Link>
+              <Link
+                href="/nhat-ky"
+                className="flex items-center gap-2.5 p-3 rounded-xl bg-stone-50 hover:bg-emerald-50 text-stone-700 hover:text-emerald-700 border border-stone-200 transition-colors"
+              >
+                <Flame className="w-4 h-4 text-orange-500 shrink-0" />
+                <div>
+                  <span className="text-xs font-bold block">Nhật ký Calo</span>
+                  <span className="text-[10px] text-stone-500">Theo dõi sức khỏe</span>
+                </div>
+              </Link>
+              <Link
+                href="/shopping"
+                className="flex items-center gap-2.5 p-3 rounded-xl bg-stone-50 hover:bg-emerald-50 text-stone-700 hover:text-emerald-700 border border-stone-200 transition-colors"
+              >
+                <ShoppingCart className="w-4 h-4 text-emerald-600 shrink-0" />
+                <div>
+                  <span className="text-xs font-bold block">Giỏ đi chợ</span>
+                  <span className="text-[10px] text-stone-500">Gộp nguyên liệu</span>
+                </div>
+              </Link>
+              <Link
+                href="/da-luu"
+                className="flex items-center gap-2.5 p-3 rounded-xl bg-stone-50 hover:bg-emerald-50 text-stone-700 hover:text-emerald-700 border border-stone-200 transition-colors"
+              >
+                <BookOpen className="w-4 h-4 text-rose-600 shrink-0" />
+                <div>
+                  <span className="text-xs font-bold block">Sổ tay đã lưu</span>
+                  <span className="text-[10px] text-stone-500">Món tủ yêu thích</span>
+                </div>
+              </Link>
+              <Link
+                href="/contribute"
+                className="flex items-center gap-2.5 p-3 rounded-xl bg-amber-50/70 hover:bg-amber-100/80 text-amber-900 border border-amber-200 transition-colors"
+              >
+                <ChefHat className="w-4 h-4 text-amber-700 shrink-0" />
+                <div>
+                  <span className="text-xs font-bold block">Đóng góp món</span>
+                  <span className="text-[10px] text-amber-700">Chia sẻ công thức</span>
+                </div>
+              </Link>
+              {(user.role === 'ADMIN' || user.role === 'EDITOR') && (
+                <Link
+                  href="/editor/recipes"
+                  className="flex items-center gap-2.5 p-3 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 transition-colors"
+                >
+                  <Settings className="w-4 h-4 text-purple-600 shrink-0" />
+                  <div>
+                    <span className="text-xs font-bold block">Quản trị & Biên tập</span>
+                    <span className="text-[10px] text-purple-600">Kho món & Kiểm duyệt</span>
+                  </div>
+                </Link>
+              )}
+            </div>
           </div>
         </div>
+
+        {/* Khu 2: Hồ Sơ Thể Trạng & Máy Tính BMR / TDEE Chuẩn Bác Sĩ Dinh Dưỡng */}
+        <PersonalHealthBmrCalculator />
 
         {/* 2 Form Sections: Update Profile & Change Password */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

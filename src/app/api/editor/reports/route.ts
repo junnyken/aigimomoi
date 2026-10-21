@@ -27,24 +27,47 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = request.nextUrl;
     const statusParam = searchParams.get('status');
+    const VALID_REPORT_STATUSES = ['PENDING', 'RESOLVED', 'DISMISSED'] as const;
+    const SAFE_USER_COLUMNS = {
+      id: true,
+      displayName: true,
+      email: true,
+      role: true,
+      avatarUrl: true,
+    } as const;
+
+    if (
+      statusParam &&
+      statusParam !== 'ALL' &&
+      !VALID_REPORT_STATUSES.includes(statusParam as (typeof VALID_REPORT_STATUSES)[number])
+    ) {
+      return NextResponse.json({ error: 'Trạng thái lọc báo cáo không hợp lệ.' }, { status: 400 });
+    }
 
     const reports = await db.query.recipeReports.findMany({
-      where: (rep, { eq, and }) => {
+      where: (rep, { eq }) => {
         if (statusParam && statusParam !== 'ALL') {
-          return eq(rep.status, statusParam as any);
+          return eq(rep.status, statusParam as (typeof VALID_REPORT_STATUSES)[number]);
         }
         return undefined;
       },
       orderBy: [desc(recipeReports.createdAt)],
+      limit: 200,
       with: {
         recipe: {
           with: {
             dish: true,
-            author: true,
+            author: {
+              columns: SAFE_USER_COLUMNS,
+            },
           },
         },
-        reporter: true,
-        resolvedBy: true,
+        reporter: {
+          columns: SAFE_USER_COLUMNS,
+        },
+        resolvedBy: {
+          columns: SAFE_USER_COLUMNS,
+        },
       },
     });
 

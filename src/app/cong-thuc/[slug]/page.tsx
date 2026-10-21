@@ -2,7 +2,7 @@ import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound, permanentRedirect } from 'next/navigation';
-import { ArrowLeft, Clock, Flame, Gauge, Users, UtensilsCrossed, Tag, Store } from 'lucide-react';
+import { ArrowLeft, Clock, Flame, Gauge, Users, UtensilsCrossed, Tag, Store, Utensils, Droplets } from 'lucide-react';
 import { getCurrentSlugForArchived, getPublishedRecipeBySlug } from '@/lib/recipes/public';
 import type { PublicRecipe } from '@/lib/recipes/publicQueries';
 import {
@@ -200,6 +200,7 @@ export default async function PublicRecipePage({ params }: PageParams) {
           ) : (
             <div className="pt-1 flex flex-wrap items-center gap-3">
               <StartCookingButton slug={rawRecipe.slug} baseServings={rawRecipe.baseServings} />
+              <AddToMealTrayLink slug={rawRecipe.slug} role={rawRecipe.role} baseServings={rawRecipe.baseServings} />
               <BookmarkButton slug={rawRecipe.slug} size="lg" showText={true} />
               <LogToDiaryButton recipeId={rawRecipe.id} recipeName={rawRecipe.name} />
             </div>
@@ -302,56 +303,86 @@ async function PaidRecipeBody({ rawRecipe }: { rawRecipe: PublicRecipe }) {
 
 function FullRecipeBody({ recipe }: { recipe: PublicRecipe }) {
   return (
-    <div className="grid gap-8 lg:grid-cols-[minmax(0,360px)_1fr] lg:items-start">
-      <aside className="flex flex-col gap-4 lg:sticky lg:top-24">
-        <PantryCheckWidget recipeId={recipe.id} />
-        <IngredientList ingredients={recipe.ingredients} baseServings={recipe.baseServings} />
-        <NutritionNotice
-          nutritionStatus={recipe.nutritionStatus}
-          caloriesPerServing={recipe.caloriesPerServing}
-          isNutritionVerified={recipe.isNutritionVerified}
-          nutritionSnapshot={recipe.nutritionSnapshot}
-        />
-      </aside>
+    <div className="flex flex-col gap-6">
+      {/* Thanh nhảy nhanh trên Điện thoại (< lg) giúp không phải cuộn dài qua danh sách nguyên liệu */}
+      <nav
+        aria-label="Nhảy nhanh tới phần nội dung"
+        className="lg:hidden flex items-center gap-2 p-2 rounded-2xl bg-[var(--color-surface-white)] border border-[var(--color-border-base)] shadow-2xs overflow-x-auto scrollbar-none"
+      >
+        <a
+          href="#ingredients-heading"
+          className="flex-1 text-center px-3 py-2 rounded-xl text-xs font-bold bg-[var(--color-brand-light)] text-[var(--color-brand-primary)] whitespace-nowrap"
+        >
+          1. Nguyên liệu ({recipe.ingredients.length})
+        </a>
+        <a
+          href="#recipe-steps-section"
+          className="flex-1 text-center px-3 py-2 rounded-xl text-xs font-bold bg-[var(--color-accent-light)] text-[var(--color-accent-text)] whitespace-nowrap"
+        >
+          2. Cách làm ({recipe.steps.length} bước)
+        </a>
+        <a
+          href="#cooked-it-heading"
+          className="px-3 py-2 rounded-xl text-xs font-semibold bg-[var(--color-surface-raised)] text-[var(--color-text-secondary)] whitespace-nowrap"
+        >
+          Cảm nhận
+        </a>
+      </nav>
 
-      <div className="flex flex-col gap-8">
-        <KitchenStorySection
-          kitchenStory={recipe.kitchenStory}
-          sourceAttribution={recipe.sourceAttribution}
-          region={recipe.region}
-        />
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,360px)_1fr] lg:items-start">
+        <aside className="flex flex-col gap-4 lg:sticky lg:top-24">
+          <PantryCheckWidget recipeId={recipe.id} />
+          <IngredientList ingredients={recipe.ingredients} baseServings={recipe.baseServings} />
+          <NutritionNotice
+            nutritionStatus={recipe.nutritionStatus}
+            caloriesPerServing={recipe.caloriesPerServing}
+            isNutritionVerified={recipe.isNutritionVerified}
+            nutritionSnapshot={recipe.nutritionSnapshot}
+          />
+          <RecommendedDippingSauceCard recipe={recipe} />
+        </aside>
 
-        <StepList steps={recipe.steps} recipeName={recipe.name} />
+        <div className="flex flex-col gap-8">
+          <KitchenStorySection
+            kitchenStory={recipe.kitchenStory}
+            sourceAttribution={recipe.sourceAttribution}
+            region={recipe.region}
+          />
 
-        <RegionalVariants
-          currentDishName={recipe.dish?.name}
-          variants={recipe.variants}
-        />
+          <StepList steps={recipe.steps} recipeName={recipe.name} />
 
-        {recipe.tags.length > 0 && (
-          <section aria-labelledby="tags-heading">
-            <h2 id="tags-heading" className="mb-3 text-sm font-semibold text-[var(--color-text-secondary)] flex items-center gap-1.5">
-              <Tag className="w-4 h-4" aria-hidden="true" />
-              Phân loại
-            </h2>
-            <ul className="flex flex-wrap gap-2">
-              {recipe.tags.map((tag) => (
-                <li
-                  key={tag.slug}
-                  className="px-3 py-1 rounded-full text-xs font-medium bg-[var(--color-surface-white)] border border-[var(--color-border-base)] text-[var(--color-text-secondary)]"
-                  title={TAXONOMY_TYPE_LABELS[tag.type] ?? tag.type}
-                >
-                  {tag.name}
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
+          <RegionalVariants
+            currentDishName={recipe.dish?.name}
+            variants={recipe.variants}
+          />
 
-        <CookedItSection recipeId={recipe.id} recipeName={recipe.name} />
+          {recipe.tags.length > 0 && (
+            <section aria-labelledby="tags-heading">
+              <h2 id="tags-heading" className="mb-3 text-sm font-semibold text-[var(--color-text-secondary)] flex items-center gap-1.5">
+                <Tag className="w-4 h-4" aria-hidden="true" />
+                Phân loại
+              </h2>
+              <ul className="flex flex-wrap gap-2">
+                {recipe.tags.map((tag) => (
+                  <li
+                    key={tag.slug}
+                    className="px-3 py-1 rounded-full text-xs font-medium bg-[var(--color-surface-white)] border border-[var(--color-border-base)] text-[var(--color-text-secondary)]"
+                    title={TAXONOMY_TYPE_LABELS[tag.type] ?? tag.type}
+                  >
+                    {tag.name}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
 
-        <div className="pt-4 border-t border-[var(--color-border-base)] flex justify-end">
-          <ReportButton recipeId={recipe.id} recipeName={recipe.name} />
+          <div id="cooked-it-heading" className="scroll-mt-24">
+            <CookedItSection recipeId={recipe.id} recipeName={recipe.name} />
+          </div>
+
+          <div className="pt-4 border-t border-[var(--color-border-base)] flex justify-end">
+            <ReportButton recipeId={recipe.id} recipeName={recipe.name} />
+          </div>
         </div>
       </div>
     </div>
@@ -376,6 +407,111 @@ function Stat({ icon: Icon, label, value }: { icon: typeof Clock; label: string;
       </dt>
       <dd className="mt-0.5 text-sm font-bold text-[var(--color-text-primary)]">{value}</dd>
     </div>
+  );
+}
+
+function AddToMealTrayLink({
+  slug,
+  role,
+  baseServings,
+}: {
+  slug: string;
+  role: string;
+  baseServings: number;
+}) {
+  const paramKey =
+    role === 'MAIN'
+      ? 'main'
+      : role === 'SOUP'
+      ? 'soup'
+      : role === 'SIDE'
+      ? 'side'
+      : role === 'DIPPING_SAUCE'
+      ? 'sauce'
+      : null;
+
+  if (!paramKey) return null;
+
+  return (
+    <Link
+      href={`/meal?${paramKey}=${encodeURIComponent(slug)}&servings=${baseServings}`}
+      className="min-h-11 inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-light)]/70 hover:bg-[var(--color-brand-primary)] text-[var(--color-brand-primary)] hover:text-white text-sm font-semibold transition-colors shadow-2xs"
+    >
+      <Utensils className="w-4 h-4" aria-hidden="true" />
+      <span>Đưa vào mâm cơm</span>
+    </Link>
+  );
+}
+
+function RecommendedDippingSauceCard({ recipe }: { recipe: PublicRecipe }) {
+  if (recipe.role === 'DIPPING_SAUCE' || recipe.role === 'DESSERT' || recipe.role === 'BEVERAGE') {
+    return null;
+  }
+
+  const lowerName = `${recipe.name} ${recipe.shortDescription}`.toLowerCase();
+  let sauceTitle = 'Nước mắm nhĩ dầm ớt hiểm & tiêu xanh';
+  let sauceFormula = '3 muỗng nước mắm nhĩ + ½ quả chanh + 2 trái ớt hiểm cắt lát';
+  let sauceSlug = 'nuoc-mam-nguyen-chat-dam-ot';
+  let sauceNote = 'Giữ trọn vị ngọt tự nhiên của món mặn và canh, ~12 kcal/phần.';
+
+  if (lowerName.includes('luộc') && recipe.role === 'SIDE') {
+    sauceTitle = 'Kho quẹt tóp mỡ tôm khô hoặc Nước tương tỏi ớt';
+    sauceFormula = '3 muỗng mắm + 2 muỗng đường + 2 muỗng nước lọc + tôm khô & tiêu xanh';
+    sauceSlug = 'kho-quet-top-mo-tom-kho';
+    sauceNote = 'Rau củ luộc chấm kho quẹt sệt kẹo hoặc nước tương dầu mè cực đưa cơm.';
+  } else if (lowerName.includes('gà') || lowerName.includes('hấp') || lowerName.includes('hải sản')) {
+    sauceTitle = 'Muối ớt xanh lá chanh';
+    sauceFormula = '1 muỗng muối + 2 muỗng đường + 3 muỗng cốt chanh/tắc + ớt xiêm xanh';
+    sauceSlug = 'muoi-ot-xanh-chanh-day';
+    sauceNote = 'Chua cay thơm nồng mùi lá chanh, giúp món hấp/luộc thanh đạm không ngấy (~25 kcal).';
+  } else if (lowerName.includes('đậu hũ') || lowerName.includes('chay') || lowerName.includes('xào')) {
+    sauceTitle = 'Nước tương (Xì dầu) tỏi ớt & dầu mè';
+    sauceFormula = '3 muỗng nước tương + 1 muỗng nước ấm + ½ muỗng đường + ½ muỗng dầu mè';
+    sauceSlug = 'xi-dau-toi-ot-me-rang';
+    sauceNote = 'Dịu mặn, ít Natri hơn nước mắm, rất hợp món xào và đậu hũ (~20 kcal/phần).';
+  } else if (lowerName.includes('chiên') || lowerName.includes('rán') || lowerName.includes('nướng') || lowerName.includes('gỏi')) {
+    sauceTitle = 'Nước mắm tỏi ớt chua ngọt (Tỷ lệ vàng)';
+    sauceFormula = '2 muỗng mắm + 1.5 muỗng đường + 1 muỗng cốt chanh + 4 muỗng nước ấm + tỏi ớt';
+    sauceSlug = 'nuoc-mam-toi-ot-chua-ngot';
+    sauceNote = 'Chua ngọt hài hòa giúp cân bằng vị béo của món chiên/nướng (~22 kcal/phần).';
+  }
+
+  const roleParam =
+    recipe.role === 'MAIN'
+      ? `main=${encodeURIComponent(recipe.slug)}&`
+      : recipe.role === 'SOUP'
+      ? `soup=${encodeURIComponent(recipe.slug)}&`
+      : recipe.role === 'SIDE'
+      ? `side=${encodeURIComponent(recipe.slug)}&`
+      : '';
+
+  return (
+    <section
+      aria-labelledby="dipping-sauce-rec-heading"
+      className="rounded-2xl border border-amber-200 bg-amber-50/70 p-4 shadow-2xs flex flex-col gap-2"
+    >
+      <div className="flex items-center justify-between gap-2">
+        <h2
+          id="dipping-sauce-rec-heading"
+          className="text-xs font-bold uppercase tracking-wider text-amber-900 flex items-center gap-1.5"
+        >
+          <Droplets className="w-3.5 h-3.5 text-amber-600" aria-hidden="true" />
+          <span>Món này chấm gì ngon nhất?</span>
+        </h2>
+      </div>
+      <p className="text-sm font-bold text-[var(--color-text-primary)]">{sauceTitle}</p>
+      <div className="p-2.5 rounded-xl bg-[var(--color-surface-white)] border border-amber-200/80 text-xs text-amber-950 leading-relaxed">
+        <strong>🥄 Tỷ lệ muỗng:</strong> {sauceFormula}
+      </div>
+      <p className="text-[11px] text-[var(--color-text-secondary)] leading-relaxed">{sauceNote}</p>
+      <Link
+        href={`/meal?${roleParam}sauce=${sauceSlug}&servings=${recipe.baseServings}`}
+        className="mt-1 inline-flex items-center justify-between px-3 py-2 rounded-xl bg-[var(--color-surface-white)] hover:bg-amber-100/70 border border-amber-300 text-xs font-semibold text-amber-900 transition-colors"
+      >
+        <span>Ghép món này + nước chấm vào mâm</span>
+        <span aria-hidden="true">&rarr;</span>
+      </Link>
+    </section>
   );
 }
 

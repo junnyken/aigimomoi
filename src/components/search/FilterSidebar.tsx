@@ -2,8 +2,8 @@
 
 import { useTransition } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { SlidersHorizontal, Clock, Flame, ShieldCheck, Tag, ArrowUpDown } from 'lucide-react';
-import { SORT_LABELS, TIME_PRESETS } from '@/lib/recipes/labels';
+import { SlidersHorizontal, Clock, Flame, ShieldCheck, Tag, ArrowUpDown, HeartPulse } from 'lucide-react';
+import { SORT_LABELS, TIME_PRESETS, CALORIE_PRESETS } from '@/lib/recipes/labels';
 
 interface FilterSidebarProps {
   taxonomies?: { id: number; name: string; slug: string; type: string }[];
@@ -21,6 +21,7 @@ export function FilterSidebar({
   const [isPending, startTransition] = useTransition();
 
   const currentMaxTime = searchParams.get('maxTime') || '';
+  const currentMaxCalories = searchParams.get('maxCalories') || '';
   const currentDifficulty = searchParams.get('difficulty') || '';
   const currentTested = searchParams.get('tested') === 'true';
   const currentNutrition = searchParams.get('nutrition') === 'true';
@@ -51,6 +52,7 @@ export function FilterSidebar({
   // Nhóm taxonomy theo loại
   const methods = taxonomies.filter((t) => t.type === 'COOKING_METHOD');
   const regions = taxonomies.filter((t) => t.type === 'CUISINE_REGION');
+  const diets = taxonomies.filter((t) => t.type === 'DIET_PREFERENCE' || t.type === 'OCCASION');
 
   return (
     <aside className="w-full flex flex-col gap-6">
@@ -108,6 +110,35 @@ export function FilterSidebar({
                   name="maxTime"
                   checked={isChecked}
                   onChange={() => updateParam('maxTime', valStr ? valStr : null)}
+                  className="w-3.5 h-3.5 text-[var(--color-brand-primary)] border-[var(--color-border-base)] focus:ring-[var(--color-brand-primary)]"
+                />
+                <span>{p.label}</span>
+              </label>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* 2b. Mức năng lượng (Calo / Khẩu phần) */}
+      <div className="flex flex-col gap-2">
+        <span className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider flex items-center gap-1.5">
+          <HeartPulse className="w-3.5 h-3.5 text-[var(--color-accent-primary)]" />
+          <span>Mức Calo / khẩu phần</span>
+        </span>
+        <div className="flex flex-col gap-1.5">
+          {CALORIE_PRESETS.map((p) => {
+            const valStr = p.value ? String(p.value) : '';
+            const isChecked = currentMaxCalories === valStr;
+            return (
+              <label
+                key={p.label}
+                className="flex items-center gap-2 text-xs text-[var(--color-text-primary)] cursor-pointer hover:text-[var(--color-brand-primary)]"
+              >
+                <input
+                  type="radio"
+                  name="maxCalories"
+                  checked={isChecked}
+                  onChange={() => updateParam('maxCalories', valStr ? valStr : null)}
                   className="w-3.5 h-3.5 text-[var(--color-brand-primary)] border-[var(--color-border-base)] focus:ring-[var(--color-brand-primary)]"
                 />
                 <span>{p.label}</span>
@@ -223,6 +254,35 @@ export function FilterSidebar({
                   }`}
                 >
                   {r.name}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* 7. Chế độ ăn & Dịp (Diets / Occasions) */}
+      {diets.length > 0 && (
+        <div className="flex flex-col gap-2">
+          <span className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider flex items-center gap-1.5">
+            <HeartPulse className="w-3.5 h-3.5" />
+            <span>Chế độ ăn & Dịp</span>
+          </span>
+          <div className="flex flex-wrap gap-1.5">
+            {diets.map((d) => {
+              const isActive = currentTaxonomy === d.slug;
+              return (
+                <button
+                  key={d.id}
+                  type="button"
+                  onClick={() => updateParam('tax', isActive ? null : d.slug)}
+                  className={`px-2.5 py-1 text-xs rounded-lg transition-all ${
+                    isActive
+                      ? 'bg-[var(--color-brand-primary)] text-white font-medium'
+                      : 'bg-[var(--color-surface-white)] text-[var(--color-text-secondary)] border border-[var(--color-border-base)] hover:border-[var(--color-border-strong)]'
+                  }`}
+                >
+                  {d.name}
                 </button>
               );
             })}

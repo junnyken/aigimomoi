@@ -12,6 +12,7 @@ import {
   recipePublishStatusEnum,
 } from '@/lib/db/schema';
 import { getSessionUser } from '@/lib/auth/session';
+import { calculateRecipeNutrition } from '@/lib/nutrition/calculator';
 import { ilike, eq, ne, and, desc } from 'drizzle-orm';
 
 function slugify(text: string): string {
@@ -252,6 +253,15 @@ export async function POST(request: NextRequest) {
 
       return rec;
     });
+
+    // Tự động tính toán Snapshot Dinh dưỡng Viện Dinh Dưỡng nếu chưa nhập tay
+    if (!caloriesPerServing) {
+      try {
+        await calculateRecipeNutrition(createdRecipe.id);
+      } catch (nutErr) {
+        console.warn('Auto nutrition calculation skipped:', nutErr);
+      }
+    }
 
     return NextResponse.json({ recipe: createdRecipe }, { status: 201 });
   } catch (error) {

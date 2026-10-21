@@ -30,6 +30,7 @@ async function ShoppingPageContent({ searchParams }: ShoppingPageProps) {
   const mainSlug = typeof params.main === 'string' ? params.main.trim() : null;
   const soupSlug = typeof params.soup === 'string' ? params.soup.trim() : null;
   const sideSlug = typeof params.side === 'string' ? params.side.trim() : null;
+  const sauceSlug = typeof params.sauce === 'string' ? params.sauce.trim() : null;
   const servings = clampServings(params.servings, 4);
 
   // Phân giải mâm cơm
@@ -37,9 +38,15 @@ async function ShoppingPageContent({ searchParams }: ShoppingPageProps) {
     mainSlug,
     soupSlug,
     sideSlug,
+    sauceSlug,
   });
 
-  const dishes = [mealSelection.main, mealSelection.soup, mealSelection.side]
+  const dishes = [
+    mealSelection.main,
+    mealSelection.soup,
+    mealSelection.side,
+    mealSelection.sauce && !mealSelection.sauce.isBuiltInPreset ? mealSelection.sauce : null,
+  ]
     .filter((d): d is NonNullable<typeof d> => Boolean(d))
     .map((d) => ({
       name: d.name,

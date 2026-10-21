@@ -9,6 +9,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { recipes, dishes, recipeIngredients, cookingSteps, recipeTags, mealRoleEnum } from '@/lib/db/schema';
 import { getSessionUser } from '@/lib/auth/session';
+import { calculateRecipeNutrition } from '@/lib/nutrition/calculator';
 import { eq, desc, and } from 'drizzle-orm';
 import { logger } from '@/lib/logger';
 
@@ -228,6 +229,12 @@ export async function POST(request: NextRequest) {
 
       return rec;
     });
+
+    try {
+      await calculateRecipeNutrition(created.id);
+    } catch (nutErr) {
+      logger.warn('Auto nutrition calculation for contributor recipe skipped', { error: nutErr });
+    }
 
     logger.info('Community contributor recipe submitted', {
       recipeId: created.id,

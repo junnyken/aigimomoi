@@ -11,6 +11,7 @@ import {
   Sparkles,
   ChefHat,
   ShoppingBag,
+  Share2,
 } from 'lucide-react';
 import type { AggregationResult } from '@/lib/recipes/aggregation';
 import { useShoppingChecklist, generateShoppingPlainText } from '@/lib/shopping/shoppingClient';
@@ -47,6 +48,24 @@ export function ShoppingView({ result, dishes, servings }: ShoppingViewProps) {
       });
     }
   }, [result, dishes]);
+
+  const handleNativeShare = useCallback(async () => {
+    const dishNames = dishes.map((d) => d.name);
+    const text = generateShoppingPlainText(result, dishNames);
+
+    if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+      try {
+        await navigator.share({
+          title: `Danh sách đi chợ (${servings} người) — Ăn Gì Mom`,
+          text,
+        });
+        return;
+      } catch {
+        // Nếu người dùng đóng hộp thoại share hoặc trình duyệt từ chối, fallback sang copy
+      }
+    }
+    handleCopy();
+  }, [result, dishes, servings, handleCopy]);
 
   return (
     <div className="w-full flex flex-col gap-6 pb-16">
@@ -85,6 +104,16 @@ export function ShoppingView({ result, dishes, servings }: ShoppingViewProps) {
             >
               {copied ? <Check className="w-3.5 h-3.5 stroke-[3]" /> : <Copy className="w-3.5 h-3.5" />}
               <span>{copied ? 'Đã sao chép!' : 'Sao chép gửi Zalo'}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleNativeShare}
+              className="min-h-11 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-[var(--color-accent-primary)]/30 bg-[var(--color-accent-light)] hover:bg-[var(--color-accent-primary)] text-[var(--color-accent-text)] hover:text-white text-xs font-semibold transition-all shadow-xs"
+              title="Chia sẻ nhanh danh sách đi chợ cho người nhà qua ứng dụng nhắn tin"
+            >
+              <Share2 className="w-3.5 h-3.5" />
+              <span>Chia sẻ người nhà</span>
             </button>
 
             <button
@@ -317,7 +346,7 @@ export function ShoppingView({ result, dishes, servings }: ShoppingViewProps) {
             </div>
 
             <Link
-              href={`/meal?servings=${servings}`}
+              href={`/meal?${mealQueryFromDishes(dishes, servings)}`}
               className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-[var(--color-brand-primary)] text-white font-bold text-sm shadow-xs hover:opacity-95 transition-all"
             >
               <Sparkles className="w-4 h-4" />

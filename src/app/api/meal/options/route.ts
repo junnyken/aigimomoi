@@ -1,11 +1,17 @@
 import { NextResponse } from 'next/server';
-import { queryPublishedMealOptions } from '@/lib/meal/mealQueries';
+import { queryPublishedMealOptions, type MealSlotRole } from '@/lib/meal/mealQueries';
 
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const roleParam = searchParams.get('role');
-    const role = roleParam === 'MAIN' || roleParam === 'SOUP' || roleParam === 'SIDE' ? roleParam : undefined;
+    const role: MealSlotRole | undefined =
+      roleParam === 'MAIN' ||
+      roleParam === 'SOUP' ||
+      roleParam === 'SIDE' ||
+      roleParam === 'DIPPING_SAUCE'
+        ? roleParam
+        : undefined;
 
     const options = await queryPublishedMealOptions(role);
     return NextResponse.json({ options });

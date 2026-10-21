@@ -10,6 +10,38 @@ export function NutritionNotice({ nutritionStatus, caloriesPerServing, isNutriti
   if (nutritionSnapshot && nutritionSnapshot.perServing) {
     const { perServing, coveragePercent, source, missingIngredients } = nutritionSnapshot;
 
+    // Tự động suy luận Huy hiệu Sức khỏe Gia đình từ số liệu Viện Dinh Dưỡng
+    const healthBadges: { label: string; className: string }[] = [];
+    if (perServing.calories > 0 && perServing.calories <= 350) {
+      healthBadges.push({
+        label: '🌿 Ít Calo (≤350 kcal)',
+        className: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+      });
+    }
+    if (perServing.protein >= 18) {
+      healthBadges.push({
+        label: '💪 Giàu Đạm tự nhiên',
+        className: 'bg-blue-50 text-blue-700 border-blue-200',
+      });
+    }
+    if (perServing.fiber !== null && perServing.fiber >= 3.5) {
+      healthBadges.push({
+        label: '🥗 Giàu Chất xơ',
+        className: 'bg-teal-50 text-teal-700 border-teal-200',
+      });
+    }
+    if (perServing.sodium !== null && perServing.sodium <= 500) {
+      healthBadges.push({
+        label: '💚 Dịu mặn (Tốt huyết áp)',
+        className: 'bg-emerald-50 text-emerald-800 border-emerald-200',
+      });
+    } else if (perServing.sodium !== null && perServing.sodium > 850) {
+      healthBadges.push({
+        label: '🧂 Đậm đà (Lưu ý muối)',
+        className: 'bg-amber-50 text-amber-800 border-amber-200',
+      });
+    }
+
     return (
       <section
         aria-labelledby="nutrition-heading"
@@ -28,13 +60,31 @@ export function NutritionNotice({ nutritionStatus, caloriesPerServing, isNutriti
           )}
         </div>
 
+        {/* Huy hiệu Sức khỏe Gia đình */}
+        {healthBadges.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 mb-3">
+            {healthBadges.map((b) => (
+              <span
+                key={b.label}
+                className={`px-2 py-0.5 rounded-full text-[11px] font-semibold border ${b.className}`}
+              >
+                {b.label}
+              </span>
+            ))}
+          </div>
+        )}
+
         {/* Năng lượng chính */}
-        <div className="flex items-baseline justify-between mb-4">
-          <span className="text-xs text-[var(--color-text-secondary)] font-medium">Năng lượng</span>
+        <div className="flex items-baseline justify-between mb-1">
+          <span className="text-xs text-[var(--color-text-secondary)] font-medium">Năng lượng món ăn</span>
           <p className="text-2xl font-extrabold text-[var(--color-text-primary)] tracking-tight">
             ~{perServing.calories} <span className="text-xs font-semibold text-[var(--color-text-muted)]">kcal</span>
           </p>
         </div>
+        <p className="text-[11px] text-[var(--color-text-muted)] mb-4">
+          💡 Ăn kèm 1 chén cơm trắng (+130 kcal) ≈{' '}
+          <strong className="text-[var(--color-text-primary)]">~{perServing.calories + 130} kcal/người</strong>
+        </p>
 
         {/* Bảng phân tích Đạm / Béo / Đường bột / Natri */}
         <div className="grid grid-cols-2 gap-2 text-xs mb-4">
@@ -66,18 +116,32 @@ export function NutritionNotice({ nutritionStatus, caloriesPerServing, isNutriti
           </div>
         )}
 
-        {/* Nguồn dữ liệu & Minh bạch */}
-        <div className="mt-3 pt-2.5 border-t border-[var(--color-border-subtle)]">
+        {/* Nguồn dữ liệu & Minh bạch Y khoa */}
+        <div className="mt-3 pt-2.5 border-t border-[var(--color-border-subtle)] space-y-2">
           <p className="text-[10px] text-[var(--color-text-muted)] flex items-center justify-between">
             <span>Nguồn: {source || 'Viện Dinh Dưỡng'}</span>
             <span>Bao phủ {coveragePercent}%</span>
           </p>
           {missingIngredients && missingIngredients.length > 0 && (
-            <p className="text-[10px] text-amber-600/80 mt-1 flex items-start gap-1">
+            <p className="text-[10px] text-amber-600/80 flex items-start gap-1">
               <AlertCircle className="w-3 h-3 flex-shrink-0 mt-0.5" />
               <span>Chưa có số liệu: {missingIngredients.join(', ')}</span>
             </p>
           )}
+          <details className="group rounded-xl bg-[var(--color-surface-subtle)] border border-[var(--color-border-subtle)] px-2.5 py-1.5 text-[10px] text-[var(--color-text-secondary)]">
+            <summary className="cursor-pointer font-semibold text-[var(--color-text-primary)] select-none flex items-center justify-between">
+              <span>🩺 Căn cứ tính Calo & chế biến (Viện Dinh Dưỡng)</span>
+              <span className="text-[9px] text-[var(--color-text-muted)] group-open:rotate-180 transition-transform">▼</span>
+            </summary>
+            <ul className="mt-1.5 space-y-1 pl-3.5 list-disc leading-relaxed text-[10px]">
+              <li>
+                <strong>Khối lượng thực ăn (Edible Portion):</strong> Đã tự động trừ phần thải bỏ (xương sườn ~25%, vỏ tôm ~42%, cuống rau ~16–20%) theo Bảng Thành Phần Thực Phẩm Việt Nam (Bộ Y Tế).
+              </li>
+              <li>
+                <strong>Hấp thụ theo cách nấu:</strong> Món luộc/hấp giữ nguyên mức calo gốc; món kho/canh giảm ~25–30% lượng Natri & chất béo nếu không chan hết nước kho.
+              </li>
+            </ul>
+          </details>
         </div>
       </section>
     );

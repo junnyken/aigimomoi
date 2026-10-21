@@ -71,7 +71,7 @@ export default function NewRecipePage() {
   const [name, setName] = useState('');
   const [dishName, setDishName] = useState('');
   const [shortDescription, setShortDescription] = useState('');
-  const [role, setRole] = useState<'MAIN' | 'SOUP' | 'SIDE' | 'ONE_DISH_MEAL'>('MAIN');
+  const [role, setRole] = useState<'MAIN' | 'SOUP' | 'SIDE' | 'DIPPING_SAUCE' | 'ONE_DISH_MEAL' | 'DESSERT' | 'BEVERAGE'>('MAIN');
   const [baseServings, setBaseServings] = useState<number>(4);
   const [prepTimeMinutes, setPrepTimeMinutes] = useState<number>(15);
   const [cookTimeMinutes, setCookTimeMinutes] = useState<number>(30);
@@ -456,7 +456,10 @@ export default function NewRecipePage() {
                 <option value="MAIN">Món chính (Mặn)</option>
                 <option value="SOUP">Món canh</option>
                 <option value="SIDE">Món phụ / Rau xào</option>
+                <option value="DIPPING_SAUCE">Nước chấm / Sốt</option>
                 <option value="ONE_DISH_MEAL">Món ăn một đĩa</option>
+                <option value="DESSERT">Tráng miệng</option>
+                <option value="BEVERAGE">Đồ uống</option>
               </select>
             </div>
 

@@ -6,9 +6,11 @@
 // - Lưu audit trail: resolvedById = user.id, resolvedAt = new Date().
 
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { db } from '@/lib/db';
 import { recipeReports, recipes } from '@/lib/db/schema';
 import { getSessionUser } from '@/lib/auth/session';
+import { PUBLIC_RECIPES_TAG } from '@/lib/recipes/public';
 import { eq } from 'drizzle-orm';
 import { logger } from '@/lib/logger';
 
@@ -88,6 +90,14 @@ export async function PUT(request: NextRequest, context: RouteContext) {
         });
       }
     });
+
+    if (action === 'TAKEDOWN') {
+      try {
+        revalidateTag(PUBLIC_RECIPES_TAG, 'max');
+      } catch {
+        // Bỏ qua khi chạy ngoài Next runtime (ví dụ script test CLI)
+      }
+    }
 
     return NextResponse.json({
       success: true,

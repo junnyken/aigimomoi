@@ -27,14 +27,21 @@ if [ ! -f "$ENV_FILE" ]; then
     fi
 fi
 echo "✅ Đang sử dụng file cấu hình môi trường: $ENV_FILE"
+set -a
+# shellcheck disable=SC1090
+source "$ENV_FILE"
+set +a
+export PG_CONTAINER="${PG_CONTAINER:-angimom_prod_postgres}"
+export POSTGRES_DB="${POSTGRES_DB:-angimom_prod}"
 
 # 3. Tạo thư mục dữ liệu nếu chưa có
 mkdir -p data/postgres data/caddy_data data/caddy_config backups public/uploads
+chown -R 1001:1001 public/uploads 2>/dev/null || chmod 777 public/uploads || true
 
-# 4. Sao lưu CSDL hiện tại để phòng ngừa rủi ro
-if [ -f "./scripts/backup_db.sh" ]; then
+# 4. Sao lưu CSDL hiện tại để phòng ngừa rủi ro (nếu container đang chạy)
+if [ -f "./scripts/backup_db.sh" ] && docker ps --format '{{.Names}}' | grep -q "^${PG_CONTAINER}$"; then
     echo "💾 Đang tiến hành sao lưu CSDL trước khi cập nhật..."
-    ./scripts/backup_db.sh || true
+    ./scripts/backup_db.sh
 fi
 
 # 5. Kiểm tra kết nối Cloudflare R2

@@ -29,20 +29,31 @@ async function MealPageContent({ searchParams }: MealPageProps) {
   const mainSlug = typeof params.main === 'string' ? params.main.trim() : null;
   const soupSlug = typeof params.soup === 'string' ? params.soup.trim() : null;
   const sideSlug = typeof params.side === 'string' ? params.side.trim() : null;
+  const sauceSlug = typeof params.sauce === 'string' ? params.sauce.trim() : null;
+  const initialProfile = typeof params.profile === 'string' ? params.profile.trim() : null;
   const servings = clampServings(params.servings, 4);
+  const rawAiIngredients = typeof params.aiIngredients === 'string' ? params.aiIngredients : '';
+  const initialAiIngredients = rawAiIngredients
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .slice(0, 15);
 
   const initialSelection = await resolveMealSelection({
     mainSlug,
     soupSlug,
     sideSlug,
+    sauceSlug,
   });
 
   return (
     <MealView
-      key={`${initialSelection.main?.slug ?? ''}|${initialSelection.soup?.slug ?? ''}|${initialSelection.side?.slug ?? ''}|${servings}`}
+      key={`${initialSelection.main?.slug ?? ''}|${initialSelection.soup?.slug ?? ''}|${initialSelection.side?.slug ?? ''}|${initialSelection.sauce?.slug ?? ''}|${servings}|${initialProfile ?? ''}|${initialAiIngredients.join(',')}`}
       initialSelection={initialSelection}
       initialServings={servings}
-      hasExplicitSelection={Boolean(mainSlug || soupSlug || sideSlug)}
+      initialProfile={initialProfile}
+      hasExplicitSelection={Boolean(mainSlug || soupSlug || sideSlug || sauceSlug || initialProfile || initialAiIngredients.length > 0)}
+      initialAiIngredients={initialAiIngredients}
     />
   );
 }

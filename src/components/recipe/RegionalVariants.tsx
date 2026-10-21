@@ -57,6 +57,7 @@ export function RegionalVariants({ currentDishName, variants }: RegionalVariants
                     src={v.heroImage}
                     alt={v.name}
                     fill
+                    unoptimized
                     className="object-cover group-hover:scale-105 transition-transform duration-300"
                     sizes="64px"
                   />

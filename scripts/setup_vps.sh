@@ -34,16 +34,18 @@ if [ ! -f ".env.production" ]; then
 
     sed -i "s|SinhKhoaNgauNhienItNhat32KyTuBangLenhOpensslRandBase64_32|${RANDOM_SECRET}|g" .env.production
     sed -i "s|DatMatKhauDBSieuManhChoVPS_MatBao_2026!|${RANDOM_PG_PASS}|g" .env.production
+    chmod 600 .env.production
 
     echo "✅ Đã tự động tạo khóa AUTH_SECRET và POSTGRES_PASSWORD ngẫu nhiên an toàn trong .env.production!"
     echo "👉 Hãy mở .env.production để cập nhật DOMAIN_NAME trỏ tới tên miền của bạn nếu cần."
 else
+    chmod 600 .env.production || true
     echo "✅ Đã tìm thấy file .env.production hiện có."
 fi
 
 # 3. Tạo các thư mục dữ liệu cần thiết
 mkdir -p data/postgres data/caddy_data data/caddy_config backups public/uploads
-chmod 755 public/uploads
+chown -R 1001:1001 public/uploads 2>/dev/null || chmod 777 public/uploads || true
 
 echo ""
 echo "=========================================================="

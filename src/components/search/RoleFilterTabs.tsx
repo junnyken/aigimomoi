@@ -15,6 +15,7 @@ const ORDERED_ROLES = [
   { key: 'MAIN', label: ROLE_LABELS.MAIN ?? 'Món mặn' },
   { key: 'SOUP', label: ROLE_LABELS.SOUP ?? 'Món canh' },
   { key: 'SIDE', label: ROLE_LABELS.SIDE ?? 'Món rau / phụ' },
+  { key: 'DIPPING_SAUCE', label: ROLE_LABELS.DIPPING_SAUCE ?? 'Nước chấm / Sốt' },
   { key: 'ONE_DISH_MEAL', label: ROLE_LABELS.ONE_DISH_MEAL ?? 'Món một đĩa' },
   { key: 'DESSERT', label: ROLE_LABELS.DESSERT ?? 'Tráng miệng' },
   { key: 'BEVERAGE', label: ROLE_LABELS.BEVERAGE ?? 'Đồ uống' },

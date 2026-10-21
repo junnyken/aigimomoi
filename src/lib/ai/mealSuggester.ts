@@ -66,25 +66,36 @@ async function getPublishedCatalogContext(): Promise<RawCatalogDish[]> {
     .from(recipes)
     .where(eq(recipes.status, 'PUBLISHED'));
 
-  const result: RawCatalogDish[] = [];
-
-  for (const r of publishedRows) {
-    if (r.role !== 'MAIN' && r.role !== 'SOUP' && r.role !== 'SIDE') continue;
-
-    const ingRows = await db
-      .select({ name: ingredients.name })
-      .from(recipeIngredients)
-      .innerJoin(ingredients, eq(recipeIngredients.ingredientId, ingredients.id))
-      .where(eq(recipeIngredients.recipeId, r.id));
-
-    result.push({
-      ...r,
-      role: r.role as 'MAIN' | 'SOUP' | 'SIDE',
-      ingredientNames: ingRows.map((i) => i.name.toLowerCase()),
-    });
+  const validRows = publishedRows.filter(
+    (r) => r.role === 'MAIN' || r.role === 'SOUP' || r.role === 'SIDE'
+  );
+  if (validRows.length === 0) {
+    return [];
   }
 
-  return result;
+  // Batch fetch toàn bộ nguyên liệu trong 1 câu truy vấn thay vì N+1 queries
+  const recipeIds = validRows.map((r) => r.id);
+  const allIngRows = await db
+    .select({
+      recipeId: recipeIngredients.recipeId,
+      name: ingredients.name,
+    })
+    .from(recipeIngredients)
+    .innerJoin(ingredients, eq(recipeIngredients.ingredientId, ingredients.id))
+    .where(inArray(recipeIngredients.recipeId, recipeIds));
+
+  const ingMap = new Map<number, string[]>();
+  for (const row of allIngRows) {
+    const list = ingMap.get(row.recipeId) || [];
+    list.push(row.name.toLowerCase());
+    ingMap.set(row.recipeId, list);
+  }
+
+  return validRows.map((r) => ({
+    ...r,
+    role: r.role as 'MAIN' | 'SOUP' | 'SIDE',
+    ingredientNames: ingMap.get(r.id) || [],
+  }));
 }
 
 function toDishSummary(row: RawCatalogDish): MealDishSummary {

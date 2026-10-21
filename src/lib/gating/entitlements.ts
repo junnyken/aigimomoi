@@ -17,8 +17,8 @@ export function canAccessRecipe(
   viewerId: number | null,
   entitlements: Set<number> | ReadonlySet<number>
 ): boolean {
-  // 1. Công thức biên tập Bếp Mom luôn mở 100% cho mọi người (kể cả khách chưa đăng nhập)
-  if (recipe.provenance === 'EDITORIAL') {
+  // 1. Công thức biên tập Bếp Mom (MANUAL / AI_ASSISTED / EDITORIAL) luôn mở 100% cho mọi người
+  if (recipe.provenance !== 'COMMUNITY_SUBMITTED') {
     return true;
   }
 

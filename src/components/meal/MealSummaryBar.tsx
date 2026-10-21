@@ -10,10 +10,11 @@ interface MealSummaryBarProps {
   main: MealDishSummary | null;
   soup: MealDishSummary | null;
   side: MealDishSummary | null;
+  sauce?: MealDishSummary | null;
   servings: number;
 }
 
-export function MealSummaryBar({ main, soup, side, servings }: MealSummaryBarProps) {
+export function MealSummaryBar({ main, soup, side, sauce, servings }: MealSummaryBarProps) {
   const dishes = [main, soup, side].filter((d): d is MealDishSummary => Boolean(d));
 
   // Thời gian ước tính: người nấu thường làm song song các món (luộc rau trong lúc kho thịt)
@@ -25,6 +26,7 @@ export function MealSummaryBar({ main, soup, side, servings }: MealSummaryBarPro
     mainSlug: main?.slug,
     soupSlug: soup?.slug,
     sideSlug: side?.slug,
+    sauceSlug: sauce?.slug,
     servings,
   })}`;
 

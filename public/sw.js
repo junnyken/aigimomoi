@@ -40,8 +40,27 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(event.request.url);
 
-  // Bỏ qua các API route và dev socket
-  if (url.pathname.startsWith('/api/') || url.pathname.includes('/_next/webpack-hmr')) {
+  // Bỏ qua các API route, dev socket, RSC flight payloads và các trang cá nhân/quản trị cần xác thực
+  const PRIVATE_PREFIXES = [
+    '/api/',
+    '/profile',
+    '/tu-lanh',
+    '/nhat-ky',
+    '/ke-hoach-tuan',
+    '/contribute',
+    '/editor',
+    '/admin',
+    '/login',
+    '/register',
+    '/forgot-password',
+    '/reset-password',
+  ];
+  if (
+    PRIVATE_PREFIXES.some((prefix) => url.pathname.startsWith(prefix)) ||
+    url.pathname.includes('/_next/webpack-hmr') ||
+    url.searchParams.has('_rsc') ||
+    event.request.headers.get('RSC') === '1'
+  ) {
     return;
   }
 

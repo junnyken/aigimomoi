@@ -41,6 +41,14 @@ export class AiGateway {
     const now = Date.now();
     const windowMs = 60 * 1000; // 1 phút
 
+    if (this.rateLimitMap.size > 500) {
+      for (const [key, val] of this.rateLimitMap.entries()) {
+        if (now >= val.resetAt) {
+          this.rateLimitMap.delete(key);
+        }
+      }
+    }
+
     let record = this.rateLimitMap.get(clientId);
 
     if (!record || now >= record.resetAt) {

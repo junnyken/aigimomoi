@@ -98,6 +98,7 @@ async function SearchContent({ searchParams }: { searchParams: Promise<{ [key: s
   const q = typeof rawParams.q === 'string' ? rawParams.q : undefined;
   const role = typeof rawParams.role === 'string' ? rawParams.role : undefined;
   const maxTime = typeof rawParams.maxTime === 'string' ? Number(rawParams.maxTime) : undefined;
+  const maxCalories = typeof rawParams.maxCalories === 'string' ? Number(rawParams.maxCalories) : undefined;
   const difficulty = typeof rawParams.difficulty === 'string' ? rawParams.difficulty : undefined;
   const testedOnly = rawParams.tested === 'true';
   const nutritionOnly = rawParams.nutrition === 'true';
@@ -114,6 +115,7 @@ async function SearchContent({ searchParams }: { searchParams: Promise<{ [key: s
       q,
       role,
       maxTime,
+      maxCalories,
       difficulty,
       testedOnly,
       nutritionOnly,
@@ -126,7 +128,7 @@ async function SearchContent({ searchParams }: { searchParams: Promise<{ [key: s
     getSearchFilterMeta(),
   ]);
 
-  const hasAnyFilter = Boolean(q || role || maxTime || difficulty || testedOnly || nutritionOnly || taxonomySlug || sort || source !== 'all');
+  const hasAnyFilter = Boolean(q || role || maxTime || maxCalories || difficulty || testedOnly || nutritionOnly || taxonomySlug || sort || source !== 'all');
 
   return (
     <>

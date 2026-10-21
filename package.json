@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build && cp -r .next/static .next/standalone/.next/ && cp -r public .next/standalone/ || true",
+    "build": "next build && (cp -r .next/static .next/standalone/.next/ && cp -r public .next/standalone/ || true)",
     "start": "next start",
     "lint": "eslint",
     "lint:scoped": "eslint playwright.config.ts e2e src/app/api/auth/login/route.ts src/app/api/health/route.ts 'src/app/cong-thuc/[slug]/page.tsx' 'src/app/cong-thuc/[slug]/nau/page.tsx' src/app/meal/page.tsx src/components/cooking src/components/meal/MealSlotCard.tsx src/components/meal/MealSummaryBar.tsx src/components/meal/MealView.tsx src/components/meal/SwapDishModal.tsx src/components/recipe/RecipeCard.tsx src/components/recipe/StartCookingButton.tsx src/components/recipe/VerificationBadges.tsx src/components/shopping src/lib/auth/session.ts src/lib/logger.ts src/lib/meal/flowUrls.ts src/lib/meal/mealQueries.ts src/lib/recipes/aggregation.ts src/lib/recipes/labels.ts src/lib/recipes/publicQueries.ts src/lib/recipes/searchQueries.ts src/lib/recipes/scaling.ts src/lib/shopping src/scripts/test_auth_hardening.ts src/scripts/test_core_mvp_flows.ts src/scripts/test_data_honesty.ts",
@@ -19,6 +19,9 @@
     "test:e2e": "playwright test",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
+    "db:migrate:cloud": "tsx src/scripts/migrate_supabase.ts",
+    "db:seed:cloud": "tsx src/scripts/seed_production_catalog.ts",
+    "db:setup:cloud": "tsx src/scripts/migrate_supabase.ts && tsx src/scripts/seed_production_catalog.ts",
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {

@@ -12,7 +12,15 @@ export interface R2Config {
 }
 
 export function getR2Config(): R2Config | null {
-  const accountId = process.env.CLOUDFLARE_R2_ACCOUNT_ID || process.env.R2_ACCOUNT_ID;
+  let accountId = process.env.CLOUDFLARE_R2_ACCOUNT_ID || process.env.R2_ACCOUNT_ID;
+  const endpoint = process.env.CLOUDFLARE_R2_ENDPOINT || process.env.R2_ENDPOINT || process.env.S3_ENDPOINT;
+  if (!accountId && endpoint) {
+    const match = endpoint.match(/https?:\/\/([a-zA-Z0-9]+)\.r2\.cloudflarestorage\.com/i);
+    if (match?.[1]) {
+      accountId = match[1];
+    }
+  }
+
   const accessKeyId = process.env.CLOUDFLARE_R2_ACCESS_KEY_ID || process.env.R2_ACCESS_KEY_ID || process.env.S3_ACCESS_KEY_ID;
   const secretAccessKey = process.env.CLOUDFLARE_R2_SECRET_ACCESS_KEY || process.env.R2_SECRET_ACCESS_KEY || process.env.S3_SECRET_ACCESS_KEY;
   const bucketName = process.env.CLOUDFLARE_R2_BUCKET_NAME || process.env.R2_BUCKET_NAME || process.env.S3_BUCKET_NAME || 'angimom-media';

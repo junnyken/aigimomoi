@@ -51,12 +51,13 @@ export default function ContributorNewRecipePage() {
 
   const [availableIngredients, setAvailableIngredients] = useState<IngredientOption[]>([]);
   const [loadingData, setLoadingData] = useState(true);
+  const [isUnauthorized, setIsUnauthorized] = useState(false);
 
   // Form State
   const [name, setName] = useState('');
   const [dishName, setDishName] = useState('');
   const [shortDescription, setShortDescription] = useState('');
-  const [role, setRole] = useState<'MAIN' | 'SOUP' | 'SIDE' | 'ONE_DISH_MEAL'>('MAIN');
+  const [role, setRole] = useState<'MAIN' | 'SOUP' | 'SIDE' | 'DIPPING_SAUCE' | 'ONE_DISH_MEAL' | 'DESSERT' | 'BEVERAGE'>('MAIN');
   const [baseServings, setBaseServings] = useState<number>(4);
   const [prepTimeMinutes, setPrepTimeMinutes] = useState<number>(15);
   const [cookTimeMinutes, setCookTimeMinutes] = useState<number>(30);
@@ -82,7 +83,20 @@ export default function ContributorNewRecipePage() {
     async function loadIngredients() {
       try {
         setLoadingData(true);
-        const res = await fetch('/api/ingredients');
+        const [authRes, res] = await Promise.all([
+          fetch('/api/auth/me'),
+          fetch('/api/ingredients'),
+        ]);
+        if (authRes.ok) {
+          const authData = await authRes.json();
+          if (!authData.user) {
+            setIsUnauthorized(true);
+            return;
+          }
+        } else if (authRes.status === 401) {
+          setIsUnauthorized(true);
+          return;
+        }
         if (res.ok) {
           const data = await res.json();
           setAvailableIngredients(data.ingredients || []);
@@ -262,6 +276,36 @@ export default function ContributorNewRecipePage() {
     }
   };
 
+  if (!loadingData && isUnauthorized) {
+    return (
+      <div className="min-h-screen bg-[#FAF7F0] text-[#2D2A26] py-16 px-4">
+        <div className="max-w-xl mx-auto bg-white rounded-3xl border border-[#EADBC8] p-8 text-center shadow-xs space-y-4">
+          <ChefHat className="w-12 h-12 text-[#3F6240] mx-auto" />
+          <h1 className="text-xl font-bold text-[#3F6240]">
+            Đăng nhập để đóng góp món ngon gia đình
+          </h1>
+          <p className="text-xs sm:text-sm text-[#5C4A3A] leading-relaxed">
+            Để lưu bản nháp công thức và gửi bài cho Ban biên tập Ăn Gì Mom, vui lòng đăng nhập tài khoản của bạn trước khi bắt đầu viết nhé!
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+            <Link
+              href="/login?from=/contribute/new"
+              className="min-h-11 inline-flex items-center px-6 py-2.5 rounded-xl bg-[#3F6240] hover:bg-[#324f33] text-white text-xs sm:text-sm font-semibold transition-colors shadow-xs"
+            >
+              Đăng nhập ngay
+            </Link>
+            <Link
+              href="/register?from=/contribute/new"
+              className="min-h-11 inline-flex items-center px-5 py-2.5 rounded-xl bg-[#FAF7F0] hover:bg-[#F3E9DD] text-[#5C4A3A] border border-[#EADBC8] text-xs sm:text-sm font-semibold transition-colors"
+            >
+              Tạo tài khoản mới
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#FAF7F0] text-[#2D2A26] pb-24">
       {/* Sticky Header */}
@@ -365,7 +409,10 @@ export default function ContributorNewRecipePage() {
                 <option value="MAIN">Món chính (Mặn)</option>
                 <option value="SOUP">Món canh</option>
                 <option value="SIDE">Món phụ / Rau xào</option>
+                <option value="DIPPING_SAUCE">Nước chấm / Sốt</option>
                 <option value="ONE_DISH_MEAL">Món ăn một đĩa</option>
+                <option value="DESSERT">Tráng miệng</option>
+                <option value="BEVERAGE">Đồ uống</option>
               </select>
             </div>
           </div>
@@ -546,6 +593,31 @@ export default function ContributorNewRecipePage() {
               <Plus className="w-3.5 h-3.5" />
               <span>Thêm bước</span>
             </button>
+          </div>
+
+          {/* Tóm tắt Pipeline Giai đoạn nấu */}
+          <div className="flex flex-wrap items-center gap-2 p-3 rounded-xl bg-[#FAF7F0] border border-[#EADBC8]">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-[#7C6A59] mr-1">
+              Pipeline giai đoạn:
+            </span>
+            {['Sơ chế', 'Chế biến', 'Hoàn thành'].map((phaseName, pIdx) => {
+              const count = stepRows.filter((s) => s.phaseName === phaseName).length;
+              return (
+                <span
+                  key={phaseName}
+                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold border ${
+                    count > 0
+                      ? 'bg-white border-[#BCD0BE] text-[#3F6240]'
+                      : 'bg-stone-100/70 border-stone-200 text-stone-400'
+                  }`}
+                >
+                  <span>{pIdx + 1}. {phaseName}</span>
+                  <span className="px-1.5 py-0.2 rounded-full bg-[#EAF0EA] text-[10px] font-bold">
+                    {count} bước
+                  </span>
+                </span>
+              );
+            })}
           </div>
 
           <div className="space-y-4">

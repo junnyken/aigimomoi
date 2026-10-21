@@ -4,6 +4,7 @@ export const ROLE_LABELS: Record<string, string> = {
   MAIN: 'Món mặn',
   SOUP: 'Món canh',
   SIDE: 'Món rau / phụ',
+  DIPPING_SAUCE: 'Nước chấm / Sốt',
   ONE_DISH_MEAL: 'Món nước / Trọn bữa',
   DESSERT: 'Tráng miệng',
   BEVERAGE: 'Đồ uống',
@@ -27,6 +28,13 @@ export const TIME_PRESETS = [
   { label: '≤ 20 phút (Nhanh gọn)', value: 20 },
   { label: '≤ 45 phút (Bữa cơm thường)', value: 45 },
   { label: '≤ 60 phút', value: 60 },
+] as const;
+
+export const CALORIE_PRESETS = [
+  { label: 'Tất cả mức Calo', value: undefined },
+  { label: '≤ 250 kcal/phần (Thanh đạm)', value: 250 },
+  { label: '≤ 350 kcal/phần (Giảm cân)', value: 350 },
+  { label: '≤ 500 kcal/phần (Cân bằng)', value: 500 },
 ] as const;
 
 const amountFormatter = new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 2 });

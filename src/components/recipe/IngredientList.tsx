@@ -45,6 +45,7 @@ export function IngredientList({
     window.history.replaceState({}, '', url.toString());
   }, [servings, safeBase]);
 
+  const [showKitchenGuide, setShowKitchenGuide] = useState(false);
   const scaledList = scaleRecipeIngredients(ingredients, safeBase, servings);
   const required = scaledList.filter((i) => !i.isOptional);
   const optional = scaledList.filter((i) => i.isOptional);
@@ -62,7 +63,24 @@ export function IngredientList({
           <ShoppingBasket className="w-5 h-5 text-[var(--color-brand-primary)]" aria-hidden="true" />
           <span>Nguyên liệu</span>
         </h2>
+        <button
+          type="button"
+          onClick={() => setShowKitchenGuide((v) => !v)}
+          className="text-xs font-semibold text-[var(--color-brand-primary)] hover:underline"
+        >
+          {showKitchenGuide ? 'Ẩn mẹo đong bếp' : '🥄 Mẹo đong không cần cân'}
+        </button>
       </div>
+
+      {showKitchenGuide && (
+        <div className="p-3 rounded-2xl bg-[var(--color-brand-light)]/50 border border-[var(--color-brand-border)] text-xs text-[var(--color-text-primary)] space-y-1">
+          <p className="font-bold text-[var(--color-brand-primary)]">Quy đổi nhanh dụng cụ bếp gia đình:</p>
+          <p>• <strong>1 muỗng canh (tbsp):</strong> ~15ml chất lỏng hoặc ~15g gia vị</p>
+          <p>• <strong>1 muỗng cà phê (tsp):</strong> ~5ml hoặc ~5g</p>
+          <p>• <strong>100g thịt / cá phi lê:</strong> cỡ bằng 1 lòng bàn tay người lớn</p>
+          <p>• <strong>1 chén ăn cơm chuẩn:</strong> ~200ml nước hoặc ~100g cơm chín</p>
+        </div>
+      )}
 
       {/* Serving Selector Component (Invariants §5.4, D21) */}
       <ServingSelector

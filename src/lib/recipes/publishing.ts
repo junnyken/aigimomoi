@@ -7,6 +7,8 @@ import {
   recipeIngredients,
   cookingSteps,
   recipeTags,
+  userEntitlements,
+  recipeBundleItems,
 } from '@/lib/db/schema';
 import { and, asc, eq, inArray } from 'drizzle-orm';
 import {
@@ -101,6 +103,17 @@ export async function publishRecipe(recipeId: number, adminId: number, flags: Ve
           updatedAt: new Date(),
         })
         .where(eq(recipes.id, source.id));
+
+      // Chuyển tiếp quyền sở hữu (entitlements) và các bộ combo (bundles) từ bản cũ sang bản mới
+      await tx
+        .update(userEntitlements)
+        .set({ recipeId })
+        .where(and(eq(userEntitlements.itemType, 'RECIPE'), eq(userEntitlements.recipeId, source.id)));
+
+      await tx
+        .update(recipeBundleItems)
+        .set({ recipeId })
+        .where(eq(recipeBundleItems.recipeId, source.id));
     }
 
     const now = new Date();
@@ -205,7 +218,15 @@ export async function createRevision(sourceId: number) {
         difficulty: source.difficulty,
         caloriesPerServing: source.caloriesPerServing,
         nutritionStatus: source.nutritionStatus,
+        nutritionSnapshot: source.nutritionSnapshot,
         heroImage: source.heroImage,
+        provenance: source.provenance,
+        region: source.region,
+        kitchenStory: source.kitchenStory,
+        sourceAttribution: source.sourceAttribution,
+        variantOfId: source.variantOfId,
+        price: source.price,
+        isFree: source.isFree,
         // D23: nội dung sẽ thay đổi nên nhãn kiểm chứng phải được ADMIN xác nhận lại
         isEditorialReviewed: false,
         isCookTested: false,

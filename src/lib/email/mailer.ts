@@ -52,6 +52,9 @@ async function sendViaSmtp(options: EmailOptions): Promise<SendEmailResult> {
     }
 
     socket.on('error', onError);
+    socket.setTimeout(10_000, () => {
+      onError(new Error('SMTP connection timed out after 10s'));
+    });
     socket.setEncoding('utf-8');
 
     function onConnected() {
@@ -136,7 +139,19 @@ export async function sendEmail(options: EmailOptions): Promise<SendEmailResult>
   return { success: true, isMock: true, messageId: `mock-${Date.now()}` };
 }
 
+function escapeHtml(input: string): string {
+  return input
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 export async function sendPasswordResetEmail(email: string, resetUrl: string): Promise<SendEmailResult> {
+  const safeEmail = email.replace(/[\r\n<>]/g, '').trim();
+  const escapedEmail = escapeHtml(safeEmail);
+  const escapedUrl = escapeHtml(resetUrl);
   const subject = 'ĂN GÌ MOM — Hướng dẫn đặt lại mật khẩu của bạn';
   const html = `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 560px; margin: 0 auto; padding: 24px; border: 1px solid #e5e7eb; border-radius: 12px; background-color: #ffffff;">
@@ -148,7 +163,7 @@ export async function sendPasswordResetEmail(email: string, resetUrl: string): P
 
       <div style="background-color: #fffbeb; border: 1px solid #fef3c7; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
         <p style="color: #92400e; font-size: 14px; margin: 0; line-height: 1.5;">
-          Bạn vừa yêu cầu đặt lại mật khẩu cho tài khoản <strong>${email}</strong> tại Ăn Gì Mom.
+          Bạn vừa yêu cầu đặt lại mật khẩu cho tài khoản <strong>${escapedEmail}</strong> tại Ăn Gì Mom.
         </p>
       </div>
 
@@ -157,7 +172,7 @@ export async function sendPasswordResetEmail(email: string, resetUrl: string): P
       </p>
 
       <div style="text-align: center; margin-bottom: 28px;">
-        <a href="${resetUrl}" style="display: inline-block; background-color: #059669; color: #ffffff; text-decoration: none; padding: 12px 28px; border-radius: 8px; font-weight: 600; font-size: 15px;">
+        <a href="${escapedUrl}" style="display: inline-block; background-color: #059669; color: #ffffff; text-decoration: none; padding: 12px 28px; border-radius: 8px; font-weight: 600; font-size: 15px;">
           Đặt lại mật khẩu ngay
         </a>
       </div>
@@ -166,7 +181,7 @@ export async function sendPasswordResetEmail(email: string, resetUrl: string): P
         Nếu nút trên không hoạt động, bạn có thể sao chép và dán liên kết sau vào trình duyệt:
       </p>
       <p style="word-break: break-all; font-size: 12px; color: #059669; background: #f3f4f6; padding: 8px; border-radius: 6px;">
-        ${resetUrl}
+        ${escapedUrl}
       </p>
 
       <hr style="border: 0; border-top: 1px solid #f3f4f6; margin: 24px 0;" />
@@ -178,9 +193,9 @@ export async function sendPasswordResetEmail(email: string, resetUrl: string): P
   `;
 
   return sendEmail({
-    to: email,
+    to: safeEmail,
     subject,
     html,
-    text: `Yêu cầu đặt lại mật khẩu Ăn Gì Mom cho ${email}. Vui lòng mở liên kết sau trong 15 phút: ${resetUrl}`,
+    text: `Yêu cầu đặt lại mật khẩu Ăn Gì Mom cho ${safeEmail}. Vui lòng mở liên kết sau trong 15 phút: ${resetUrl}`,
   });
 }

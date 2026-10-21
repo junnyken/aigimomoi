@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { recipes, recipeIngredients, pantryItems } from '@/lib/db/schema';
 import { getSessionUser } from '@/lib/auth/session';
+import { canAccessRecipe } from '@/lib/gating/entitlements';
+import { getUserRecipeEntitlements } from '@/lib/gating/queries';
 import { eq } from 'drizzle-orm';
 import { logger } from '@/lib/logger';
 
@@ -28,11 +30,44 @@ export async function GET(
       },
     });
 
-    if (!recipe) {
+    const user = await getSessionUser();
+    const isStaff = user?.role === 'ADMIN' || user?.role === 'EDITOR';
+
+    if (!recipe || (!isStaff && recipe.status !== 'PUBLISHED' && recipe.authorId !== user?.id)) {
       return NextResponse.json({ error: 'Không tìm thấy công thức.' }, { status: 404 });
     }
 
-    const user = await getSessionUser();
+    if (!isStaff) {
+      const entitlements = user ? await getUserRecipeEntitlements(user.id) : new Set<number>();
+      const hasAccess = canAccessRecipe(
+        {
+          recipeId: recipe.id,
+          provenance: recipe.provenance,
+          isFree: recipe.isFree ?? true,
+          price: recipe.price ?? 0,
+          authorId: recipe.authorId,
+        },
+        user?.id ?? null,
+        entitlements
+      );
+
+      if (!hasAccess) {
+        return NextResponse.json(
+          {
+            error: 'Vui lòng mở khóa công thức để đối chiếu nguyên liệu với tủ lạnh.',
+            isGated: true,
+            totalIngredients: 0,
+            availableCount: 0,
+            coveragePercent: 0,
+            matchedIngredients: [],
+            missingIngredients: [],
+            isLoggedIn: Boolean(user),
+          },
+          { status: 403 }
+        );
+      }
+    }
+
     if (!user) {
       return NextResponse.json({
         totalIngredients: recipe.ingredients.length,

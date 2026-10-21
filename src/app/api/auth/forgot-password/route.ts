@@ -3,6 +3,7 @@ import { db } from '@/lib/db';
 import { users } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { isAuthConfigurationValid } from '@/lib/auth/session';
+import { checkRateLimit, getClientIp } from '@/lib/auth/rateLimit';
 import { createResetToken } from '@/lib/auth/resetToken';
 import { sendPasswordResetEmail } from '@/lib/email/mailer';
 
@@ -41,6 +42,14 @@ export async function POST(request: Request) {
     return NextResponse.json(
       { error: 'Hệ thống xác thực chưa được cấu hình sẵn sàng' },
       { status: 503 }
+    );
+  }
+
+  const rate = checkRateLimit('auth-forgot-pw', getClientIp(request), 10, 60_000);
+  if (!rate.allowed) {
+    return NextResponse.json(
+      { error: 'Quá nhiều yêu cầu đặt lại mật khẩu. Vui lòng thử lại sau ít phút.' },
+      { status: 429, headers: { 'Retry-After': String(rate.retryAfterSeconds) } }
     );
   }
 

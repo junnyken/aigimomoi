@@ -27,24 +27,47 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = request.nextUrl;
     const statusParam = searchParams.get('status');
+    const VALID_FEEDBACK_STATUSES = ['PENDING', 'APPROVED', 'REJECTED'] as const;
+    const SAFE_USER_COLUMNS = {
+      id: true,
+      displayName: true,
+      email: true,
+      role: true,
+      avatarUrl: true,
+    } as const;
+
+    if (
+      statusParam &&
+      statusParam !== 'ALL' &&
+      !VALID_FEEDBACK_STATUSES.includes(statusParam as (typeof VALID_FEEDBACK_STATUSES)[number])
+    ) {
+      return NextResponse.json({ error: 'Trạng thái lọc phản hồi không hợp lệ.' }, { status: 400 });
+    }
 
     const feedbacks = await db.query.recipeCookedFeedbacks.findMany({
       where: (fb, { eq }) => {
         if (statusParam && statusParam !== 'ALL') {
-          return eq(fb.status, statusParam as any);
+          return eq(fb.status, statusParam as (typeof VALID_FEEDBACK_STATUSES)[number]);
         }
         return undefined;
       },
       orderBy: [desc(recipeCookedFeedbacks.createdAt)],
+      limit: 200,
       with: {
         recipe: {
           with: {
             dish: true,
-            author: true,
+            author: {
+              columns: SAFE_USER_COLUMNS,
+            },
           },
         },
-        user: true,
-        approvedBy: true,
+        user: {
+          columns: SAFE_USER_COLUMNS,
+        },
+        approvedBy: {
+          columns: SAFE_USER_COLUMNS,
+        },
       },
     });
 

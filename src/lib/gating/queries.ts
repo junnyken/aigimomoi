@@ -129,8 +129,8 @@ export async function claimRecipePromo(
     .where(eq(recipes.id, recipeId))
     .limit(1);
 
-  if (!existingRecipe) {
-    return { success: false, message: 'Công thức không tồn tại.' };
+  if (!existingRecipe || existingRecipe.status !== 'PUBLISHED') {
+    return { success: false, message: 'Công thức không tồn tại hoặc chưa xuất bản.' };
   }
 
   if (existingRecipe.authorId === userId) {
@@ -154,13 +154,16 @@ export async function claimRecipePromo(
     return { success: true, message: 'Bạn đã sở hữu công thức này rồi.', alreadyOwned: true };
   }
 
-  // Thêm entitlement
-  await db.insert(userEntitlements).values({
-    userId,
-    itemType: 'RECIPE',
-    recipeId,
-    grantedReason: 'PROMO_CLAIM',
-  });
+  // Thêm entitlement (chống race condition khi bấm liên tiếp)
+  await db
+    .insert(userEntitlements)
+    .values({
+      userId,
+      itemType: 'RECIPE',
+      recipeId,
+      grantedReason: 'PROMO_CLAIM',
+    })
+    .onConflictDoNothing();
 
   return { success: true, message: `Mở khóa thành công công thức "${existingRecipe.name}"!` };
 }
@@ -180,14 +183,19 @@ export async function claimBundlePromo(
     .select({
       id: recipeBundles.id,
       title: recipeBundles.title,
+      status: recipeBundles.status,
       creatorId: recipeBundles.creatorId,
     })
     .from(recipeBundles)
     .where(eq(recipeBundles.id, bundleId))
     .limit(1);
 
-  if (!bundle) {
-    return { success: false, message: 'Bộ công thức không tồn tại.' };
+  if (!bundle || bundle.status !== 'PUBLISHED') {
+    return { success: false, message: 'Bộ công thức không tồn tại hoặc chưa xuất bản.' };
+  }
+
+  if (bundle.creatorId === userId) {
+    return { success: true, message: 'Bạn là tác giả của bộ công thức này.', alreadyOwned: true };
   }
 
   const existingEntitlement = await db
@@ -206,12 +214,15 @@ export async function claimBundlePromo(
     return { success: true, message: 'Bạn đã sở hữu bộ công thức này rồi.', alreadyOwned: true };
   }
 
-  await db.insert(userEntitlements).values({
-    userId,
-    itemType: 'BUNDLE',
-    bundleId,
-    grantedReason: 'PROMO_CLAIM',
-  });
+  await db
+    .insert(userEntitlements)
+    .values({
+      userId,
+      itemType: 'BUNDLE',
+      bundleId,
+      grantedReason: 'PROMO_CLAIM',
+    })
+    .onConflictDoNothing();
 
   return { success: true, message: `Mở khóa thành công bộ công thức "${bundle.title}"!` };
 }

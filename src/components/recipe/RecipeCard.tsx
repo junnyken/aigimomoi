@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Clock, Users, ChefHat, UtensilsCrossed, Store } from 'lucide-react';
+import { Clock, Users, ChefHat, UtensilsCrossed, Store, Flame } from 'lucide-react';
 import type { PublicRecipeCard } from '@/lib/recipes/publicQueries';
 import { ROLE_LABELS, formatDuration, recipePath, isIllustrationImage } from '@/lib/recipes/labels';
 import { formatPriceVND } from '@/lib/gating/pricing';
@@ -7,6 +7,10 @@ import { BookmarkButton } from './BookmarkButton';
 
 export function RecipeCard({ recipe }: { recipe: PublicRecipeCard }) {
   const isIllustration = recipe.isIllustration ?? isIllustrationImage(recipe.heroImage);
+  const hasCalorieData =
+    typeof recipe.caloriesPerServing === 'number' &&
+    recipe.caloriesPerServing > 0 &&
+    recipe.nutritionStatus !== 'NO_DATA';
 
   return (
     <article className="group relative bg-[var(--color-surface-white)] border border-[var(--color-border-base)] rounded-2xl overflow-hidden shadow-xs hover:shadow-md transition-all hover:-translate-y-1 flex flex-col focus-within:ring-2 focus-within:ring-[var(--color-brand-primary)]">
@@ -72,15 +76,26 @@ export function RecipeCard({ recipe }: { recipe: PublicRecipeCard }) {
         )}
         <p className="text-sm text-[var(--color-text-secondary)] line-clamp-2 mb-4 flex-1">{recipe.shortDescription}</p>
 
-        <div className="pt-3 border-t border-[var(--color-border-subtle)] flex items-center justify-between text-xs text-[var(--color-text-muted)]">
-          <span className="inline-flex items-center gap-1">
-            <Clock className="w-3.5 h-3.5" aria-hidden="true" />
-            {formatDuration(recipe.totalTimeMinutes)}
-          </span>
-          <span className="inline-flex items-center gap-1">
-            <Users className="w-3.5 h-3.5" aria-hidden="true" />
-            {recipe.baseServings} người
-          </span>
+        <div className="pt-3 border-t border-[var(--color-border-subtle)] flex flex-wrap items-center justify-between gap-2 text-xs text-[var(--color-text-muted)]">
+          <div className="flex items-center gap-3">
+            <span className="inline-flex items-center gap-1">
+              <Clock className="w-3.5 h-3.5" aria-hidden="true" />
+              {formatDuration(recipe.totalTimeMinutes)}
+            </span>
+            <span className="inline-flex items-center gap-1">
+              <Users className="w-3.5 h-3.5" aria-hidden="true" />
+              {recipe.baseServings} người
+            </span>
+          </div>
+          {hasCalorieData && (
+            <span
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[var(--color-accent-light)]/70 text-[var(--color-accent-text)] font-semibold text-[11px]"
+              title="Năng lượng ước tính trên 1 khẩu phần (chưa gồm cơm trắng & nước chấm)"
+            >
+              <Flame className="w-3 h-3 text-[var(--color-accent-primary)]" aria-hidden="true" />
+              ~{recipe.caloriesPerServing} kcal
+            </span>
+          )}
           {recipe.source === 'COMMUNITY' && (
             <span
               className={`font-semibold ${recipe.isFree ? 'text-emerald-600' : 'text-amber-700'}`}

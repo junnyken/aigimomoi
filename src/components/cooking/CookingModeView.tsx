@@ -5,6 +5,7 @@ import Link from 'next/link';
 import {
   ArrowLeft,
   ArrowRight,
+  Check,
   CheckCircle2,
   Lightbulb,
   ShoppingBasket,
@@ -82,6 +83,21 @@ export function CookingModeView({
   // Tỷ lệ tiến độ (%)
   const progressPercent = totalSteps > 0 ? Math.round(((currentIdx + 1) / totalSteps) * 100) : 0;
 
+  // Gom nhóm giai đoạn (Phase Pipeline) để người đứng bếp biết đang ở giai đoạn nào
+  const phaseGroups = steps.reduce<
+    Array<{ phaseName: string; startIndex: number; endIndex: number; count: number }>
+  >((acc, step, idx) => {
+    const pName = step.phaseName?.trim() || 'Chế biến';
+    const last = acc[acc.length - 1];
+    if (last && last.phaseName === pName) {
+      last.endIndex = idx;
+      last.count += 1;
+    } else {
+      acc.push({ phaseName: pName, startIndex: idx, endIndex: idx, count: 1 });
+    }
+    return acc;
+  }, []);
+
   return (
     <div className="fixed inset-0 z-50 bg-[var(--color-bg-primary)] flex flex-col overflow-hidden">
       {/* Top Navbar */}
@@ -89,7 +105,7 @@ export function CookingModeView({
         <div className="flex items-center gap-3 min-w-0">
           <Link
             href={recipePath(recipe.slug)}
-            className="p-2 rounded-xl text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)] transition-colors shrink-0"
+            className="min-h-11 min-w-11 flex items-center justify-center p-2 rounded-xl text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)] transition-colors shrink-0"
             title="Thoát chế độ nấu"
             aria-label="Thoát chế độ nấu"
           >
@@ -126,6 +142,59 @@ export function CookingModeView({
           style={{ width: `${progressPercent}%` }}
         />
       </div>
+
+      {/* Phase Pipeline Stepper Bar (hiển thị trên cả Mobile & Desktop) */}
+      {phaseGroups.length > 0 && (
+        <div
+          aria-label="Giai đoạn chế biến"
+          className="bg-[var(--color-surface-white)]/90 border-b border-[var(--color-border-subtle)] px-4 py-2 shrink-0 overflow-x-auto scrollbar-none"
+        >
+          <div className="max-w-3xl mx-auto flex items-center gap-2 whitespace-nowrap">
+            {phaseGroups.map((pg, idx) => {
+              const isCompleted = currentIdx > pg.endIndex;
+              const isActive = currentIdx >= pg.startIndex && currentIdx <= pg.endIndex;
+              const currentStepInPhase = isActive ? currentIdx - pg.startIndex + 1 : 0;
+
+              return (
+                <div key={`${pg.phaseName}-${pg.startIndex}`} className="inline-flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentIdx(pg.startIndex)}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-all ${
+                      isActive
+                        ? 'bg-[var(--color-brand-primary)] text-white shadow-2xs'
+                        : isCompleted
+                        ? 'bg-[var(--color-brand-light)] text-[var(--color-brand-primary)] border border-[var(--color-brand-border)]'
+                        : 'bg-[var(--color-surface-raised)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]'
+                    }`}
+                  >
+                    <span
+                      className={`w-4 h-4 rounded-full text-[10px] font-bold flex items-center justify-center ${
+                        isActive
+                          ? 'bg-white text-[var(--color-brand-primary)]'
+                          : isCompleted
+                          ? 'bg-[var(--color-brand-primary)] text-white'
+                          : 'bg-[var(--color-border-base)] text-[var(--color-text-secondary)]'
+                      }`}
+                    >
+                      {isCompleted ? <Check className="w-2.5 h-2.5 stroke-[3]" /> : idx + 1}
+                    </span>
+                    <span>{pg.phaseName}</span>
+                    {isActive && pg.count > 1 && (
+                      <span className="text-[10px] opacity-90">
+                        ({currentStepInPhase}/{pg.count})
+                      </span>
+                    )}
+                  </button>
+                  {idx < phaseGroups.length - 1 && (
+                    <span className="w-4 h-0.5 bg-[var(--color-border-base)] rounded-full" aria-hidden="true" />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Main Focus Step Area */}
       <main className="flex-1 overflow-y-auto p-4 sm:p-8 flex flex-col justify-between max-w-3xl w-full mx-auto">
@@ -190,15 +259,15 @@ export function CookingModeView({
       </main>
 
       {/* Bottom Step Control Bar */}
-      <footer className="h-20 px-4 sm:px-8 bg-[var(--color-surface-white)] border-t border-[var(--color-border-base)] flex items-center justify-between gap-4 shrink-0 shadow-lg">
+      <footer className="h-20 px-4 sm:px-8 bg-[var(--color-surface-white)] border-t border-[var(--color-border-base)] flex items-center justify-between gap-3 shrink-0 shadow-lg">
         <button
           type="button"
           onClick={goToPrev}
           disabled={currentIdx === 0}
-          className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl text-sm font-semibold text-[var(--color-text-primary)] bg-[var(--color-surface-raised)] border border-[var(--color-border-base)] hover:bg-[var(--color-surface-subtle)] disabled:opacity-30 disabled:pointer-events-none transition-all shadow-xs"
+          className="min-h-11 inline-flex items-center gap-2 px-4 sm:px-5 py-3 rounded-2xl text-sm font-semibold text-[var(--color-text-primary)] bg-[var(--color-surface-raised)] border border-[var(--color-border-base)] hover:bg-[var(--color-surface-subtle)] disabled:opacity-30 disabled:pointer-events-none transition-all shadow-xs"
         >
           <ArrowLeft className="w-4 h-4" />
-          <span className="hidden sm:inline">Bước trước</span>
+          <span>Bước trước</span>
         </button>
 
         {/* Step dots on larger screens */}
@@ -224,7 +293,7 @@ export function CookingModeView({
         <button
           type="button"
           onClick={goToNext}
-          className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl text-sm font-bold text-white bg-[var(--color-brand-primary)] hover:opacity-90 transition-all shadow-sm"
+          className="min-h-11 inline-flex items-center gap-2 px-5 sm:px-6 py-3 rounded-2xl text-sm font-bold text-white bg-[var(--color-brand-primary)] hover:opacity-90 transition-all shadow-sm"
         >
           {currentIdx === totalSteps - 1 ? (
             <>

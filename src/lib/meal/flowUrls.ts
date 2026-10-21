@@ -7,15 +7,17 @@ export interface MealQueryInput {
   mainSlug?: string | null;
   soupSlug?: string | null;
   sideSlug?: string | null;
+  sauceSlug?: string | null;
   servings: number;
 }
 
-/** Query string chung cho /meal và /shopping: giữ nguyên 3 món + khẩu phần. */
-export function buildMealQuery({ mainSlug, soupSlug, sideSlug, servings }: MealQueryInput): string {
+/** Query string chung cho /meal và /shopping: giữ nguyên các món + nước chấm + khẩu phần. */
+export function buildMealQuery({ mainSlug, soupSlug, sideSlug, sauceSlug, servings }: MealQueryInput): string {
   const params = new URLSearchParams();
   if (mainSlug) params.set('main', mainSlug);
   if (soupSlug) params.set('soup', soupSlug);
   if (sideSlug) params.set('side', sideSlug);
+  if (sauceSlug) params.set('sauce', sauceSlug);
   params.set('servings', String(clampServings(servings, 4)));
   return params.toString();
 }
@@ -30,6 +32,7 @@ export function mealQueryFromDishes(
     mainSlug: find('MAIN'),
     soupSlug: find('SOUP'),
     sideSlug: find('SIDE'),
+    sauceSlug: find('DIPPING_SAUCE'),
     servings,
   });
 }

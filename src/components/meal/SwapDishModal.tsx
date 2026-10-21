@@ -1,22 +1,23 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, Search, Check, UtensilsCrossed, Clock, ChefHat } from 'lucide-react';
-import type { MealDishSummary } from '@/lib/meal/mealQueries';
+import { X, Search, Check, UtensilsCrossed, Clock, ChefHat, Flame } from 'lucide-react';
+import type { MealDishSummary, MealSlotRole } from '@/lib/meal/mealQueries';
 import { formatDuration, isIllustrationImage } from '@/lib/recipes/labels';
 
 interface SwapDishModalProps {
   isOpen: boolean;
-  role: 'MAIN' | 'SOUP' | 'SIDE';
+  role: MealSlotRole;
   currentSlug: string;
   onClose: () => void;
   onSelect: (dish: MealDishSummary) => void;
 }
 
-const ROLE_LABELS: Record<'MAIN' | 'SOUP' | 'SIDE', string> = {
+const ROLE_LABELS: Record<MealSlotRole, string> = {
   MAIN: 'Món Mặn Chính',
   SOUP: 'Món Canh',
   SIDE: 'Món Rau / Xào',
+  DIPPING_SAUCE: 'Nước Chấm & Sốt Gia Truyền',
 };
 
 export function SwapDishModal({
@@ -179,11 +180,24 @@ function SwapDishModalContent({
                     <p className="text-xs text-[var(--color-text-secondary)] line-clamp-1 mt-0.5">
                       {dish.shortDescription}
                     </p>
+                    {dish.spoonRatioFormula && (
+                      <p className="text-[11px] text-amber-800 font-medium line-clamp-1 mt-0.5">
+                        🥄 {dish.spoonRatioFormula}
+                      </p>
+                    )}
                     <div className="mt-1 flex items-center gap-3 text-[11px] text-[var(--color-text-muted)]">
                       <span className="inline-flex items-center gap-1">
                         <Clock className="w-3 h-3" />
                         {formatDuration(dish.totalTimeMinutes)}
                       </span>
+                      {typeof dish.caloriesPerServing === 'number' &&
+                        dish.caloriesPerServing > 0 &&
+                        dish.nutritionStatus !== 'NO_DATA' && (
+                          <span className="inline-flex items-center gap-0.5 font-semibold text-[var(--color-accent-text)]">
+                            <Flame className="w-3 h-3 text-[var(--color-accent-primary)]" />
+                            ~{dish.caloriesPerServing} kcal
+                          </span>
+                        )}
                       <span>Độ khó: {dish.difficulty}</span>
                     </div>
                   </div>

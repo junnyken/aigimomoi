@@ -6,14 +6,15 @@
 
 import { db, closeDb } from '../lib/db';
 import { dishes, recipes, ingredients, recipeIngredients, cookingSteps, taxonomies, recipeTags, users } from '../lib/db/schema';
-import { eq, inArray } from 'drizzle-orm';
+import { eq, inArray, sql } from 'drizzle-orm';
+import { seedNutritionStandards, calculateRecipeNutrition } from '../lib/nutrition/calculator';
 
 interface RecipeSeedData {
   dishName: string;
   dishSlug: string;
   recipeName: string;
   recipeSlug: string;
-  role: 'MAIN' | 'SOUP' | 'SIDE';
+  role: 'MAIN' | 'SOUP' | 'SIDE' | 'DIPPING_SAUCE';
   shortDescription: string;
   difficulty: 'Dễ' | 'Trung bình' | 'Khó';
   prepTimeMinutes: number;
@@ -360,10 +361,405 @@ const PRODUCTION_RECIPES: RecipeSeedData[] = [
       { stepNumber: 3, phaseName: 'Xào đậu', instruction: 'Cho đậu vào đảo nhanh trên lửa lớn trong 5-6 phút, nêm hạt nêm vừa miệng rồi tắt bếp.', timerSeconds: 360, tipText: 'Thêm 2 muỗng nước lọc vào chảo khi xào giúp đậu nhanh chín mà không bị cháy.' },
     ],
   },
+
+  // ===================== PHASE P3.5: MỞ RỘNG MÓN MẶN EAT CLEAN & CƠM NHÀ =====================
+  {
+    dishName: 'Ức gà hấp nấm xì dầu',
+    dishSlug: 'uc-ga-hap-nam-xi-dau',
+    recipeName: 'Ức gà hấp nấm hương xì dầu (Eat Clean giảm cân)',
+    recipeSlug: 'uc-ga-hap-nam-xi-dau',
+    role: 'MAIN',
+    shortDescription: 'Ức gà phi lê mềm mọng không hề khô bở, hấp cách thủy cùng nấm hương, gừng sợi và nước tương thanh dịu — giàu đạm, cực ít béo.',
+    difficulty: 'Dễ',
+    prepTimeMinutes: 10,
+    cookTimeMinutes: 15,
+    baseServings: 4,
+    heroImage: 'https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?auto=format&fit=crop&w=800&q=80',
+    taxonomySlugs: ['thanh-dam', 'bua-com-hang-ngay'],
+    ingredients: [
+      { name: 'Ức gà phi lê', slug: 'uc-ga-phi-le', category: 'Thực phẩm tươi sống', standardUnit: 'g', amount: 450, unit: 'g', scalePolicy: 'LINEAR', preparation: 'khứa nhẹ bề mặt' },
+      { name: 'Nấm hương / Nấm đùi gà', slug: 'nam-dong-co', category: 'Rau củ quả', standardUnit: 'g', amount: 150, unit: 'g', scalePolicy: 'LINEAR', preparation: 'thái lát' },
+      { name: 'Gừng tươi', slug: 'gung-tuoi', category: 'Gia vị nêm nếm', standardUnit: 'g', amount: 1, unit: 'nhánh', scalePolicy: 'FIXED', preparation: 'thái sợi' },
+      { name: 'Nước tương (Xì dầu)', slug: 'nuoc-tuong-dau-nanh', category: 'Gia vị nêm nếm', standardUnit: 'ml', amount: 2, unit: 'muỗng canh', scalePolicy: 'LINEAR' },
+      { name: 'Hành lá', slug: 'hanh-la', category: 'Rau củ quả', standardUnit: 'cây', amount: 2, unit: 'cây', scalePolicy: 'FIXED', preparation: 'cắt khúc' },
+    ],
+    steps: [
+      { stepNumber: 1, phaseName: 'Sơ chế & Ướp', instruction: 'Ức gà rửa sạch thấm khô, ướp với 2 muỗng nước tương, gừng thái sợi và chút tiêu trong 10 phút.', timerSeconds: 600, tipText: 'Khứa nhẹ mặt thịt giúp ức gà nhanh ngấm và chín đều.' },
+      { stepNumber: 2, phaseName: 'Hấp cách thủy', instruction: 'Xếp nấm dưới đáy đĩa sâu lòng, đặt ức gà lên trên rồi đưa vào xửng hấp lửa vừa 12-15 phút.', timerSeconds: 840 },
+      { stepNumber: 3, phaseName: 'Hoàn thiện', instruction: 'Rắc hành lá cắt khúc lên trên, đậy vung thêm 1 phút rồi lấy ra thái miếng vừa ăn, rưới nước hấp nấm ngọt thanh lên mặt.' },
+    ],
+  },
+  {
+    dishName: 'Cá diêu hồng hấp gừng hành',
+    dishSlug: 'ca-dieu-hong-hap-gung-hanh',
+    recipeName: 'Cá diêu hồng hấp gừng hành hoa thanh đạm',
+    recipeSlug: 'ca-dieu-hong-hap-gung-hanh',
+    role: 'MAIN',
+    shortDescription: 'Thịt cá diêu hồng trắng ngần ngọt lịm, hấp cùng gừng tươi, đầu hành trắng và chút xì dầu thơm dịu — món mặn lý tưởng cho người lớn tuổi và người giữ dáng.',
+    difficulty: 'Dễ',
+    prepTimeMinutes: 15,
+    cookTimeMinutes: 20,
+    baseServings: 4,
+    heroImage: 'https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?auto=format&fit=crop&w=800&q=80',
+    taxonomySlugs: ['mien-nam', 'thanh-dam', 'cuoi-tuan-sum-hop'],
+    ingredients: [
+      { name: 'Cá diêu hồng', slug: 'ca-dieu-hong', category: 'Thủy hải sản', standardUnit: 'g', amount: 700, unit: 'g', scalePolicy: 'LINEAR', preparation: 'làm sạch, khứa chéo thân' },
+      { name: 'Gừng tươi', slug: 'gung-tuoi', category: 'Gia vị nêm nếm', standardUnit: 'g', amount: 1, unit: 'nhánh', scalePolicy: 'FIXED', preparation: 'thái chỉ' },
+      { name: 'Hành lá', slug: 'hanh-la', category: 'Rau củ quả', standardUnit: 'cây', amount: 4, unit: 'cây', scalePolicy: 'LINEAR', preparation: 'chẻ sợi phần đầu trắng' },
+      { name: 'Nước tương (Xì dầu)', slug: 'nuoc-tuong-dau-nanh', category: 'Gia vị nêm nếm', standardUnit: 'ml', amount: 2.5, unit: 'muỗng canh', scalePolicy: 'LINEAR' },
+    ],
+    steps: [
+      { stepNumber: 1, phaseName: 'Sơ chế khử tanh', instruction: 'Cá xát muối và chút gừng đập dập rửa sạch, khứa vài đường chéo trên mình cá rồi ướp 1 muỗng nước tương.', timerSeconds: 600 },
+      { stepNumber: 2, phaseName: 'Hấp cá', instruction: 'Đặt cá lên đĩa cùng một nửa gừng sợi, hấp cách thủy 15-18 phút cho thịt cá chín trắng mềm.', timerSeconds: 1000 },
+      { stepNumber: 3, phaseName: 'Trình bày', instruction: 'Trải phần hành lá chẻ sợi và gừng còn lại lên mình cá, rưới nước tương nóng lên trên rồi thưởng thức.' },
+    ],
+  },
+  {
+    dishName: 'Trứng chiên thịt băm hành hoa',
+    dishSlug: 'trung-chien-thit-bam',
+    recipeName: 'Trứng chiên thịt băm hành hoa vàng ươm',
+    recipeSlug: 'trung-chien-thit-bam',
+    role: 'MAIN',
+    shortDescription: 'Món quốc dân của mọi gia đình Việt: trứng gà đánh bông quyện thịt nạc băm mềm ngọt và hành hoa thơm phức, bé nhỏ hay người lớn đều mê.',
+    difficulty: 'Dễ',
+    prepTimeMinutes: 5,
+    cookTimeMinutes: 8,
+    baseServings: 4,
+    heroImage: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80',
+    taxonomySlugs: ['mien-bac', 'bua-com-hang-ngay'],
+    ingredients: [
+      { name: 'Trứng gà', slug: 'trung-ga', category: 'Thực phẩm tươi sống', standardUnit: 'quả', amount: 4, unit: 'quả', scalePolicy: 'LINEAR' },
+      { name: 'Thịt heo nạc băm', slug: 'thit-heo-nac-bam', category: 'Thực phẩm tươi sống', standardUnit: 'g', amount: 120, unit: 'g', scalePolicy: 'LINEAR' },
+      { name: 'Hành lá', slug: 'hanh-la', category: 'Rau củ quả', standardUnit: 'cây', amount: 2, unit: 'cây', scalePolicy: 'LINEAR', preparation: 'thái nhỏ' },
+      { name: 'Nước mắm truyền thống', slug: 'nuoc-mam-truyen-thong', category: 'Gia vị nêm nếm', standardUnit: 'ml', amount: 1, unit: 'muỗng canh', scalePolicy: 'LINEAR' },
+      { name: 'Dầu ăn', slug: 'dau-an', category: 'Gia vị nêm nếm', standardUnit: 'ml', amount: 1.5, unit: 'muỗng canh', scalePolicy: 'LINEAR' },
+    ],
+    steps: [
+      { stepNumber: 1, phaseName: 'Đánh trứng', instruction: 'Đập trứng gà vào tô cùng thịt nạc băm, hành lá thái nhỏ và 1 muỗng nước mắm, đánh đều tay.', timerSeconds: 120, tipText: 'Thêm 1 muỗng cà phê nước lọc giúp trứng chiên xốp mềm không bị khô.' },
+      { stepNumber: 2, phaseName: 'Chiên vàng hai mặt', instruction: 'Làm nóng dầu ăn trên chảo, đổ trứng vào dàn đều, hạ lửa vừa chiên 3 phút mỗi mặt đến khi vàng ruộm.', timerSeconds: 360 },
+      { stepNumber: 3, phaseName: 'Hoàn thiện', instruction: 'Cuộn tròn hoặc cắt miếng tam giác xếp ra đĩa, ăn nóng cùng cơm trắng và tương ớt/nước mắm.' },
+    ],
+  },
+  {
+    dishName: 'Thịt bò xào bông cải xanh',
+    dishSlug: 'thit-bo-xao-bong-cai-xanh',
+    recipeName: 'Thịt bò xào bông cải xanh giòn ngọt giàu sắt',
+    recipeSlug: 'thit-bo-xao-bong-cai-xanh',
+    role: 'MAIN',
+    shortDescription: 'Thịt bò phi lê mềm ngọt xào lửa lớn cùng bông cải xanh và cà rốt giòn sần sật, bổ sung dồi dào đạm, sắt và chất xơ trong 15 phút.',
+    difficulty: 'Dễ',
+    prepTimeMinutes: 10,
+    cookTimeMinutes: 8,
+    baseServings: 4,
+    heroImage: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80',
+    taxonomySlugs: ['mon-xao', 'bua-com-hang-ngay', 'thanh-dam'],
+    ingredients: [
+      { name: 'Thịt bò phi lê', slug: 'thit-bo-phi-le', category: 'Thực phẩm tươi sống', standardUnit: 'g', amount: 250, unit: 'g', scalePolicy: 'LINEAR', preparation: 'thái lát mỏng ngang thớ' },
+      { name: 'Bông cải xanh (Súp lơ xanh)', slug: 'bong-cai-xanh', category: 'Rau củ quả', standardUnit: 'g', amount: 350, unit: 'g', scalePolicy: 'LINEAR', preparation: 'tách nhánh vừa ăn' },
+      { name: 'Cà rốt', slug: 'ca-rot', category: 'Rau củ quả', standardUnit: 'g', amount: 80, unit: 'g', scalePolicy: 'LINEAR', preparation: 'tỉa hoa thái mỏng' },
+      { name: 'Tỏi khô', slug: 'toi-kho', category: 'Gia vị nêm nếm', standardUnit: 'tép', amount: 4, unit: 'tép', scalePolicy: 'LINEAR', preparation: 'băm nhỏ' },
+      { name: 'Dầu hào', slug: 'dau-hao', category: 'Gia vị nêm nếm', standardUnit: 'ml', amount: 1.5, unit: 'muỗng canh', scalePolicy: 'LINEAR' },
+      { name: 'Dầu ăn', slug: 'dau-an', category: 'Gia vị nêm nếm', standardUnit: 'ml', amount: 1, unit: 'muỗng canh', scalePolicy: 'LINEAR' },
+    ],
+    steps: [
+      { stepNumber: 1, phaseName: 'Sơ chế & Chần rau', instruction: 'Ướp thịt bò với tỏi băm và 1/2 muỗng dầu hào. Chần nhanh bông cải xanh và cà rốt qua nước sôi 1 phút rồi vớt ra để ráo.', timerSeconds: 180 },
+      { stepNumber: 2, phaseName: 'Xào thịt bò lửa lớn', instruction: 'Phi thơm tỏi, cho thịt bò vào đảo nhanh tay trên lửa lớn 90 giây vừa chín tái thì trút ra đĩa.', timerSeconds: 90, tipText: 'Không xào thịt bò quá lâu trên chảo để giữ độ mềm ngọt.' },
+      { stepNumber: 3, phaseName: 'Đảo gộp & Hoàn thiện', instruction: 'Cho bông cải và cà rốt vào đảo 2 phút với dầu hào, trút thịt bò trở lại đảo đều 30 giây rồi tắt bếp.' },
+    ],
+  },
+  {
+    dishName: 'Tôm sú rim mặn ngọt',
+    dishSlug: 'tom-su-rim-man-ngot',
+    recipeName: 'Tôm sú rim mặn ngọt bóng bẩy đưa cơm',
+    recipeSlug: 'tom-su-rim-man-ngot',
+    role: 'MAIN',
+    shortDescription: 'Từng con tôm sú đỏ au săn chắc, áo đều lớp sốt mắm đường keo sánh bóng mượt, thơm nức mùi tỏi phi và hành lá.',
+    difficulty: 'Dễ',
+    prepTimeMinutes: 10,
+    cookTimeMinutes: 12,
+    baseServings: 4,
+    heroImage: 'https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?auto=format&fit=crop&w=800&q=80',
+    taxonomySlugs: ['mien-nam', 'mon-kho', 'bua-com-hang-ngay'],
+    ingredients: [
+      { name: 'Tôm sú / Tôm tươi', slug: 'tom-tuoi', category: 'Thủy hải sản', standardUnit: 'g', amount: 400, unit: 'g', scalePolicy: 'LINEAR', preparation: 'cắt râu, rút chỉ lưng' },
+      { name: 'Hành tím', slug: 'hanh-tim', category: 'Gia vị nêm nếm', standardUnit: 'củ', amount: 2, unit: 'củ', scalePolicy: 'LINEAR', preparation: 'băm nhỏ' },
+      { name: 'Tỏi khô', slug: 'toi-kho', category: 'Gia vị nêm nếm', standardUnit: 'tép', amount: 3, unit: 'tép', scalePolicy: 'LINEAR', preparation: 'băm nhỏ' },
+      { name: 'Nước mắm truyền thống', slug: 'nuoc-mam-truyen-thong', category: 'Gia vị nêm nếm', standardUnit: 'ml', amount: 2, unit: 'muỗng canh', scalePolicy: 'LINEAR' },
+      { name: 'Đường cát', slug: 'duong-cat', category: 'Gia vị nêm nếm', standardUnit: 'g', amount: 1, unit: 'muỗng canh', scalePolicy: 'LINEAR' },
+      { name: 'Dầu ăn', slug: 'dau-an', category: 'Gia vị nêm nếm', standardUnit: 'ml', amount: 1, unit: 'muỗng canh', scalePolicy: 'LINEAR' },
+    ],
+    steps: [
+      { stepNumber: 1, phaseName: 'Sơ chế & Ướp tôm', instruction: 'Tôm rửa sạch để ráo, ướp với chút hành tỏi băm và 1/2 muỗng đường trong 10 phút cho thịt tôm trong và giòn.', timerSeconds: 600 },
+      { stepNumber: 2, phaseName: 'Rim tôm', instruction: 'Phi thơm hành tỏi, cho tôm vào đảo lửa vừa đến khi vỏ tôm chuyển màu đỏ gạch săn lại thì nêm nước mắm và đường.', timerSeconds: 360 },
+      { stepNumber: 3, phaseName: 'Hoàn thiện', instruction: 'Đảo đều thêm 3 phút cho sốt mắm đường áo bóng quanh vỏ tôm, rắc hành lá và tiêu xay rồi tắt bếp.' },
+    ],
+  },
+  {
+    dishName: 'Đậu hũ nhồi thịt sốt cà',
+    dishSlug: 'dau-hu-nhoi-thit-sot-ca',
+    recipeName: 'Đậu hũ nhồi thịt sốt cà chua đậm đà',
+    recipeSlug: 'dau-hu-nhoi-thit-sot-ca',
+    role: 'MAIN',
+    shortDescription: 'Đậu hũ vàng mềm nhồi nhân thịt heo băm mộc nhĩ thơm ngọt, om trong nước sốt cà chua sánh đỏ chua dịu dễ ăn.',
+    difficulty: 'Dễ',
+    prepTimeMinutes: 15,
+    cookTimeMinutes: 20,
+    baseServings: 4,
+    heroImage: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80',
+    taxonomySlugs: ['mien-bac', 'mon-kho', 'bua-com-hang-ngay'],
+    ingredients: [
+      { name: 'Đậu phụ', slug: 'dau-phu', category: 'Thực phẩm tươi sống', standardUnit: 'g', amount: 350, unit: 'g', scalePolicy: 'LINEAR', preparation: 'cắt miếng dày, khoét rỗng giữa' },
+      { name: 'Thịt heo nạc băm', slug: 'thit-heo-nac-bam', category: 'Thực phẩm tươi sống', standardUnit: 'g', amount: 200, unit: 'g', scalePolicy: 'LINEAR' },
+      { name: 'Cà chua', slug: 'ca-chua', category: 'Rau củ quả', standardUnit: 'quả', amount: 3, unit: 'quả', scalePolicy: 'LINEAR', preparation: 'băm nhỏ' },
+      { name: 'Hành tím', slug: 'hanh-tim', category: 'Gia vị nêm nếm', standardUnit: 'củ', amount: 2, unit: 'củ', scalePolicy: 'LINEAR', preparation: 'băm nhỏ' },
+      { name: 'Nước mắm truyền thống', slug: 'nuoc-mam-truyen-thong', category: 'Gia vị nêm nếm', standardUnit: 'ml', amount: 1.5, unit: 'muỗng canh', scalePolicy: 'LINEAR' },
+      { name: 'Dầu ăn', slug: 'dau-an', category: 'Gia vị nêm nếm', standardUnit: 'ml', amount: 1.5, unit: 'muỗng canh', scalePolicy: 'LINEAR' },
+    ],
+    steps: [
+      { stepNumber: 1, phaseName: 'Trộn nhân & Nhồi đậu', instruction: 'Trộn thịt băm với phần ruột đậu phụ nghiền nhỏ, hành tím và chút hạt tiêu rồi nhồi gọn vào từng miếng đậu.', timerSeconds: 480 },
+      { stepNumber: 2, phaseName: 'Áp chảo mặt thịt', instruction: 'Đặt mặt có thịt úp xuống chảo dầu nóng áp chảo 3 phút cho se vàng định hình nhân.', timerSeconds: 180 },
+      { stepNumber: 3, phaseName: 'Om sốt cà chua', instruction: 'Xào cà chua băm với nước mắm tạo sốt sánh, xếp đậu nhồi thịt vào om nhỏ lửa 12 phút cho chín thấm vị.', timerSeconds: 720 },
+    ],
+  },
+
+  // ===================== PHASE P3.5: MỞ RỘNG MÓN CANH (SOUP) =====================
+  {
+    dishName: 'Canh bí đao nấu tôm tươi',
+    dishSlug: 'canh-bi-dao-nau-tom',
+    recipeName: 'Canh bí đao nấu tôm tươi thanh nhiệt ít Calo',
+    recipeSlug: 'canh-bi-dao-nau-tom',
+    role: 'SOUP',
+    shortDescription: 'Miếng bí đao trong xanh mềm mát nấu cùng tôm tươi giã dập ngọt nước tự nhiên, cực kỳ thanh đạm cho thực đơn giảm cân.',
+    difficulty: 'Dễ',
+    prepTimeMinutes: 10,
+    cookTimeMinutes: 10,
+    baseServings: 4,
+    heroImage: 'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=800&q=80',
+    taxonomySlugs: ['mon-canh', 'giai-nhiet-mua-he', 'thanh-dam'],
+    ingredients: [
+      { name: 'Bí đao (Bí xanh)', slug: 'bi-dao', category: 'Rau củ quả', standardUnit: 'g', amount: 450, unit: 'g', scalePolicy: 'LINEAR', preparation: 'gọt vỏ, thái miếng dày 1cm' },
+      { name: 'Tôm sú / Tôm tươi', slug: 'tom-tuoi', category: 'Thủy hải sản', standardUnit: 'g', amount: 150, unit: 'g', scalePolicy: 'LINEAR', preparation: 'bóc vỏ, băm thô' },
+      { name: 'Hành lá', slug: 'hanh-la', category: 'Rau củ quả', standardUnit: 'cây', amount: 2, unit: 'cây', scalePolicy: 'FIXED', preparation: 'thái nhỏ' },
+      { name: 'Nước mắm truyền thống', slug: 'nuoc-mam-truyen-thong', category: 'Gia vị nêm nếm', standardUnit: 'ml', amount: 1, unit: 'muỗng canh', scalePolicy: 'MANUAL_ADJUST' },
+    ],
+    steps: [
+      { stepNumber: 1, phaseName: 'Xào tôm', instruction: 'Xào sơ tôm bóc vỏ với đầu hành trắng cho dậy mùi thơm rồi đổ 900ml nước sôi vào nồi.', timerSeconds: 180 },
+      { stepNumber: 2, phaseName: 'Nấu bí đao', instruction: 'Khi nước sôi bùng, thả bí đao vào đun lửa vừa 5-6 phút đến khi miếng bí vừa chuyển màu trong.', timerSeconds: 360, tipText: 'Không đun bí đao quá nhừ để giữ vị ngọt mát và độ giòn nhẹ.' },
+      { stepNumber: 3, phaseName: 'Hoàn thiện', instruction: 'Nêm chút nước mắm, rắc hành lá và tiêu xay rồi tắt bếp.' },
+    ],
+  },
+  {
+    dishName: 'Canh mướp hương nấu tôm khô',
+    dishSlug: 'canh-muop-huong-tom-kho',
+    recipeName: 'Canh mướp hương nấu tôm khô ngọt lịm',
+    recipeSlug: 'canh-muop-huong-tom-kho',
+    role: 'SOUP',
+    shortDescription: 'Hương thơm dịu dàng đặc trưng của mướp hương quyện cùng vị ngọt đậm của tôm khô ngâm mềm, nấu nhanh trong 10 phút.',
+    difficulty: 'Dễ',
+    prepTimeMinutes: 8,
+    cookTimeMinutes: 8,
+    baseServings: 4,
+    heroImage: 'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=800&q=80',
+    taxonomySlugs: ['mon-canh', 'bua-com-hang-ngay', 'thanh-dam'],
+    ingredients: [
+      { name: 'Mướp hương', slug: 'muop-huong', category: 'Rau củ quả', standardUnit: 'g', amount: 500, unit: 'g', scalePolicy: 'LINEAR', preparation: 'gọt vỏ, thái vát' },
+      { name: 'Tôm khô', slug: 'tom-kho', category: 'Thủy hải sản', standardUnit: 'g', amount: 40, unit: 'g', scalePolicy: 'LINEAR', preparation: 'ngâm nước ấm 10 phút cho mềm' },
+      { name: 'Hành tím', slug: 'hanh-tim', category: 'Gia vị nêm nếm', standardUnit: 'củ', amount: 1, unit: 'củ', scalePolicy: 'LINEAR' },
+      { name: 'Hành lá', slug: 'hanh-la', category: 'Rau củ quả', standardUnit: 'cây', amount: 2, unit: 'cây', scalePolicy: 'FIXED' },
+    ],
+    steps: [
+      { stepNumber: 1, phaseName: 'Ninh tôm khô', instruction: 'Cho tôm khô cùng cả phần nước ngâm tôm vào 800ml nước đun sôi nhỏ lửa 5 phút cho tiết vị ngọt.', timerSeconds: 300 },
+      { stepNumber: 2, phaseName: 'Thả mướp hương', instruction: 'Thả mướp hương thái vát vào đun sôi bùng 2-3 phút cho mướp vừa chín mềm xanh.', timerSeconds: 180 },
+      { stepNumber: 3, phaseName: 'Hoàn thiện', instruction: 'Nêm gia vị vừa miệng, rắc hành hoa rồi múc ra tô.' },
+    ],
+  },
+  {
+    dishName: 'Canh cải ngọt nấu thịt băm',
+    dishSlug: 'canh-cai-ngot-thit-bam',
+    recipeName: 'Canh cải ngọt nấu thịt băm gừng tươi ấm bụng',
+    recipeSlug: 'canh-cai-ngot-thit-bam',
+    role: 'SOUP',
+    shortDescription: 'Cải ngọt xanh non nấu cùng thịt nạc băm và vài lát gừng tươi thơm ấm, dễ tiêu hóa và giàu chất xơ cho cả nhà.',
+    difficulty: 'Dễ',
+    prepTimeMinutes: 8,
+    cookTimeMinutes: 8,
+    baseServings: 4,
+    heroImage: 'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=800&q=80',
+    taxonomySlugs: ['mon-canh', 'bua-com-hang-ngay', 'thanh-dam'],
+    ingredients: [
+      { name: 'Cải ngọt / Cải thìa', slug: 'cai-ngot', category: 'Rau củ quả', standardUnit: 'g', amount: 400, unit: 'g', scalePolicy: 'LINEAR', preparation: 'cắt khúc 4cm' },
+      { name: 'Thịt heo nạc băm', slug: 'thit-heo-nac-bam', category: 'Thực phẩm tươi sống', standardUnit: 'g', amount: 120, unit: 'g', scalePolicy: 'LINEAR' },
+      { name: 'Gừng tươi', slug: 'gung-tuoi', category: 'Gia vị nêm nếm', standardUnit: 'g', amount: 1, unit: 'nhánh', scalePolicy: 'FIXED', preparation: 'đập dập' },
+      { name: 'Nước mắm truyền thống', slug: 'nuoc-mam-truyen-thong', category: 'Gia vị nêm nếm', standardUnit: 'ml', amount: 1, unit: 'muỗng canh', scalePolicy: 'MANUAL_ADJUST' },
+    ],
+    steps: [
+      { stepNumber: 1, phaseName: 'Nấu nước thịt', instruction: 'Đun sôi 850ml nước với gừng đập dập, thả từng viên thịt băm vào đun sôi và hớt bọt.', timerSeconds: 240 },
+      { stepNumber: 2, phaseName: 'Thả rau cải', instruction: 'Cho phần cọng cải vào trước 1 phút rồi cho phần lá vào đun sôi lại 1 phút.', timerSeconds: 120 },
+      { stepNumber: 3, phaseName: 'Hoàn thiện', instruction: 'Nêm chút nước mắm cho dậy mùi thơm rồi tắt bếp ngay để rau giữ màu xanh.' },
+    ],
+  },
+
+  // ===================== PHASE P3.5: MỞ RỘNG RAU / XÀO & MÓN PHỤ (SIDE) =====================
+  {
+    dishName: 'Bông cải xanh luộc Eat Clean',
+    dishSlug: 'bong-cai-xanh-luoc-eat-clean',
+    recipeName: 'Bông cải xanh & cà rốt luộc giòn ngọt (Chuẩn Eat Clean)',
+    recipeSlug: 'bong-cai-xanh-luoc-eat-clean',
+    role: 'SIDE',
+    shortDescription: 'Đĩa rau củ luộc xanh mướt giòn ngọt không dùng dầu mỡ, giữ trọn vitamin và chất xơ cho thực đơn giảm cân hoặc người lớn tuổi.',
+    difficulty: 'Dễ',
+    prepTimeMinutes: 8,
+    cookTimeMinutes: 4,
+    baseServings: 4,
+    heroImage: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=800&q=80',
+    taxonomySlugs: ['thanh-dam', 'bua-com-hang-ngay'],
+    ingredients: [
+      { name: 'Bông cải xanh (Súp lơ xanh)', slug: 'bong-cai-xanh', category: 'Rau củ quả', standardUnit: 'g', amount: 400, unit: 'g', scalePolicy: 'LINEAR', preparation: 'tách nhánh nhỏ vừa ăn' },
+      { name: 'Cà rốt', slug: 'ca-rot', category: 'Rau củ quả', standardUnit: 'g', amount: 120, unit: 'g', scalePolicy: 'LINEAR', preparation: 'thái lát dày 0.5cm' },
+      { name: 'Muối tinh', slug: 'muoi-an', category: 'Gia vị nêm nếm', standardUnit: 'g', amount: 0.5, unit: 'muỗng cà phê', scalePolicy: 'FIXED' },
+    ],
+    steps: [
+      { stepNumber: 1, phaseName: 'Sơ chế ngâm rửa', instruction: 'Ngâm bông cải xanh trong nước muối loãng 5 phút rồi rửa sạch, cắt miếng vừa ăn.', timerSeconds: 300 },
+      { stepNumber: 2, phaseName: 'Luộc rau củ', instruction: 'Đun sôi nồi nước với chút muối, thả cà rốt vào trước 1 phút rồi cho bông cải xanh vào luộc sôi 2 phút.', timerSeconds: 180, tipText: 'Vớt ra ngâm qua nước mát giúp bông cải giòn sần sật và xanh biếc.' },
+      { stepNumber: 3, phaseName: 'Trình bày', instruction: 'Xếp bông cải và cà rốt ra đĩa, chấm cùng nước tương tỏi ớt hoặc kho quẹt.' },
+    ],
+  },
+  {
+    dishName: 'Cải thìa xào nấm đông cô',
+    dishSlug: 'cai-thia-xao-nam-dong-co',
+    recipeName: 'Cải thìa xào nấm đông cô sốt dầu hào',
+    recipeSlug: 'cai-thia-xao-nam-dong-co',
+    role: 'SIDE',
+    shortDescription: 'Bẹ cải thìa xanh ngọc giòn ngọt quyện cùng mũ nấm đông cô mềm thơm trong lớp sốt dầu hào bóng mượt như ngoài nhà hàng.',
+    difficulty: 'Dễ',
+    prepTimeMinutes: 10,
+    cookTimeMinutes: 7,
+    baseServings: 4,
+    heroImage: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=800&q=80',
+    taxonomySlugs: ['mon-xao', 'thanh-dam', 'cuoi-tuan-sum-hop'],
+    ingredients: [
+      { name: 'Cải ngọt / Cải thìa', slug: 'cai-ngot', category: 'Rau củ quả', standardUnit: 'g', amount: 400, unit: 'g', scalePolicy: 'LINEAR', preparation: 'chẻ đôi dọc cây' },
+      { name: 'Nấm hương / Nấm đùi gà', slug: 'nam-dong-co', category: 'Rau củ quả', standardUnit: 'g', amount: 150, unit: 'g', scalePolicy: 'LINEAR' },
+      { name: 'Tỏi khô', slug: 'toi-kho', category: 'Gia vị nêm nếm', standardUnit: 'tép', amount: 4, unit: 'tép', scalePolicy: 'LINEAR', preparation: 'băm nhỏ' },
+      { name: 'Dầu hào', slug: 'dau-hao', category: 'Gia vị nêm nếm', standardUnit: 'ml', amount: 2, unit: 'muỗng canh', scalePolicy: 'LINEAR' },
+      { name: 'Dầu ăn', slug: 'dau-an', category: 'Gia vị nêm nếm', standardUnit: 'ml', amount: 1, unit: 'muỗng canh', scalePolicy: 'LINEAR' },
+    ],
+    steps: [
+      { stepNumber: 1, phaseName: 'Chần cải thìa', instruction: 'Chần cải thìa trong nước sôi 1 phút rồi vớt ra xếp gọn lên đĩa.', timerSeconds: 60 },
+      { stepNumber: 2, phaseName: 'Xào nấm sốt dầu hào', instruction: 'Phi thơm tỏi với dầu ăn, cho nấm vào xào cùng 2 muỗng dầu hào và 30ml nước lọc trong 4 phút.', timerSeconds: 240 },
+      { stepNumber: 3, phaseName: 'Hoàn thiện', instruction: 'Trút phần nấm và nước sốt dầu hào sánh thơm lên đĩa cải thìa xanh mướt.' },
+    ],
+  },
+  {
+    dishName: 'Nộm dưa leo cà rốt chua ngọt',
+    dishSlug: 'nom-dua-leo-ca-rot',
+    recipeName: 'Gỏi dưa leo cà rốt trộn chua ngọt chống ngấy',
+    recipeSlug: 'nom-dua-leo-ca-rot',
+    role: 'SIDE',
+    shortDescription: 'Đĩa gỏi dưa leo cà rốt giòn tan, chua ngọt thanh mát giúp giải ngấy cực tốt khi ăn kèm các món kho, chiên hoặc nướng.',
+    difficulty: 'Dễ',
+    prepTimeMinutes: 12,
+    cookTimeMinutes: 0,
+    baseServings: 4,
+    heroImage: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=800&q=80',
+    taxonomySlugs: ['thanh-dam', 'giai-nhiet-mua-he'],
+    ingredients: [
+      { name: 'Dưa leo (Dưa chuột)', slug: 'dua-leo', category: 'Rau củ quả', standardUnit: 'g', amount: 400, unit: 'g', scalePolicy: 'LINEAR', preparation: 'bỏ ruột, thái vát mỏng' },
+      { name: 'Cà rốt', slug: 'ca-rot', category: 'Rau củ quả', standardUnit: 'g', amount: 100, unit: 'g', scalePolicy: 'LINEAR', preparation: 'bào sợi' },
+      { name: 'Tỏi khô', slug: 'toi-kho', category: 'Gia vị nêm nếm', standardUnit: 'tép', amount: 3, unit: 'tép', scalePolicy: 'LINEAR', preparation: 'băm nhỏ' },
+      { name: 'Chanh tươi (Nước cốt chanh)', slug: 'chanh-tuoi', category: 'Gia vị nêm nếm', standardUnit: 'quả', amount: 1, unit: 'quả', scalePolicy: 'LINEAR' },
+      { name: 'Đường cát', slug: 'duong-cat', category: 'Gia vị nêm nếm', standardUnit: 'g', amount: 1.5, unit: 'muỗng canh', scalePolicy: 'LINEAR' },
+      { name: 'Nước mắm truyền thống', slug: 'nuoc-mam-truyen-thong', category: 'Gia vị nêm nếm', standardUnit: 'ml', amount: 1.5, unit: 'muỗng canh', scalePolicy: 'LINEAR' },
+    ],
+    steps: [
+      { stepNumber: 1, phaseName: 'Sơ chế giòn rau', instruction: 'Dưa leo bỏ ruột thái mỏng, ướp với chút đường 5 phút rồi chắt bỏ nước tiết ra để dưa thật giòn.', timerSeconds: 300 },
+      { stepNumber: 2, phaseName: 'Pha nước trộn gỏi', instruction: 'Khuấy tan 1.5 muỗng đường, 1.5 muỗng nước mắm, nước cốt 1 quả chanh cùng tỏi ớt băm.' },
+      { stepNumber: 3, phaseName: 'Trộn gỏi', instruction: 'Rưới nước sốt vào dưa leo và cà rốt ngay trước khi ăn 5 phút, trộn đều và bày ra đĩa.' },
+    ],
+  },
+
+  // ===================== PHASE P3.5: NƯỚC CHẤM & SỐT GIA TRUYỀN (DIPPING_SAUCE) =====================
+  {
+    dishName: 'Nước mắm tỏi ớt chua ngọt',
+    dishSlug: 'nuoc-mam-toi-ot-chua-ngot',
+    recipeName: 'Nước mắm tỏi ớt chua ngọt (Tỷ lệ vàng nổi tỏi ớt)',
+    recipeSlug: 'nuoc-mam-toi-ot-chua-ngot',
+    role: 'DIPPING_SAUCE',
+    shortDescription: 'Bí quyết pha chén nước mắm chua ngọt hài hòa theo tỷ lệ muỗng bếp nhà, tỏi ớt băm nổi đều trên mặt đẹp mắt, chấm cá chiên, chả giò hay thịt luộc đều ngon.',
+    difficulty: 'Dễ',
+    prepTimeMinutes: 5,
+    cookTimeMinutes: 0,
+    baseServings: 4,
+    heroImage: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80',
+    taxonomySlugs: ['bua-com-hang-ngay'],
+    ingredients: [
+      { name: 'Nước mắm truyền thống', slug: 'nuoc-mam-truyen-thong', category: 'Gia vị nêm nếm', standardUnit: 'ml', amount: 2, unit: 'muỗng canh', scalePolicy: 'LINEAR' },
+      { name: 'Đường cát', slug: 'duong-cat', category: 'Gia vị nêm nếm', standardUnit: 'g', amount: 1.5, unit: 'muỗng canh', scalePolicy: 'LINEAR' },
+      { name: 'Chanh tươi (Nước cốt chanh)', slug: 'chanh-tuoi', category: 'Gia vị nêm nếm', standardUnit: 'quả', amount: 1, unit: 'quả', scalePolicy: 'LINEAR', preparation: 'vắt lấy 1 muỗng canh cốt' },
+      { name: 'Tỏi khô', slug: 'toi-kho', category: 'Gia vị nêm nếm', standardUnit: 'tép', amount: 3, unit: 'tép', scalePolicy: 'LINEAR', preparation: 'băm thật nhuyễn' },
+      { name: 'Ớt tươi', slug: 'ot-tuoi', category: 'Gia vị nêm nếm', standardUnit: 'quả', amount: 1, unit: 'quả', scalePolicy: 'MANUAL_ADJUST', preparation: 'băm nhuyễn' },
+    ],
+    steps: [
+      { stepNumber: 1, phaseName: 'Hòa tan đường mắm', instruction: 'Hòa tan 1.5 muỗng đường với 4 muỗng canh nước ấm, sau đó thêm 2 muỗng canh nước mắm và 1 muỗng cốt chanh vào khuấy đều.', timerSeconds: 60 },
+      { stepNumber: 2, phaseName: 'Thả tỏi ớt nổi đều', instruction: 'Cho tỏi và ớt băm nhuyễn vào sau cùng để tỏi ớt nổi hoàn toàn trên mặt chén nước chấm.', tipText: 'Luôn cho tỏi ớt vào sau khi đã pha nước mắm-đường-chanh để tỏi ớt không bị chìm.' },
+    ],
+  },
+  {
+    dishName: 'Kho quẹt tóp mỡ tôm khô',
+    dishSlug: 'kho-quet-top-mo-tom-kho',
+    recipeName: 'Kho quẹt tóp mỡ tôm khô chấm rau củ luộc',
+    recipeSlug: 'kho-quet-top-mo-tom-kho',
+    role: 'DIPPING_SAUCE',
+    shortDescription: 'Niêu kho quẹt Nam Bộ sệt kẹo màu cánh gián, dậy mùi thơm của tôm khô, tóp mỡ giòn rụm và hạt tiêu xanh, biến đĩa rau luộc thành mỹ vị.',
+    difficulty: 'Dễ',
+    prepTimeMinutes: 5,
+    cookTimeMinutes: 10,
+    baseServings: 4,
+    heroImage: 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=80',
+    taxonomySlugs: ['mien-nam', 'mon-kho', 'bua-com-hang-ngay'],
+    ingredients: [
+      { name: 'Tôm khô', slug: 'tom-kho', category: 'Thủy hải sản', standardUnit: 'g', amount: 30, unit: 'g', scalePolicy: 'LINEAR', preparation: 'ngâm mềm' },
+      { name: 'Thịt ba chỉ heo', slug: 'thit-ba-chi-heo', category: 'Thực phẩm tươi sống', standardUnit: 'g', amount: 80, unit: 'g', scalePolicy: 'LINEAR', preparation: 'thái hạt lựu thắng tóp mỡ' },
+      { name: 'Nước mắm truyền thống', slug: 'nuoc-mam-truyen-thong', category: 'Gia vị nêm nếm', standardUnit: 'ml', amount: 3, unit: 'muỗng canh', scalePolicy: 'LINEAR' },
+      { name: 'Đường cát', slug: 'duong-cat', category: 'Gia vị nêm nếm', standardUnit: 'g', amount: 2, unit: 'muỗng canh', scalePolicy: 'LINEAR' },
+      { name: 'Hành tím', slug: 'hanh-tim', category: 'Gia vị nêm nếm', standardUnit: 'củ', amount: 2, unit: 'củ', scalePolicy: 'LINEAR', preparation: 'băm nhỏ' },
+      { name: 'Hạt tiêu đen', slug: 'hat-tieu-den', category: 'Gia vị nêm nếm', standardUnit: 'g', amount: 1, unit: 'muỗng cà phê', scalePolicy: 'MANUAL_ADJUST' },
+    ],
+    steps: [
+      { stepNumber: 1, phaseName: 'Thắng tóp mỡ & xào tôm', instruction: 'Đảo thịt ba chỉ thái hạt lựu trên lửa vừa đến khi tóp mỡ vàng giòn, phi thơm hành tím rồi cho tôm khô vào xào săn.', timerSeconds: 240 },
+      { stepNumber: 2, phaseName: 'Rim sốt kho quẹt', instruction: 'Pha 3 muỗng nước mắm, 2 muỗng đường và 2 muỗng nước lọc đổ vào nồi, đun liu riu 6 phút cho sốt sánh kẹo lại rồi rắc tiêu.', timerSeconds: 360 },
+    ],
+  },
+  {
+    dishName: 'Muối ớt xanh lá chanh',
+    dishSlug: 'muoi-ot-xanh-chanh-day',
+    recipeName: 'Muối ớt xanh lá chanh chấm gà luộc & hải sản',
+    recipeSlug: 'muoi-ot-xanh-chanh-day',
+    role: 'DIPPING_SAUCE',
+    shortDescription: 'Chén sốt chấm màu xanh ngọc bích sánh mịn, thơm lừng lá chanh và ớt xiêm xanh, chấm ức gà hấp Eat Clean hay hải sản đều tuyệt hảo.',
+    difficulty: 'Dễ',
+    prepTimeMinutes: 5,
+    cookTimeMinutes: 0,
+    baseServings: 4,
+    heroImage: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=800&q=80',
+    taxonomySlugs: ['thanh-dam', 'bua-com-hang-ngay'],
+    ingredients: [
+      { name: 'Ớt tươi', slug: 'ot-tuoi', category: 'Gia vị nêm nếm', standardUnit: 'quả', amount: 5, unit: 'quả', scalePolicy: 'MANUAL_ADJUST', preparation: 'ớt xiêm xanh bỏ hạt' },
+      { name: 'Chanh tươi (Nước cốt chanh)', slug: 'chanh-tuoi', category: 'Gia vị nêm nếm', standardUnit: 'quả', amount: 2, unit: 'quả', scalePolicy: 'LINEAR' },
+      { name: 'Đường cát', slug: 'duong-cat', category: 'Gia vị nêm nếm', standardUnit: 'g', amount: 2, unit: 'muỗng canh', scalePolicy: 'LINEAR' },
+      { name: 'Muối tinh', slug: 'muoi-an', category: 'Gia vị nêm nếm', standardUnit: 'g', amount: 1, unit: 'muỗng cà phê', scalePolicy: 'LINEAR' },
+    ],
+    steps: [
+      { stepNumber: 1, phaseName: 'Xay nhuyễn sốt', instruction: 'Cho ớt xanh, muối, đường và nước cốt chanh vào cối xay thật nhuyễn mịn trong 1 phút đến khi hỗn hợp sánh đặc.', timerSeconds: 60 },
+    ],
+  },
 ];
 
 export async function seedProductionCatalog() {
-  console.log('=== BẮT ĐẦU SEED PRODUCTION CATALOG BATCH 1 (GATE P3) ===\n');
+  console.log('=== BẮT ĐẦU SEED PRODUCTION CATALOG BATCH 1 & P3.5 (GATE P3 & P6) ===\n');
+
+  // Đảm bảo enum meal_role có sẵn DIPPING_SAUCE trước khi seed
+  await db.execute(sql`ALTER TYPE "public"."meal_role" ADD VALUE IF NOT EXISTS 'DIPPING_SAUCE'`);
 
   // Lấy hoặc tạo user tác giả mặc định
   let author = await db.query.users.findFirst({
@@ -496,6 +892,28 @@ export async function seedProductionCatalog() {
   }
 
   console.log(`\n✓ ĐÃ SEED THÀNH CÔNG ${totalRecipes} CÔNG THỨC PUBLISHED VÀO DATABASE!`);
+
+  // 7. Nạp dữ liệu dinh dưỡng chuẩn Viện Dinh Dưỡng (VIETNAM_FCT_2007) và tính toán tự động cho toàn bộ công thức PUBLISHED
+  console.log('\n=== ĐỒNG BỘ TỪ ĐIỂN DINH DƯỠNG & TÍNH CALO TỰ ĐỘNG (GATE P6) ===');
+  const seededNutCount = await seedNutritionStandards();
+  console.log(`-> Đã đồng bộ ${seededNutCount} bản ghi nguyên liệu chuẩn Viện Dinh Dưỡng Quốc Gia.`);
+
+  const allPublished = await db
+    .select({ id: recipes.id, name: recipes.name })
+    .from(recipes)
+    .where(eq(recipes.status, 'PUBLISHED'));
+
+  let calcCount = 0;
+  for (const r of allPublished) {
+    try {
+      const snap = await calculateRecipeNutrition(r.id);
+      console.log(`   + [${r.name}] => ~${snap.perServing.calories} kcal/phần (Bao phủ: ${snap.coveragePercent}%)`);
+      calcCount++;
+    } catch (err) {
+      console.warn(`   ! Không thể tính dinh dưỡng cho recipe #${r.id}:`, err);
+    }
+  }
+  console.log(`✓ Đã tính toán và lưu Snapshot dinh dưỡng cho ${calcCount}/${allPublished.length} công thức!`);
 }
 
 if (process.argv[1]?.endsWith('seed_production_catalog.ts')) {

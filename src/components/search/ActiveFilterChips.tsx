@@ -17,6 +17,7 @@ export function ActiveFilterChips({ taxonomies = [] }: ActiveFilterChipsProps) {
   const q = searchParams.get('q');
   const role = searchParams.get('role');
   const maxTime = searchParams.get('maxTime');
+  const maxCalories = searchParams.get('maxCalories');
   const difficulty = searchParams.get('difficulty');
   const tested = searchParams.get('tested') === 'true';
   const nutrition = searchParams.get('nutrition') === 'true';
@@ -24,7 +25,7 @@ export function ActiveFilterChips({ taxonomies = [] }: ActiveFilterChipsProps) {
 
   // Kiểm tra xem có filter nào đang áp dụng không
   const hasActiveFilters = Boolean(
-    q || role || maxTime || difficulty || tested || nutrition || taxSlug
+    q || role || maxTime || maxCalories || difficulty || tested || nutrition || taxSlug
   );
 
   if (!hasActiveFilters) return null;
@@ -92,6 +93,21 @@ export function ActiveFilterChips({ taxonomies = [] }: ActiveFilterChipsProps) {
             disabled={isPending}
             className="p-0.5 hover:text-[var(--color-brand-primary)]"
             aria-label="Xóa thời gian"
+          >
+            <X className="w-3 h-3" />
+          </button>
+        </span>
+      )}
+
+      {maxCalories && (
+        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs bg-[var(--color-accent-light)] text-[var(--color-accent-text)] border border-[var(--color-accent-primary)]/20 font-medium">
+          <span>≤ {maxCalories} kcal/phần</span>
+          <button
+            type="button"
+            onClick={() => removeParam('maxCalories')}
+            disabled={isPending}
+            className="p-0.5 hover:opacity-75"
+            aria-label="Xóa mức Calo"
           >
             <X className="w-3 h-3" />
           </button>

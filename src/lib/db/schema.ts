@@ -33,6 +33,7 @@ export const mealRoleEnum = pgEnum('meal_role', [
   'MAIN',
   'SOUP',
   'SIDE',
+  'DIPPING_SAUCE',
   'ONE_DISH_MEAL',
   'DESSERT',
   'BEVERAGE'

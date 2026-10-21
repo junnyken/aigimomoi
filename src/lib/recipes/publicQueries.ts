@@ -7,6 +7,7 @@ import { recipes, recipeIngredients, cookingSteps, users, creatorProfiles } from
 import { isIllustrationImage } from './labels';
 import { recipeSourceFromProvenance, type RecipeSource } from './source';
 import type { RecipeNutritionSnapshot } from '@/lib/nutrition/types';
+import { FALLBACK_PUBLIC_RECIPES, toPublicRecipeCard } from './fallbackCatalog';
 
 const SLUG_PATTERN = /^[a-z0-9]+(?:-+[a-z0-9]+)*$/;
 const SLUG_MAX_LENGTH = 200;
@@ -118,6 +119,8 @@ export interface PublicRecipeCard {
   baseServings: number;
   totalTimeMinutes: number;
   difficulty: string;
+  caloriesPerServing?: number | null;
+  nutritionStatus?: 'NO_DATA' | 'INCOMPLETE' | 'ESTIMATED';
   heroImage: string | null;
   isIllustration: boolean;
   isCookTested: boolean;
@@ -138,6 +141,8 @@ export const publicCardColumns = {
   prepTimeMinutes: recipes.prepTimeMinutes,
   cookTimeMinutes: recipes.cookTimeMinutes,
   difficulty: recipes.difficulty,
+  caloriesPerServing: recipes.caloriesPerServing,
+  nutritionStatus: recipes.nutritionStatus,
   heroImage: recipes.heroImage,
   isCookTested: recipes.isCookTested,
   provenance: recipes.provenance,
@@ -157,6 +162,8 @@ export interface PublicCardRow {
   prepTimeMinutes: number;
   cookTimeMinutes: number;
   difficulty: string;
+  caloriesPerServing?: number | null;
+  nutritionStatus?: 'NO_DATA' | 'INCOMPLETE' | 'ESTIMATED' | null;
   heroImage: string | null;
   isCookTested: boolean;
   provenance: string;
@@ -186,6 +193,8 @@ export function mapPublicCardRow(r: PublicCardRow): PublicRecipeCard {
     baseServings: r.baseServings,
     totalTimeMinutes: (r.prepTimeMinutes ?? 0) + (r.cookTimeMinutes ?? 0),
     difficulty: r.difficulty,
+    caloriesPerServing: r.caloriesPerServing ?? null,
+    nutritionStatus: r.nutritionStatus ?? 'NO_DATA',
     heroImage: safeImageSrc(r.heroImage),
     isIllustration: isIllustrationImage(r.heroImage),
     // Bất biến R7: món cộng đồng không bao giờ hiển thị "Đã nấu thử" của Bếp Mom
@@ -202,143 +211,149 @@ export function mapPublicCardRow(r: PublicCardRow): PublicRecipeCard {
 export async function queryPublishedRecipeBySlug(slug: string): Promise<PublicRecipe | null> {
   if (!isValidPublicSlug(slug)) return null;
 
-  const row = await db.query.recipes.findFirst({
-    where: and(eq(recipes.slug, slug), eq(recipes.status, 'PUBLISHED')),
-    columns: {
-      id: true,
-      slug: true,
-      name: true,
-      shortDescription: true,
-      role: true,
-      baseServings: true,
-      prepTimeMinutes: true,
-      cookTimeMinutes: true,
-      difficulty: true,
-      caloriesPerServing: true,
-      nutritionStatus: true,
-      nutritionSnapshot: true,
-      heroImage: true,
-      isEditorialReviewed: true,
-      isCookTested: true,
-      isNutritionVerified: true,
-      versionNumber: true,
-      publishedAt: true,
-      region: true,
-      kitchenStory: true,
-      sourceAttribution: true,
-      variantOfId: true,
-      provenance: true,
-      price: true,
-      isFree: true,
-      authorId: true,
-    },
-    with: {
-      dish: { columns: { name: true }, with: { aliases: { columns: { aliasName: true } } } },
-      author: {
-        columns: { displayName: true },
-        with: { creatorProfile: { columns: { slug: true, isPublic: true } } },
+  try {
+    const row = await db.query.recipes.findFirst({
+      where: and(eq(recipes.slug, slug), eq(recipes.status, 'PUBLISHED')),
+      columns: {
+        id: true,
+        slug: true,
+        name: true,
+        shortDescription: true,
+        role: true,
+        baseServings: true,
+        prepTimeMinutes: true,
+        cookTimeMinutes: true,
+        difficulty: true,
+        caloriesPerServing: true,
+        nutritionStatus: true,
+        nutritionSnapshot: true,
+        heroImage: true,
+        isEditorialReviewed: true,
+        isCookTested: true,
+        isNutritionVerified: true,
+        versionNumber: true,
+        publishedAt: true,
+        region: true,
+        kitchenStory: true,
+        sourceAttribution: true,
+        variantOfId: true,
+        provenance: true,
+        price: true,
+        isFree: true,
+        authorId: true,
       },
-      ingredients: {
-        orderBy: [asc(recipeIngredients.sortOrder), asc(recipeIngredients.id)],
-        columns: { id: true, amount: true, unit: true, scalePolicy: true, preparation: true, isOptional: true },
-        with: { ingredient: { columns: { name: true, category: true } } },
-      },
-      steps: {
-        orderBy: [asc(cookingSteps.stepNumber), asc(cookingSteps.id)],
-        columns: {
-          id: true,
-          stepNumber: true,
-          phaseName: true,
-          instruction: true,
-          timerSeconds: true,
-          tipText: true,
-          image: true,
+      with: {
+        dish: { columns: { name: true }, with: { aliases: { columns: { aliasName: true } } } },
+        author: {
+          columns: { displayName: true },
+          with: { creatorProfile: { columns: { slug: true, isPublic: true } } },
         },
+        ingredients: {
+          orderBy: [asc(recipeIngredients.sortOrder), asc(recipeIngredients.id)],
+          columns: { id: true, amount: true, unit: true, scalePolicy: true, preparation: true, isOptional: true },
+          with: { ingredient: { columns: { name: true, category: true } } },
+        },
+        steps: {
+          orderBy: [asc(cookingSteps.stepNumber), asc(cookingSteps.id)],
+          columns: {
+            id: true,
+            stepNumber: true,
+            phaseName: true,
+            instruction: true,
+            timerSeconds: true,
+            tipText: true,
+            image: true,
+          },
+        },
+        tags: { with: { taxonomy: { columns: { name: true, slug: true, type: true } } } },
       },
-      tags: { with: { taxonomy: { columns: { name: true, slug: true, type: true } } } },
-    },
-  });
+    });
 
-  if (!row) return null;
+    if (!row) {
+      return FALLBACK_PUBLIC_RECIPES.find((r) => r.slug === slug) ?? null;
+    }
 
-  // Lấy các biến thể liên quan (Invariants §5.1: chỉ trả PUBLISHED)
-  const rootId = row.variantOfId || row.id;
-  const rawVariants = await db.query.recipes.findMany({
-    where: (r, { and, or, eq, ne }) =>
-      and(
-        eq(r.status, 'PUBLISHED'),
-        ne(r.id, row.id),
-        or(eq(r.id, rootId), eq(r.variantOfId, rootId))
-      ),
-    columns: {
-      id: true,
-      name: true,
-      slug: true,
-      region: true,
-      shortDescription: true,
-      heroImage: true,
-    },
-    limit: 6,
-  });
+    // Lấy các biến thể liên quan (Invariants §5.1: chỉ trả PUBLISHED)
+    const rootId = row.variantOfId || row.id;
+    const rawVariants = await db.query.recipes.findMany({
+      where: (r, { and, or, eq, ne }) =>
+        and(
+          eq(r.status, 'PUBLISHED'),
+          ne(r.id, row.id),
+          or(eq(r.id, rootId), eq(r.variantOfId, rootId))
+        ),
+      columns: {
+        id: true,
+        name: true,
+        slug: true,
+        region: true,
+        shortDescription: true,
+        heroImage: true,
+      },
+      limit: 6,
+    });
 
-  const variants: PublicRecipeVariant[] = rawVariants.map((v) => ({
-    id: v.id,
-    name: v.name,
-    slug: v.slug,
-    region: v.region,
-    shortDescription: v.shortDescription,
-    heroImage: safeImageSrc(v.heroImage),
-  }));
+    const variants: PublicRecipeVariant[] = rawVariants.map((v) => ({
+      id: v.id,
+      name: v.name,
+      slug: v.slug,
+      region: v.region,
+      shortDescription: v.shortDescription,
+      heroImage: safeImageSrc(v.heroImage),
+    }));
 
-  const source = recipeSourceFromProvenance(row.provenance);
-  const creatorProfile = row.author?.creatorProfile;
+    const source = recipeSourceFromProvenance(row.provenance);
+    const creatorProfile = row.author?.creatorProfile;
 
-  return {
-    id: row.id,
-    slug: row.slug,
-    name: row.name,
-    shortDescription: row.shortDescription,
-    role: row.role,
-    region: row.region || 'GENERAL',
-    kitchenStory: row.kitchenStory,
-    sourceAttribution: row.sourceAttribution,
-    variantOfId: row.variantOfId,
-    variants,
-    baseServings: row.baseServings,
-    prepTimeMinutes: row.prepTimeMinutes,
-    cookTimeMinutes: row.cookTimeMinutes,
-    difficulty: row.difficulty,
-    caloriesPerServing: row.caloriesPerServing,
-    nutritionStatus: row.nutritionStatus,
-    nutritionSnapshot: (row.nutritionSnapshot ?? null) as RecipeNutritionSnapshot | null,
-    heroImage: safeImageSrc(row.heroImage),
-    isIllustration: isIllustrationImage(row.heroImage),
-    isEditorialReviewed: row.isEditorialReviewed,
-    isCookTested: source === 'EDITORIAL' ? row.isCookTested : false,
-    isNutritionVerified: row.isNutritionVerified,
-    versionNumber: row.versionNumber,
-    publishedAt: row.publishedAt ? row.publishedAt.toISOString() : null,
-    dish: row.dish ? { name: row.dish.name, aliases: row.dish.aliases.map((a) => a.aliasName) } : null,
-    authorName: row.author?.displayName ?? null,
-    source,
-    creatorSlug: source === 'COMMUNITY' && creatorProfile?.isPublic ? creatorProfile.slug : null,
-    price: row.price ?? 0,
-    isFree: row.isFree ?? true,
-    authorId: row.authorId,
-    provenance: row.provenance,
-    ingredients: row.ingredients.map((ri) => ({
-      id: ri.id,
-      name: ri.ingredient.name,
-      category: ri.ingredient.category,
-      amount: ri.amount,
-      unit: ri.unit,
-      scalePolicy: ri.scalePolicy,
-      preparation: ri.preparation,
-      isOptional: ri.isOptional,
-    })),
-    steps: row.steps.map((s) => ({ ...s, image: safeImageSrc(s.image) })),
-    tags: row.tags.map((t) => t.taxonomy),
-  };
+    return {
+      id: row.id,
+      slug: row.slug,
+      name: row.name,
+      shortDescription: row.shortDescription,
+      role: row.role,
+      region: row.region || 'GENERAL',
+      kitchenStory: row.kitchenStory,
+      sourceAttribution: row.sourceAttribution,
+      variantOfId: row.variantOfId,
+      variants,
+      baseServings: row.baseServings,
+      prepTimeMinutes: row.prepTimeMinutes,
+      cookTimeMinutes: row.cookTimeMinutes,
+      difficulty: row.difficulty,
+      caloriesPerServing: row.caloriesPerServing,
+      nutritionStatus: row.nutritionStatus,
+      nutritionSnapshot: (row.nutritionSnapshot ?? null) as RecipeNutritionSnapshot | null,
+      heroImage: safeImageSrc(row.heroImage),
+      isIllustration: isIllustrationImage(row.heroImage),
+      isEditorialReviewed: row.isEditorialReviewed,
+      isCookTested: source === 'EDITORIAL' ? row.isCookTested : false,
+      isNutritionVerified: row.isNutritionVerified,
+      versionNumber: row.versionNumber,
+      publishedAt: row.publishedAt ? row.publishedAt.toISOString() : null,
+      dish: row.dish ? { name: row.dish.name, aliases: row.dish.aliases.map((a) => a.aliasName) } : null,
+      authorName: row.author?.displayName ?? null,
+      source,
+      creatorSlug: source === 'COMMUNITY' && creatorProfile?.isPublic ? creatorProfile.slug : null,
+      price: row.price ?? 0,
+      isFree: row.isFree ?? true,
+      authorId: row.authorId,
+      provenance: row.provenance,
+      ingredients: row.ingredients.map((ri) => ({
+        id: ri.id,
+        name: ri.ingredient.name,
+        category: ri.ingredient.category,
+        amount: ri.amount,
+        unit: ri.unit,
+        scalePolicy: ri.scalePolicy,
+        preparation: ri.preparation,
+        isOptional: ri.isOptional,
+      })),
+      steps: row.steps.map((s) => ({ ...s, image: safeImageSrc(s.image) })),
+      tags: row.tags.map((t) => t.taxonomy),
+    };
+  } catch {
+    return FALLBACK_PUBLIC_RECIPES.find((r) => r.slug === slug) ?? null;
+  }
 }
 
 /**
@@ -384,37 +399,62 @@ export type PublicSlugResolution =
 export async function queryPublicSlugResolution(slug: string): Promise<PublicSlugResolution> {
   if (!isValidPublicSlug(slug)) return { kind: 'missing' };
 
-  const [row] = await db
-    .select({ status: recipes.status })
-    .from(recipes)
-    .where(eq(recipes.slug, slug))
-    .limit(1);
+  try {
+    const [row] = await db
+      .select({ status: recipes.status })
+      .from(recipes)
+      .where(eq(recipes.slug, slug))
+      .limit(1);
 
-  if (row?.status === 'PUBLISHED') return { kind: 'published' };
-  if (row?.status === 'ARCHIVED') {
-    const current = await queryCurrentSlugForArchived(slug);
-    if (current) return { kind: 'redirect', slug: current };
+    if (row?.status === 'PUBLISHED') return { kind: 'published' };
+    if (row?.status === 'ARCHIVED') {
+      const current = await queryCurrentSlugForArchived(slug);
+      if (current) return { kind: 'redirect', slug: current };
+    }
+    if (FALLBACK_PUBLIC_RECIPES.some((r) => r.slug === slug)) {
+      return { kind: 'published' };
+    }
+    return { kind: 'missing' };
+  } catch {
+    if (FALLBACK_PUBLIC_RECIPES.some((r) => r.slug === slug)) {
+      return { kind: 'published' };
+    }
+    return { kind: 'missing' };
   }
-  return { kind: 'missing' };
 }
 
 export async function queryPublishedRecipeCards(limit = 12): Promise<PublicRecipeCard[]> {
   const safeLimit = Math.min(Math.max(Math.trunc(limit) || 12, 1), 48);
-  const rows = await selectPublicCards()
-    .where(eq(recipes.status, 'PUBLISHED'))
-    .orderBy(desc(recipes.publishedAt), desc(recipes.id))
-    .limit(safeLimit);
+  try {
+    const rows = await selectPublicCards()
+      .where(eq(recipes.status, 'PUBLISHED'))
+      .orderBy(desc(recipes.publishedAt), desc(recipes.id))
+      .limit(safeLimit);
 
-  return rows.map(mapPublicCardRow);
+    if (rows.length > 0) {
+      return rows.map(mapPublicCardRow);
+    }
+    return FALLBACK_PUBLIC_RECIPES.slice(0, safeLimit).map(toPublicRecipeCard);
+  } catch {
+    return FALLBACK_PUBLIC_RECIPES.slice(0, safeLimit).map(toPublicRecipeCard);
+  }
 }
 
 export async function queryPublishedRecipeCardsBySlugs(slugs: string[]): Promise<PublicRecipeCard[]> {
   const validSlugs = slugs.filter(isValidPublicSlug).slice(0, 100);
   if (validSlugs.length === 0) return [];
 
-  const rows = await selectPublicCards()
-    .where(and(inArray(recipes.slug, validSlugs), eq(recipes.status, 'PUBLISHED')));
+  try {
+    const rows = await selectPublicCards()
+      .where(and(inArray(recipes.slug, validSlugs), eq(recipes.status, 'PUBLISHED')));
 
-  return rows.map(mapPublicCardRow);
+    if (rows.length > 0) {
+      return rows.map(mapPublicCardRow);
+    }
+  } catch {
+    // Fallback below
+  }
+
+  return FALLBACK_PUBLIC_RECIPES.filter((r) => validSlugs.includes(r.slug)).map(toPublicRecipeCard);
 }
 

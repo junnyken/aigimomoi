@@ -56,11 +56,20 @@ export function buildRecipeJsonLd(recipe: PublicRecipe, siteUrl: string) {
 }
 
 export function RecipeJsonLd({ recipe }: { recipe: PublicRecipe }) {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://angimom.vn';
+  const baseUrl =
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    process.env.NEXT_PUBLIC_APP_URL ||
+    process.env.APP_URL ||
+    'https://angimom.vn';
   const schema = buildRecipeJsonLd(recipe, baseUrl);
 
   // Serialize an toàn chống XSS breakout
-  const safeJson = JSON.stringify(schema).replace(/</g, '\\u003c');
+  const safeJson = JSON.stringify(schema)
+    .replace(/</g, '\\u003c')
+    .replace(/>/g, '\\u003e')
+    .replace(/&/g, '\\u0026')
+    .replace(/\u2028/g, '\\u2028')
+    .replace(/\u2029/g, '\\u2029');
 
   return (
     <script

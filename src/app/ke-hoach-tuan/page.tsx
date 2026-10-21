@@ -11,12 +11,10 @@ import {
   Check, 
   Trash2, 
   ShoppingBag, 
-  BookOpen, 
   Utensils, 
-  Sparkles, 
   CheckCircle2, 
-  Clock,
-  ExternalLink
+  ExternalLink,
+  LogIn
 } from 'lucide-react';
 
 interface MealPlan {
@@ -54,6 +52,7 @@ function WeeklyPlannerContent() {
   const [weekStart, setWeekStart] = useState<string>('');
   const [plans, setPlans] = useState<MealPlan[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isUnauthorized, setIsUnauthorized] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedDayDate, setSelectedDayDate] = useState<string>('');
   const [selectedMealType, setSelectedMealType] = useState<'BREAKFAST' | 'LUNCH' | 'DINNER' | 'SNACK'>('LUNCH');
@@ -73,13 +72,16 @@ function WeeklyPlannerContent() {
   const [excludePantry, setExcludePantry] = useState(true);
   const [aggregating, setAggregating] = useState(false);
 
+  const toLocalDateStr = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
   // Khởi tạo Thứ 2 tuần hiện tại
   useEffect(() => {
     const now = new Date();
     const day = now.getDay();
     const diff = now.getDate() - day + (day === 0 ? -6 : 1);
     const monday = new Date(now.setDate(diff));
-    setWeekStart(monday.toISOString().split('T')[0]);
+    setWeekStart(toLocalDateStr(monday));
   }, []);
 
   // Tải danh sách công thức để chọn
@@ -89,7 +91,7 @@ function WeeklyPlannerContent() {
         const res = await fetch('/api/recipes?limit=50');
         if (res.ok) {
           const data = await res.json();
-          setAvailableRecipes(data || []);
+          setAvailableRecipes(Array.isArray(data) ? data : (data.recipes || []));
         }
       } catch (e) {
         console.error('Failed to load recipes', e);
@@ -103,7 +105,12 @@ function WeeklyPlannerContent() {
     try {
       setLoading(true);
       const res = await fetch(`/api/meal-plans?weekStart=${start}`);
+      if (res.status === 401) {
+        setIsUnauthorized(true);
+        return;
+      }
       if (res.ok) {
+        setIsUnauthorized(false);
         const data = await res.json();
         setPlans(data.plans || []);
       }
@@ -195,8 +202,9 @@ function WeeklyPlannerContent() {
     }
   };
 
-  const handleAggregateShopping = async () => {
+  const handleAggregateShopping = async (overrideExcludePantry?: boolean) => {
     if (!weekStart) return;
+    const shouldExcludePantry = overrideExcludePantry ?? excludePantry;
     setAggregating(true);
     try {
       const res = await fetch('/api/meal-plans/to-shopping', {
@@ -204,7 +212,7 @@ function WeeklyPlannerContent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           weekStart,
-          excludePantry,
+          excludePantry: shouldExcludePantry,
         }),
       });
 
@@ -223,9 +231,9 @@ function WeeklyPlannerContent() {
   // Tạo mảng 7 ngày từ weekStart
   const daysInWeek = Array.from({ length: 7 }, (_, i) => {
     if (!weekStart) return { dateStr: '', dayName: DAY_NAMES[i], displayDate: '' };
-    const d = new Date(weekStart);
+    const d = new Date(`${weekStart}T00:00:00`);
     d.setDate(d.getDate() + i);
-    const dateStr = d.toISOString().split('T')[0];
+    const dateStr = toLocalDateStr(d);
     const displayDate = `${d.getDate()}/${d.getMonth() + 1}`;
     return {
       dateStr,
@@ -234,6 +242,49 @@ function WeeklyPlannerContent() {
       dayNumber: i + 1,
     };
   });
+
+  if (!loading && isUnauthorized) {
+    return (
+      <div className="max-w-3xl mx-auto px-4 py-12">
+        <div className="bg-[var(--color-surface-white)] rounded-3xl border border-[var(--color-border-base)] p-8 sm:p-10 text-center shadow-xs space-y-5">
+          <div className="w-16 h-16 rounded-2xl bg-[var(--color-brand-light)] text-[var(--color-brand-primary)] border border-[var(--color-brand-border)]/70 flex items-center justify-center mx-auto">
+            <Calendar className="w-8 h-8" />
+          </div>
+          <div className="space-y-2 max-w-lg mx-auto">
+            <h1 className="text-2xl sm:text-3xl font-bold text-[var(--color-brand-primary)]">
+              Kế Hoạch Bữa Cơm Tuần
+            </h1>
+            <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed">
+              Lên thực đơn 7 ngày cho cả gia đình, gộp nguyên liệu đi chợ cả tuần có trừ sẵn đồ trong tủ lạnh và đánh dấu hoàn thành để lưu vào Nhật ký dinh dưỡng.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+            <Link
+              href="/login?from=/ke-hoach-tuan"
+              className="min-h-11 inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-hover)] text-white font-semibold text-sm transition-colors shadow-xs"
+            >
+              <LogIn className="w-4 h-4" />
+              <span>Đăng nhập để lên lịch tuần</span>
+            </Link>
+            <Link
+              href="/register?from=/ke-hoach-tuan"
+              className="min-h-11 inline-flex items-center gap-2 px-5 py-3 rounded-2xl bg-[var(--color-surface-raised)] hover:bg-[var(--color-surface-subtle)] text-[var(--color-text-primary)] border border-[var(--color-border-base)] font-semibold text-sm transition-colors"
+            >
+              <span>Tạo tài khoản mới</span>
+            </Link>
+            <Link
+              href="/meal"
+              className="min-h-11 inline-flex items-center gap-2 px-5 py-3 rounded-2xl text-[var(--color-accent-text)] bg-[var(--color-accent-light)] hover:opacity-95 font-semibold text-sm transition-colors"
+            >
+              <Utensils className="w-4 h-4" />
+              <span>Ghép mâm cơm hôm nay</span>
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
@@ -260,7 +311,7 @@ function WeeklyPlannerContent() {
             <span>🧊 Tủ lạnh gia đình</span>
           </Link>
           <button
-            onClick={handleAggregateShopping}
+            onClick={() => handleAggregateShopping()}
             disabled={aggregating || plans.length === 0}
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 font-bold text-sm transition-all shadow-xs disabled:opacity-50"
           >
@@ -302,6 +353,49 @@ function WeeklyPlannerContent() {
           <ChevronRight className="w-4 h-4" />
         </button>
       </div>
+
+      {/* Thống kê nhanh Tiến độ & Năng lượng Tuần */}
+      {plans.length > 0 && (
+        <div className="mb-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="p-4 rounded-2xl bg-[var(--color-surface-white)] border border-[var(--color-border-base)] flex items-center justify-between">
+            <div>
+              <span className="text-xs text-[var(--color-text-muted)] font-medium">Tổng số món trong tuần</span>
+              <p className="text-xl font-bold text-[var(--color-text-primary)] mt-0.5">{plans.length} món</p>
+            </div>
+            <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-[var(--color-brand-light)] text-[var(--color-brand-primary)]">
+              7 ngày
+            </span>
+          </div>
+          <div className="p-4 rounded-2xl bg-[var(--color-surface-white)] border border-[var(--color-border-base)] flex items-center justify-between">
+            <div>
+              <span className="text-xs text-[var(--color-text-muted)] font-medium">Đã nấu &amp; Ghi nhật ký</span>
+              <p className="text-xl font-bold text-emerald-700 mt-0.5">
+                {plans.filter((p) => p.isCompleted).length} / {plans.length} món
+              </p>
+            </div>
+            <Link
+              href="/nhat-ky"
+              className="text-xs font-semibold text-[var(--color-brand-primary)] hover:underline"
+            >
+              Mở nhật ký &rarr;
+            </Link>
+          </div>
+          <div className="p-4 rounded-2xl bg-[var(--color-surface-white)] border border-[var(--color-border-base)] flex items-center justify-between">
+            <div>
+              <span className="text-xs text-[var(--color-text-muted)] font-medium">Tổng năng lượng ước tính</span>
+              <p className="text-xl font-bold text-[var(--color-accent-primary)] mt-0.5">
+                ~{plans.reduce((sum, p) => sum + (p.recipe?.caloriesPerServing ?? 0), 0)} kcal/người
+              </p>
+            </div>
+            <Link
+              href="/meal"
+              className="text-xs font-semibold text-[var(--color-brand-primary)] hover:underline"
+            >
+              Ghép mâm &rarr;
+            </Link>
+          </div>
+        </div>
+      )}
 
       {/* Bảng 7 ngày */}
       {loading ? (
@@ -545,8 +639,9 @@ function WeeklyPlannerContent() {
                     type="checkbox"
                     checked={excludePantry}
                     onChange={(e) => {
-                      setExcludePantry(e.target.checked);
-                      handleAggregateShopping();
+                      const nextVal = e.target.checked;
+                      setExcludePantry(nextVal);
+                      handleAggregateShopping(nextVal);
                     }}
                     className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500"
                   />

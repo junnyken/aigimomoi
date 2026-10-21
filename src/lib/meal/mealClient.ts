@@ -10,6 +10,7 @@ export interface StoredMealState {
   mainSlug: string;
   soupSlug: string;
   sideSlug: string;
+  sauceSlug?: string;
   servings: number;
 }
 
@@ -28,6 +29,7 @@ export function getStoredMeal(): StoredMealState | null {
         mainSlug: parsed.mainSlug,
         soupSlug: parsed.soupSlug,
         sideSlug: parsed.sideSlug,
+        sauceSlug: typeof parsed.sauceSlug === 'string' ? parsed.sauceSlug : undefined,
         servings: clampServings(parsed.servings, 4),
       };
     }
@@ -61,13 +63,14 @@ export function useMealState(initial: StoredMealState) {
     return initial;
   });
 
-  const swapDish = useCallback((role: 'MAIN' | 'SOUP' | 'SIDE', newSlug: string) => {
+  const swapDish = useCallback((role: 'MAIN' | 'SOUP' | 'SIDE' | 'DIPPING_SAUCE', newSlug: string) => {
     setMeal((prev) => {
       const next: StoredMealState = {
         ...prev,
         mainSlug: role === 'MAIN' ? newSlug : prev.mainSlug,
         soupSlug: role === 'SOUP' ? newSlug : prev.soupSlug,
         sideSlug: role === 'SIDE' ? newSlug : prev.sideSlug,
+        sauceSlug: role === 'DIPPING_SAUCE' ? newSlug : prev.sauceSlug,
       };
       saveStoredMeal(next);
       return next;

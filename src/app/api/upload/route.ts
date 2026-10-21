@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionUser } from '@/lib/auth/session';
 import { saveUploadedFile, deleteUploadedFile } from '@/lib/storage';
+import { isCrossSiteRequest } from '@/lib/http/sameOrigin';
 
 // POST /api/upload
 export async function POST(request: NextRequest) {
   try {
+    if (isCrossSiteRequest(request)) {
+      return NextResponse.json({ error: 'Yêu cầu bị từ chối do khác nguồn gốc (CSRF).' }, { status: 403 });
+    }
     const user = await getSessionUser();
     if (!user || (user.role !== 'ADMIN' && user.role !== 'EDITOR')) {
       return NextResponse.json(
@@ -48,6 +52,9 @@ export async function POST(request: NextRequest) {
 // DELETE /api/upload
 export async function DELETE(request: NextRequest) {
   try {
+    if (isCrossSiteRequest(request)) {
+      return NextResponse.json({ error: 'Yêu cầu bị từ chối do khác nguồn gốc (CSRF).' }, { status: 403 });
+    }
     const user = await getSessionUser();
     if (!user || (user.role !== 'ADMIN' && user.role !== 'EDITOR')) {
       return NextResponse.json(

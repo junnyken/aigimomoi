@@ -10,6 +10,9 @@ import {
 import { getSessionUser } from '@/lib/auth/session';
 import { isSameOrigin } from '@/lib/http/sameOrigin';
 import { findOpenRevisionId } from '@/lib/recipes/publishing';
+import { calculateRecipeNutrition } from '@/lib/nutrition/calculator';
+import { canAccessRecipe, filterRecipeForViewer } from '@/lib/gating/entitlements';
+import { getUserRecipeEntitlements } from '@/lib/gating/queries';
 import { eq, asc } from 'drizzle-orm';
 
 // AG-15: PUT chỉ được chuyển sang các trạng thái này. PUBLISHED / NEEDS_CHANGES chỉ đi qua
@@ -73,9 +76,22 @@ export async function GET(
     }
 
     if (!staff) {
-      // Không lộ metadata kiểm duyệt nội bộ ra ngoài
+      // Không lộ metadata kiểm duyệt nội bộ và bảo vệ nội dung có phí (D66)
+      const entitlements = user ? await getUserRecipeEntitlements(user.id) : new Set<number>();
+      const hasAccess = canAccessRecipe(
+        {
+          recipeId: recipe.id,
+          provenance: recipe.provenance,
+          isFree: recipe.isFree ?? true,
+          price: recipe.price ?? 0,
+          authorId: recipe.authorId,
+        },
+        user?.id ?? null,
+        entitlements
+      );
       const { reviewNotes: _n, reviewedById: _r, ...publicRecipe } = recipe;
-      return NextResponse.json({ recipe: publicRecipe });
+      const filteredRecipe = filterRecipeForViewer(publicRecipe, hasAccess);
+      return NextResponse.json({ recipe: filteredRecipe });
     }
 
     const openRevisionId =
@@ -244,6 +260,14 @@ export async function PUT(
 
       return uRec;
     });
+
+    if (Array.isArray(rawIngredients) && rawIngredients.length > 0) {
+      try {
+        await calculateRecipeNutrition(updated.id);
+      } catch (nutErr) {
+        console.warn('Auto nutrition update skipped:', nutErr);
+      }
+    }
 
     return NextResponse.json({ recipe: updated });
   } catch (error) {

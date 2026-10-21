@@ -84,7 +84,7 @@ function EditRecipeContent() {
   const [name, setName] = useState('');
   const [dishName, setDishName] = useState('');
   const [shortDescription, setShortDescription] = useState('');
-  const [role, setRole] = useState<'MAIN' | 'SOUP' | 'SIDE' | 'ONE_DISH_MEAL'>('MAIN');
+  const [role, setRole] = useState<'MAIN' | 'SOUP' | 'SIDE' | 'DIPPING_SAUCE' | 'ONE_DISH_MEAL' | 'DESSERT' | 'BEVERAGE'>('MAIN');
   const [status, setStatus] = useState<string>('DRAFT');
   const [baseServings, setBaseServings] = useState<number>(4);
   const [prepTimeMinutes, setPrepTimeMinutes] = useState<number>(15);
@@ -110,6 +110,24 @@ function EditRecipeContent() {
   const [openRevisionId, setOpenRevisionId] = useState<number | null>(null);
   const [creatingRevision, setCreatingRevision] = useState(false);
   const [provenance, setProvenance] = useState<string>('MANUAL');
+  const [calculatingNut, setCalculatingNut] = useState(false);
+
+  const handleRecalculateNutrition = async () => {
+    try {
+      setCalculatingNut(true);
+      const res = await fetch(`/api/recipes/${recipeId}/nutrition`, { method: 'POST' });
+      const data = await res.json();
+      if (res.ok && data.nutrition?.perServing) {
+        setCaloriesPerServing(data.nutrition.perServing.calories);
+      } else {
+        setErrorMsg(data.error || 'Không thể tính toán dinh dưỡng');
+      }
+    } catch {
+      setErrorMsg('Lỗi kết nối khi tính dinh dưỡng');
+    } finally {
+      setCalculatingNut(false);
+    }
+  };
 
   useEffect(() => {
     async function init() {
@@ -435,6 +453,42 @@ function EditRecipeContent() {
       </header>
 
       <main className="max-w-5xl mx-auto px-4 pt-6 space-y-6">
+        {/* Pipeline trạng thái công thức (4 chặng) */}
+        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#EADBC8] shadow-xs">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-bold uppercase tracking-wider text-[#7C6A59]">
+              Pipeline Vòng đời Công thức (Phiên bản v{versionNumber})
+            </span>
+            <span className="text-xs font-bold text-[#3F6240]">
+              Trạng thái: {status}
+            </span>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {[
+              { key: 'DRAFT', label: '1. Soạn bản thảo', active: status === 'DRAFT', done: ['SUBMITTED', 'NEEDS_CHANGES', 'PUBLISHED', 'ARCHIVED'].includes(status) },
+              { key: 'SUBMITTED', label: '2. Nộp chờ duyệt', active: status === 'SUBMITTED', done: ['PUBLISHED', 'ARCHIVED'].includes(status) },
+              { key: 'NEEDS_CHANGES', label: status === 'NEEDS_CHANGES' ? '3. Cần chỉnh sửa' : '3. Kiểm nghiệm Gate', active: status === 'NEEDS_CHANGES', done: ['PUBLISHED', 'ARCHIVED'].includes(status) },
+              { key: 'PUBLISHED', label: status === 'ARCHIVED' ? '4. Đã lưu trữ (v cũ)' : '4. Xuất bản công khai', active: status === 'PUBLISHED', done: status === 'PUBLISHED' || status === 'ARCHIVED' },
+            ].map((st) => (
+              <div
+                key={st.key}
+                className={`p-2.5 rounded-xl border text-xs font-semibold flex items-center gap-2 ${
+                  st.key === 'NEEDS_CHANGES' && st.active
+                    ? 'bg-orange-50 border-orange-300 text-orange-800'
+                    : st.active
+                    ? 'bg-[#3F6240] text-white border-[#3F6240]'
+                    : st.done
+                    ? 'bg-[#EAF0EA] border-[#BCD0BE] text-[#3F6240]'
+                    : 'bg-[#FAF7F0] border-[#EADBC8] text-[#9C8B7A]'
+                }`}
+              >
+                <Check className={`w-3.5 h-3.5 shrink-0 ${st.done || st.active ? 'opacity-100' : 'opacity-30'}`} />
+                <span className="truncate">{st.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* Invariant Banner if Published */}
         {status === 'PUBLISHED' && (
           <div className="bg-amber-50 border border-amber-200 text-amber-900 p-4 rounded-2xl flex flex-col sm:flex-row sm:items-center gap-3 text-sm">
@@ -556,7 +610,10 @@ function EditRecipeContent() {
                 <option value="MAIN">Món chính (Mặn)</option>
                 <option value="SOUP">Món canh</option>
                 <option value="SIDE">Món phụ / Rau xào</option>
+                <option value="DIPPING_SAUCE">Nước chấm / Sốt</option>
                 <option value="ONE_DISH_MEAL">Món một đĩa</option>
+                <option value="DESSERT">Tráng miệng</option>
+                <option value="BEVERAGE">Đồ uống</option>
               </select>
             </div>
 
@@ -592,6 +649,42 @@ function EditRecipeContent() {
                 className="w-full px-3 py-2 bg-[#FAF7F0] border border-[#EADBC8] rounded-xl text-xs disabled:opacity-70"
               />
             </div>
+          </div>
+
+          {/* Khu vực Calo / Khẩu phần & Đồng bộ Viện Dinh Dưỡng (FCT) */}
+          <div className="p-3.5 rounded-xl bg-[#FAF7F0] border border-[#EADBC8] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div>
+                <label className="block text-xs font-bold text-[#3F6240] mb-1">
+                  Năng lượng 1 khẩu phần (kcal)
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    disabled={isReadOnly}
+                    placeholder="Tự động tính..."
+                    value={caloriesPerServing}
+                    onChange={(e) =>
+                      setCaloriesPerServing(e.target.value === '' ? '' : Number(e.target.value))
+                    }
+                    className="w-32 px-3 py-1.5 bg-white border border-[#EADBC8] rounded-lg text-xs font-bold text-[#2D2A26] disabled:opacity-70"
+                  />
+                  <span className="text-[11px] text-[#7C6A59]">
+                    kcal / người (Đã trừ hao hụt phần thải bỏ theo Viện Dinh Dưỡng)
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleRecalculateNutrition}
+              disabled={calculatingNut}
+              className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 text-xs font-bold transition-colors cursor-pointer disabled:opacity-50 shrink-0"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+              {calculatingNut ? 'Đang tính toán...' : '⚡ Tính chuẩn Viện Dinh Dưỡng (FCT)'}
+            </button>
           </div>
 
           <div>
@@ -735,6 +828,31 @@ function EditRecipeContent() {
                 Thêm bước
               </button>
             )}
+          </div>
+
+          {/* Tóm tắt Pipeline Giai đoạn nấu */}
+          <div className="flex flex-wrap items-center gap-2 p-3 rounded-xl bg-[#FAF7F0] border border-[#EADBC8]">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-[#7C6A59] mr-1">
+              Pipeline giai đoạn:
+            </span>
+            {PHASES.map((phaseName, pIdx) => {
+              const count = stepRows.filter((s) => s.phaseName === phaseName).length;
+              return (
+                <span
+                  key={phaseName}
+                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold border ${
+                    count > 0
+                      ? 'bg-white border-[#BCD0BE] text-[#3F6240]'
+                      : 'bg-stone-100/70 border-stone-200 text-stone-400'
+                  }`}
+                >
+                  <span>{pIdx + 1}. {phaseName}</span>
+                  <span className="px-1.5 py-0.2 rounded-full bg-[#EAF0EA] text-[10px] font-bold">
+                    {count} bước
+                  </span>
+                </span>
+              );
+            })}
           </div>
 
           <div className="space-y-4">

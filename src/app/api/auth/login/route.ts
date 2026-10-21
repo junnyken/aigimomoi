@@ -4,12 +4,21 @@ import { users } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { verifyPassword } from '@/lib/auth/password';
 import { setSessionCookie, signToken, SESSION_COOKIE_NAME, SESSION_DURATION_MS, AuthConfigurationError, getAuthSecret } from '@/lib/auth/session';
+import { checkRateLimit, getClientIp } from '@/lib/auth/rateLimit';
 import { logger } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
     // Kiểm tra cấu hình xác thực trước khi xử lý (fail-closed)
     getAuthSecret();
+
+    const rate = checkRateLimit('auth-login', getClientIp(request), 20, 60_000);
+    if (!rate.allowed) {
+      return NextResponse.json(
+        { error: 'Quá nhiều lần thử đăng nhập. Vui lòng thử lại sau ít phút.' },
+        { status: 429, headers: { 'Retry-After': String(rate.retryAfterSeconds) } }
+      );
+    }
 
     const body = await request.json();
     const { email, password } = body;

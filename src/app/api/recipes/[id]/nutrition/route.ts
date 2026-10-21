@@ -6,6 +6,8 @@ import { db } from '@/lib/db';
 import { recipes } from '@/lib/db/schema';
 import { getSessionUser } from '@/lib/auth/session';
 import { calculateRecipeNutrition } from '@/lib/nutrition/calculator';
+import { canAccessRecipe } from '@/lib/gating/entitlements';
+import { getUserRecipeEntitlements } from '@/lib/gating/queries';
 import { eq } from 'drizzle-orm';
 import { logger } from '@/lib/logger';
 
@@ -26,6 +28,11 @@ export async function GET(request: NextRequest, context: RouteContext) {
       .select({
         id: recipes.id,
         name: recipes.name,
+        status: recipes.status,
+        provenance: recipes.provenance,
+        price: recipes.price,
+        isFree: recipes.isFree,
+        authorId: recipes.authorId,
         caloriesPerServing: recipes.caloriesPerServing,
         nutritionStatus: recipes.nutritionStatus,
         isNutritionVerified: recipes.isNutritionVerified,
@@ -35,13 +42,39 @@ export async function GET(request: NextRequest, context: RouteContext) {
       .where(eq(recipes.id, recipeId))
       .limit(1);
 
-    if (!recipe) {
+    const user = await getSessionUser();
+    const isStaff = user?.role === 'ADMIN' || user?.role === 'EDITOR';
+
+    if (!recipe || (!isStaff && recipe.status !== 'PUBLISHED' && recipe.authorId !== user?.id)) {
       return NextResponse.json({ error: 'Không tìm thấy công thức.' }, { status: 404 });
+    }
+
+    let safeNutrition = recipe.nutritionSnapshot;
+    if (!isStaff && safeNutrition) {
+      const entitlements = user ? await getUserRecipeEntitlements(user.id) : new Set<number>();
+      const hasAccess = canAccessRecipe(
+        {
+          recipeId: recipe.id,
+          provenance: recipe.provenance,
+          isFree: recipe.isFree ?? true,
+          price: recipe.price ?? 0,
+          authorId: recipe.authorId,
+        },
+        user?.id ?? null,
+        entitlements
+      );
+      if (!hasAccess) {
+        safeNutrition = {
+          ...safeNutrition,
+          ingredientsDetail: [],
+          missingIngredients: [],
+        };
+      }
     }
 
     return NextResponse.json({
       success: true,
-      nutrition: recipe.nutritionSnapshot,
+      nutrition: safeNutrition,
       summary: {
         caloriesPerServing: recipe.caloriesPerServing,
         nutritionStatus: recipe.nutritionStatus,
@@ -69,6 +102,24 @@ export async function POST(request: NextRequest, context: RouteContext) {
 
     if (!Number.isInteger(recipeId) || recipeId <= 0) {
       return NextResponse.json({ error: 'ID công thức không hợp lệ.' }, { status: 400 });
+    }
+
+    const [recipe] = await db
+      .select({ id: recipes.id, authorId: recipes.authorId })
+      .from(recipes)
+      .where(eq(recipes.id, recipeId))
+      .limit(1);
+
+    if (!recipe) {
+      return NextResponse.json({ error: 'Không tìm thấy công thức.' }, { status: 404 });
+    }
+
+    const isStaff = user.role === 'ADMIN' || user.role === 'EDITOR';
+    if (!isStaff && recipe.authorId !== user.id) {
+      return NextResponse.json(
+        { error: 'Chỉ Ban biên tập, Quản trị viên hoặc tác giả mới được tính toán lại dinh dưỡng.' },
+        { status: 403 }
+      );
     }
 
     // Tính toán snapshot dinh dưỡng

@@ -19,7 +19,7 @@ function MobileBottomNavInner() {
 
   return (
     <nav 
-      className="fixed bottom-0 left-0 right-0 z-40 md:hidden bg-white/95 backdrop-blur-md border-t border-stone-200 px-2 py-1.5 flex items-center justify-around shadow-lg safe-area-bottom"
+      className="fixed bottom-0 left-0 right-0 z-40 md:hidden bg-[var(--color-surface-white)]/95 backdrop-blur-md border-t border-[var(--color-border-base)] px-2 py-1.5 flex items-center justify-around shadow-lg safe-area-bottom"
       aria-label="Điều hướng di động"
     >
       {NAV_ITEMS.map((item) => {
@@ -30,10 +30,11 @@ function MobileBottomNavInner() {
           <Link
             key={item.href}
             href={item.href}
-            className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition-all ${
+            aria-current={isActive ? 'page' : undefined}
+            className={`min-h-11 min-w-11 flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition-all ${
               isActive
-                ? 'text-[var(--color-brand-primary)] font-bold'
-                : 'text-stone-500 hover:text-stone-900 font-medium'
+                ? 'text-[var(--color-brand-primary)] bg-[var(--color-brand-light)]/70 font-bold'
+                : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] font-medium'
             }`}
           >
             <Icon className={`w-5 h-5 mb-0.5 ${isActive ? 'stroke-[2.5]' : 'stroke-[1.8]'}`} />

@@ -69,7 +69,20 @@ const MEAL_CONFIG = {
   SNACK: { label: 'Bữa phụ / Tráng miệng', icon: Coffee, color: 'text-emerald-500 bg-emerald-50 border-emerald-200' },
 };
 
-const RDA_CALORIES = 2000; // Khuyến nghị năng lượng trung bình người Việt Nam
+const DAILY_CALORIE_TARGETS = [
+  { label: 'Giảm cân (1.400 kcal)', value: 1400 },
+  { label: 'Giữ dáng (1.800 kcal)', value: 1800 },
+  { label: 'Chuẩn Việt (2.000 kcal)', value: 2000 },
+  { label: 'Tăng cơ / Mẹ bầu (2.300 kcal)', value: 2300 },
+];
+
+const QUICK_DIARY_PRESETS = [
+  'Cơm trắng (1 chén 100g)',
+  'Cơm gạo lứt (1 chén 100g)',
+  'Nước mắm tỏi ớt chua ngọt',
+  'Kho quẹt chấm rau luộc',
+  'Trái cây tráng miệng theo mùa',
+];
 
 export default function MealDiaryPage() {
   return (
@@ -105,6 +118,7 @@ function MealDiaryContent() {
   });
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState(false);
+  const [targetCalories, setTargetCalories] = useState(2000);
 
   // Modal Add Entry
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -198,7 +212,7 @@ function MealDiaryContent() {
     }
   }
 
-  const caloriePercent = Math.min(100, Math.round((summary.totalCalories / RDA_CALORIES) * 100));
+  const caloriePercent = Math.min(100, Math.round((summary.totalCalories / targetCalories) * 100));
 
   return (
     <div className="min-h-screen bg-[var(--color-surface-subtle)] pb-20">
@@ -269,12 +283,20 @@ function MealDiaryContent() {
             <p className="text-xs text-[var(--color-text-secondary)] mt-1 max-w-md mx-auto">
               Nhật ký bữa ăn gia đình là dữ liệu riêng tư. Vui lòng đăng nhập để lưu trữ và theo dõi dinh dưỡng.
             </p>
-            <Link
-              href="/login"
-              className="inline-block mt-4 px-5 py-2 rounded-xl text-xs font-semibold bg-[var(--color-brand-primary)] text-white shadow-sm"
-            >
-              Đăng nhập ngay
-            </Link>
+            <div className="flex flex-wrap items-center justify-center gap-3 mt-5">
+              <Link
+                href="/login?from=/nhat-ky"
+                className="min-h-11 inline-flex items-center px-5 py-2.5 rounded-xl text-xs font-semibold bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-hover)] text-white shadow-xs transition-colors"
+              >
+                Đăng nhập để mở nhật ký
+              </Link>
+              <Link
+                href="/register?from=/nhat-ky"
+                className="min-h-11 inline-flex items-center px-4 py-2.5 rounded-xl text-xs font-semibold bg-[var(--color-surface-raised)] hover:bg-[var(--color-surface-subtle)] text-[var(--color-text-primary)] border border-[var(--color-border-base)] transition-colors"
+              >
+                Tạo tài khoản mới
+              </Link>
+            </div>
           </div>
         ) : loading ? (
           <div className="py-20 flex flex-col items-center justify-center text-[var(--color-text-secondary)]">
@@ -295,8 +317,24 @@ function MealDiaryContent() {
                       {summary.totalCalories}
                     </span>
                     <span className="text-xs font-semibold text-[var(--color-text-muted)]">
-                      / {RDA_CALORIES} kcal nhu cầu chuẩn
+                      / {targetCalories} kcal mục tiêu ngày
                     </span>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                    {DAILY_CALORIE_TARGETS.map((t) => (
+                      <button
+                        key={t.value}
+                        type="button"
+                        onClick={() => setTargetCalories(t.value)}
+                        className={`px-2 py-0.5 rounded-full text-[11px] font-semibold border transition-colors ${
+                          targetCalories === t.value
+                            ? 'bg-[var(--color-brand-primary)] text-white border-[var(--color-brand-primary)]'
+                            : 'bg-[var(--color-surface-raised)] text-[var(--color-text-secondary)] border-[var(--color-border-base)] hover:border-[var(--color-brand-border)]'
+                        }`}
+                      >
+                        {t.label}
+                      </button>
+                    ))}
                   </div>
                 </div>
 
@@ -490,6 +528,18 @@ function MealDiaryContent() {
                   onChange={(e) => setRecipeName(e.target.value)}
                   className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--color-border-base)] bg-[var(--color-surface-white)] text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-primary)]"
                 />
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {QUICK_DIARY_PRESETS.map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      onClick={() => setRecipeName(preset)}
+                      className="px-2 py-1 rounded-lg text-[11px] font-medium bg-[var(--color-surface-raised)] hover:bg-[var(--color-brand-light)] text-[var(--color-text-secondary)] hover:text-[var(--color-brand-primary)] border border-[var(--color-border-subtle)] transition-colors"
+                    >
+                      + {preset}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
