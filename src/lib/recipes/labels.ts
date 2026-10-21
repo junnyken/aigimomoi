@@ -4,7 +4,7 @@ export const ROLE_LABELS: Record<string, string> = {
   MAIN: 'Món mặn',
   SOUP: 'Món canh',
   SIDE: 'Món rau / phụ',
-  ONE_DISH_MEAL: 'Món một đĩa',
+  ONE_DISH_MEAL: 'Món nước / Trọn bữa',
   DESSERT: 'Tráng miệng',
   BEVERAGE: 'Đồ uống',
 };
