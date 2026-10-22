@@ -248,11 +248,11 @@ export default function HomePage() {
               <span>Gian bếp của Mẹ • Bữa cơm gia đình ấm áp mỗi ngày</span>
             </span>
 
-            <h1 className="text-3xl sm:text-4xl lg:text-[44px] font-bold text-[var(--color-brand-primary)] tracking-tight leading-[1.18] mb-3">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[var(--color-brand-primary)] tracking-tight leading-tight mb-3">
               Hôm nay nhà mình ăn gì?
             </h1>
 
-            <p className="text-sm sm:text-base lg:text-lg text-[var(--color-text-secondary)] mb-6 max-w-3xl leading-relaxed">
+            <p className="text-sm sm:text-base text-[var(--color-text-secondary)] mb-5 max-w-3xl leading-relaxed">
               Từ mâm cơm 3 món sum vầy (Mặn • Canh • Rau), bát nước chấm gia truyền đến thực đơn{" "}
               <strong className="text-[var(--color-text-primary)]">Giảm cân ít Calo &amp; Tập Gym</strong> — tất cả đã được cân chỉnh định lượng chuẩn xác cho gia đình Việt.
             </p>

@@ -86,34 +86,10 @@
   --color-border-subtle: var(--color-border-subtle);
   --color-border-base: var(--color-border-base);
   --color-border-strong: var(--color-border-strong);
-
-  /* Nâng tỷ lệ cỡ chữ toàn trang để dễ đọc trên cả điện thoại và màn hình lớn */
-  --text-xs: 0.85rem;
-  --text-xs--line-height: 1.35rem;
-  --text-sm: 0.96rem;
-  --text-sm--line-height: 1.45rem;
-  --text-base: 1.0625rem;
-  --text-base--line-height: 1.6rem;
-  --text-lg: 1.2rem;
-  --text-lg--line-height: 1.75rem;
-  --text-xl: 1.375rem;
-  --text-xl--line-height: 1.85rem;
-  --text-2xl: 1.65rem;
-  --text-2xl--line-height: 2.1rem;
-  --text-3xl: 2.05rem;
-  --text-3xl--line-height: 2.45rem;
-  --text-4xl: 2.5rem;
-  --text-4xl--line-height: 2.9rem;
 }
 
 html {
   font-size: 16px;
-}
-
-@media (min-width: 1024px) {
-  html {
-    font-size: 16px;
-  }
 }
 
 body {

@@ -93,25 +93,33 @@ export default function RootLayout({
           <ServiceWorkerRegister />
           {/* Sticky Header */}
           <header className="sticky top-0 z-40 w-full bg-[var(--color-surface-white)] border-b border-[var(--color-border-base)] shadow-xs">
-            <div className="w-full lg:max-w-[88vw] xl:max-w-[85vw] mx-auto px-3.5 sm:px-6 py-3 sm:py-3.5 flex items-center justify-between gap-3 sm:gap-5">
-              <Link href="/" className="flex flex-col no-underline shrink-0">
-                <div className="text-xl sm:text-2xl font-bold tracking-tight leading-none" data-no-i18n="true">
-                  <span className="text-[var(--color-brand-primary)]">ĂN GÌ</span>
-                  <span className="text-[var(--color-accent-primary)] ml-1">MOM</span>
-                </div>
-                <span className="text-xs text-[var(--color-text-secondary)] mt-1 hidden sm:inline">
-                  Bữa cơm nhà, bớt nghĩ hôm nay ăn gì.
-                </span>
-              </Link>
+            <div className="w-full lg:max-w-[88vw] xl:max-w-[85vw] mx-auto px-3.5 sm:px-6 py-2.5 sm:py-3 flex flex-col gap-2">
+              <div className="flex items-center justify-between gap-2 sm:gap-4">
+                <Link href="/" className="flex flex-col no-underline shrink-0">
+                  <div className="text-xl sm:text-2xl font-bold tracking-tight leading-none" data-no-i18n="true">
+                    <span className="text-[var(--color-brand-primary)]">ĂN GÌ</span>
+                    <span className="text-[var(--color-accent-primary)] ml-1">MOM</span>
+                  </div>
+                  <span className="text-[11px] text-[var(--color-text-secondary)] mt-1 hidden xl:inline">
+                    Bữa cơm nhà, bớt nghĩ hôm nay ăn gì.
+                  </span>
+                </Link>
 
-              <div className="flex items-center justify-center min-w-0 flex-1">
-                <HeaderNav />
+                {/* Desktop & Tablet Navigation (Single Row) */}
+                <div className="hidden md:flex items-center justify-center min-w-0 flex-1">
+                  <HeaderNav />
+                </div>
+
+                <div className="flex items-center justify-end gap-1.5 sm:gap-2 shrink-0">
+                  <LanguageSwitcher />
+
+                  <UserNavButton />
+                </div>
               </div>
 
-              <div className="flex items-center justify-end gap-2 sm:gap-2.5 shrink-0">
-                <LanguageSwitcher />
-
-                <UserNavButton />
+              {/* Mobile Secondary Quick Bar (< md) — Không bao giờ bị chật trên màn hình điện thoại */}
+              <div className="flex md:hidden items-center justify-center border-t border-[var(--color-border-subtle)] pt-1.5">
+                <HeaderNav />
               </div>
             </div>
           </header>
