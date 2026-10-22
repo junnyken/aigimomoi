@@ -1,10 +1,11 @@
 import fs from 'fs';
 import path from 'path';
 import { sql, eq } from 'drizzle-orm';
-import { db, recipes, users, ingredients } from './index';
+import { db, recipes, users, ingredients, taxonomies } from './index';
 import { hashPassword } from '../auth/password';
 import { seedProductionCatalog } from '../../scripts/seed_production_catalog';
 import { calculateRecipeNutrition, seedNutritionStandards } from '../nutrition/calculator';
+import { seedStandardTaxonomies } from '../recipes/standardTaxonomies';
 import { logger } from '../logger';
 
 let bootstrapPromise: Promise<void> | null = null;
@@ -141,6 +142,19 @@ async function runBootstrap(): Promise<void> {
     logger.info('Seeding expanded Vietnamese ingredients & FCT nutrition dictionary...');
     await seedNutritionStandards();
     logger.info('Expanded Vietnamese ingredients dictionary seeded!');
+  }
+
+  // 4c. Tự động seed Hệ thống Phân loại Đa trục chuẩn Việt Nam (44 nhãn phổ biến) nếu chưa có
+  const existingStandardTax = await db
+    .select({ id: taxonomies.id })
+    .from(taxonomies)
+    .where(eq(taxonomies.slug, 'eat-clean-viet'))
+    .limit(1);
+
+  if (existingStandardTax.length === 0) {
+    logger.info('Seeding standard Vietnamese culinary & nutrition taxonomies (44 tags)...');
+    await seedStandardTaxonomies();
+    logger.info('Standard taxonomies seeded!');
   }
 
   // 5. Đảm bảo tất cả công thức đều có Snapshot Dinh dưỡng 100% cho từng thành phần

@@ -14,6 +14,8 @@ import {
   BookOpen,
   ExternalLink,
   ShieldCheck,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 
 interface Ingredient {
@@ -33,6 +35,8 @@ interface Ingredient {
   nutritionSource?: string | null;
   nutritionNotes?: string | null;
 }
+
+const ITEMS_PER_PAGE = 30;
 
 const CATEGORIES = [
   'Tất cả',
@@ -81,6 +85,7 @@ export default function EditorIngredientsPage() {
   const [syncNotice, setSyncNotice] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Tất cả');
+  const [currentPage, setCurrentPage] = useState(1);
   const [showSourcesPanel, setShowSourcesPanel] = useState(false);
 
   // Modal State
@@ -118,11 +123,21 @@ export default function EditorIngredientsPage() {
   }, [searchTerm, selectedCategory]);
 
   useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, selectedCategory]);
+
+  useEffect(() => {
     const timer = setTimeout(() => {
       fetchIngredients();
     }, 200);
     return () => clearTimeout(timer);
   }, [fetchIngredients]);
+
+  const totalCount = items.length;
+  const totalPages = Math.max(1, Math.ceil(totalCount / ITEMS_PER_PAGE));
+  const safePage = Math.min(currentPage, totalPages);
+  const startIndex = (safePage - 1) * ITEMS_PER_PAGE;
+  const paginatedItems = items.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
   const handleSyncVietnamCatalog = async () => {
     setSyncing(true);
@@ -234,7 +249,7 @@ export default function EditorIngredientsPage() {
             <span className="text-[var(--color-border-strong)]">•</span>
             <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
               <ShieldCheck className="w-3.5 h-3.5" />
-              <span>Hiện có {items.length} nguyên liệu chuẩn hóa</span>
+              <span>Hiện có {totalCount} nguyên liệu chuẩn hóa ({ITEMS_PER_PAGE} dòng/trang)</span>
             </span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold text-[var(--color-text-primary)]">
@@ -370,12 +385,26 @@ export default function EditorIngredientsPage() {
         </div>
       </div>
 
-      {/* Ingredients Table */}
+      {/* Ingredients Table + Pagination */}
       <div className="bg-[var(--color-surface-white)] border border-[var(--color-border-base)] rounded-2xl overflow-hidden shadow-xs">
+        {/* Top Pagination Summary Bar */}
+        {!loading && totalCount > 0 && (
+          <div className="px-4 sm:px-5 py-3 bg-[var(--color-bg-primary)]/60 border-b border-[var(--color-border-subtle)] flex flex-wrap items-center justify-between gap-2 text-xs text-[var(--color-text-secondary)]">
+            <span>
+              Hiển thị <strong>{startIndex + 1}–{Math.min(startIndex + ITEMS_PER_PAGE, totalCount)}</strong> trong tổng số{' '}
+              <strong className="text-[var(--color-brand-primary)]">{totalCount}</strong> nguyên liệu
+            </span>
+            <span>
+              Trang <strong>{safePage}</strong> / <strong>{totalPages}</strong> (mỗi trang {ITEMS_PER_PAGE} dòng)
+            </span>
+          </div>
+        )}
+
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="bg-[var(--color-surface-raised)] border-b border-[var(--color-border-base)] text-xs font-semibold text-[var(--color-text-secondary)] uppercase">
               <tr>
+                <th className="px-4 sm:px-5 py-3.5 w-12">#</th>
                 <th className="px-4 sm:px-5 py-3.5">Tên nguyên liệu & Công dụng</th>
                 <th className="px-4 py-3.5">Nhóm thực phẩm</th>
                 <th className="px-4 py-3.5">Đơn vị chuẩn</th>
@@ -388,22 +417,26 @@ export default function EditorIngredientsPage() {
             <tbody className="divide-y divide-[var(--color-border-subtle)] text-[var(--color-text-primary)]">
               {loading ? (
                 <tr>
-                  <td colSpan={7} className="px-5 py-10 text-center text-xs text-[var(--color-text-muted)]">
+                  <td colSpan={8} className="px-5 py-10 text-center text-xs text-[var(--color-text-muted)]">
                     Đang tải từ điển nguyên liệu Việt Nam...
                   </td>
                 </tr>
-              ) : items.length === 0 ? (
+              ) : paginatedItems.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-5 py-10 text-center text-xs text-[var(--color-text-muted)]">
+                  <td colSpan={8} className="px-5 py-10 text-center text-xs text-[var(--color-text-muted)]">
                     Chưa có nguyên liệu nào khớp bộ lọc. Hãy bấm <strong>&quot;Đồng bộ Kho Nguyên Liệu VN&quot;</strong> hoặc <strong>&quot;Thêm nguyên liệu mới&quot;</strong>.
                   </td>
                 </tr>
               ) : (
-                items.map((item) => {
+                paginatedItems.map((item, idx) => {
+                  const rowNumber = startIndex + idx + 1;
                   const hasCal = typeof item.calories100g === 'number';
                   const ediblePct = Math.round((item.edibleRate ?? 1) * 100);
                   return (
                     <tr key={item.id} className="hover:bg-[var(--color-surface-raised)]/70 transition-colors">
+                      <td className="px-4 sm:px-5 py-3 text-xs font-mono text-[var(--color-text-muted)]">
+                        {rowNumber}
+                      </td>
                       <td className="px-4 sm:px-5 py-3">
                         <div className="font-bold text-[var(--color-text-primary)]">{item.name}</div>
                         <div className="text-[11px] text-[var(--color-text-muted)] flex flex-wrap items-center gap-1.5 mt-0.5">
@@ -475,6 +508,57 @@ export default function EditorIngredientsPage() {
             </tbody>
           </table>
         </div>
+
+        {/* Bottom Numbered Pagination Bar (1, 2, 3, 4, 5...) */}
+        {!loading && totalPages > 1 && (
+          <div className="px-4 sm:px-5 py-4 bg-[var(--color-surface-raised)]/50 border-t border-[var(--color-border-base)] flex flex-col sm:flex-row items-center justify-between gap-3">
+            <span className="text-xs text-[var(--color-text-secondary)]">
+              Đang xem dòng <strong>{startIndex + 1}–{Math.min(startIndex + ITEMS_PER_PAGE, totalCount)}</strong> trên{' '}
+              <strong>{totalCount}</strong> nguyên liệu
+            </span>
+
+            <nav aria-label="Phân trang danh sách nguyên liệu" className="flex flex-wrap items-center justify-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={safePage === 1}
+                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-semibold border border-[var(--color-border-base)] bg-[var(--color-surface-white)] text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)] disabled:opacity-40 disabled:pointer-events-none transition-colors"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+                <span>Trước</span>
+              </button>
+
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => {
+                const isActive = pageNum === safePage;
+                return (
+                  <button
+                    key={pageNum}
+                    type="button"
+                    onClick={() => setCurrentPage(pageNum)}
+                    aria-current={isActive ? 'page' : undefined}
+                    className={`min-w-8 h-8 px-2.5 rounded-xl text-xs font-bold transition-all ${
+                      isActive
+                        ? 'bg-[var(--color-brand-primary)] text-white shadow-2xs'
+                        : 'bg-[var(--color-surface-white)] border border-[var(--color-border-base)] text-[var(--color-text-secondary)] hover:border-[var(--color-brand-primary)] hover:text-[var(--color-brand-primary)]'
+                    }`}
+                  >
+                    {pageNum}
+                  </button>
+                );
+              })}
+
+              <button
+                type="button"
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={safePage === totalPages}
+                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-semibold border border-[var(--color-border-base)] bg-[var(--color-surface-white)] text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)] disabled:opacity-40 disabled:pointer-events-none transition-colors"
+              >
+                <span>Sau</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </nav>
+          </div>
+        )}
       </div>
 
       {/* Add Ingredient Modal */}

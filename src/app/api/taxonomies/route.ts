@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { taxonomies, taxonomyTypeEnum } from '@/lib/db/schema';
+import { ensureDatabaseBootstrapped } from '@/lib/db/autoBootstrap';
 import { getSessionUser } from '@/lib/auth/session';
+import { seedStandardTaxonomies } from '@/lib/recipes/standardTaxonomies';
 import { eq, asc } from 'drizzle-orm';
 
 function slugify(text: string): string {
@@ -17,6 +19,8 @@ function slugify(text: string): string {
 // GET /api/taxonomies?type=...
 export async function GET(request: NextRequest) {
   try {
+    await ensureDatabaseBootstrapped();
+
     const { searchParams } = request.nextUrl;
     const typeParam = searchParams.get('type') as (typeof taxonomyTypeEnum.enumValues)[number] | null;
 
@@ -45,6 +49,16 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
+
+    if (body?.action === 'sync_standard_taxonomies') {
+      const syncedCount = await seedStandardTaxonomies();
+      return NextResponse.json({
+        ok: true,
+        syncedCount,
+        message: `Đã đồng bộ thành công ${syncedCount} nhãn phân loại phổ biến vào hệ thống!`,
+      });
+    }
+
     const { type, name } = body;
 
     if (!type || !name || typeof name !== 'string' || !name.trim()) {
