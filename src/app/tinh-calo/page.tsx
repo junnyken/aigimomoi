@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import {
   Scale,
@@ -17,7 +17,14 @@ import {
   BookOpen,
   ShoppingBag,
   Sparkles,
+  BookmarkCheck,
+  Printer,
+  HeartPulse,
 } from 'lucide-react';
+import {
+  savePersonalNutritionTarget,
+  loadPersonalNutritionTarget,
+} from '@/lib/nutrition/personalTarget';
 
 type Gender = 'female' | 'male';
 type ActivityLevelKey = 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active';
@@ -132,6 +139,24 @@ export default function CalorieCalculatorPage() {
   const [bodyFatPct, setBodyFatPct] = useState<number | ''>('');
   const [activity, setActivity] = useState<ActivityLevelKey>('light');
   const [goal, setGoal] = useState<GoalKey>('lose_standard');
+  const [savedToast, setSavedToast] = useState<boolean>(false);
+  const [savedTargetKcal, setSavedTargetKcal] = useState<number | null>(null);
+
+  // Tự động khôi phục thông số đã lưu từ lần tính trước
+  useEffect(() => {
+    const saved = loadPersonalNutritionTarget();
+    if (saved) {
+      setGender(saved.gender);
+      setAge(saved.age);
+      setHeightCm(saved.heightCm);
+      setWeightKg(saved.weightKg);
+      setTargetWeightKg(saved.targetWeightKg);
+      setBodyFatPct(saved.bodyFatPct);
+      setActivity(saved.activity);
+      setGoal(saved.goal);
+      setSavedTargetKcal(saved.targetCalories);
+    }
+  }, []);
 
   const metrics = useMemo(() => {
     const safeAge = Math.min(100, Math.max(14, Number(age) || 30));
@@ -339,6 +364,43 @@ export default function CalorieCalculatorPage() {
     Math.max(250, Math.round((metrics.dinnerKcal - 140) / 50) * 50)
   );
 
+  const handleSavePersonalTarget = () => {
+    savePersonalNutritionTarget({
+      gender,
+      age: Number(age) || 30,
+      heightCm: Number(heightCm) || 165,
+      weightKg: Number(weightKg) || 60,
+      targetWeightKg,
+      bodyFatPct,
+      activity,
+      goal,
+      bmi: metrics.bmi,
+      bmr: metrics.primaryBmr,
+      tdee: metrics.tdee,
+      targetCalories: metrics.targetCalories,
+      proteinGrams: metrics.proteinGrams,
+      carbsGrams: metrics.carbsGrams,
+      fatGrams: metrics.fatGrams,
+      fiberGrams: metrics.fiberGrams,
+      dinnerKcal: metrics.dinnerKcal,
+      rawMeatFishEquivalentGrams: metrics.rawMeatFishEquivalentGrams,
+      whiteRiceBowlsPerDay: metrics.whiteRiceBowlsPerDay,
+      brownRiceBowlsPerDay: metrics.brownRiceBowlsPerDay,
+      waterLiters: metrics.waterLiters,
+      goalTitle: metrics.goalObj.title,
+      updatedAt: new Date().toISOString(),
+    });
+    setSavedTargetKcal(metrics.targetCalories);
+    setSavedToast(true);
+    setTimeout(() => setSavedToast(false), 6000);
+  };
+
+  const handlePrintProtocol = () => {
+    if (typeof window !== 'undefined') {
+      window.print();
+    }
+  };
+
   const webAppJsonLd = {
     '@context': 'https://schema.org',
     '@type': 'WebApplication',
@@ -380,23 +442,62 @@ export default function CalorieCalculatorPage() {
             </p>
           </div>
 
-          <div className="flex flex-col sm:flex-row lg:flex-col gap-2 shrink-0">
-            <Link
-              href={metrics.goalObj.mealProfile ? `/meal?profile=${metrics.goalObj.mealProfile}` : '/meal'}
-              className="min-h-11 inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-2xl bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-hover)] text-white text-xs sm:text-sm font-bold shadow-xs transition-colors"
+          <div className="flex flex-col sm:flex-row lg:flex-col gap-2 shrink-0 no-print">
+            <button
+              type="button"
+              onClick={handleSavePersonalTarget}
+              className="min-h-11 inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-2xl bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] text-white text-xs sm:text-sm font-bold shadow-xs transition-colors cursor-pointer"
             >
-              <Utensils className="w-4 h-4 shrink-0" />
-              <span>Ghép mâm cơm theo chỉ số của tôi</span>
-            </Link>
-            <Link
-              href="/editor/ingredients"
-              className="min-h-10 inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-2xl bg-white/90 hover:bg-white text-[var(--color-text-secondary)] hover:text-[var(--color-brand-primary)] border border-[var(--color-border-base)] text-xs font-semibold transition-colors"
-            >
-              <BookOpen className="w-3.5 h-3.5 text-[var(--color-accent-primary)]" />
-              <span>Tra cứu Bảng Calo 214+ nguyên liệu VN</span>
-            </Link>
+              <BookmarkCheck className="w-4 h-4 shrink-0" />
+              <span>
+                {savedTargetKcal === metrics.targetCalories
+                  ? `✓ Đã lưu mục tiêu (${metrics.targetCalories} kcal)`
+                  : `📌 Lưu làm Mục tiêu (${metrics.targetCalories} kcal/ngày)`}
+              </span>
+            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handlePrintProtocol}
+                className="flex-1 min-h-10 inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-2xl bg-white/95 hover:bg-white text-[var(--color-text-primary)] border border-[var(--color-border-base)] text-xs font-bold shadow-2xs transition-colors cursor-pointer"
+              >
+                <Printer className="w-3.5 h-3.5 text-[var(--color-brand-primary)] shrink-0" />
+                <span>In Phác đồ / Lưu PDF</span>
+              </button>
+              <Link
+                href={metrics.goalObj.mealProfile ? `/meal?profile=${metrics.goalObj.mealProfile}` : '/meal'}
+                className="flex-1 min-h-10 inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-2xl bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-hover)] text-white text-xs font-bold shadow-2xs transition-colors"
+              >
+                <Utensils className="w-3.5 h-3.5 shrink-0" />
+                <span>Ghép mâm cơm</span>
+              </Link>
+            </div>
           </div>
         </div>
+
+        {/* Thông báo xác nhận đã đồng bộ sang Nhật ký & Ghép mâm */}
+        {savedToast && (
+          <div className="mt-5 p-4 rounded-2xl bg-emerald-50 border border-emerald-300 text-emerald-950 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-fade-in no-print">
+            <div className="flex items-start sm:items-center gap-2.5 text-xs sm:text-sm">
+              <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5 sm:mt-0" />
+              <div>
+                <strong>Đã đồng bộ phác đồ cá nhân ({metrics.targetCalories} kcal • {metrics.proteinGrams}g Đạm • {metrics.carbsGrams}g Tinh bột • {metrics.fatGrams}g Béo)!</strong>
+                <span className="block sm:inline sm:ml-1.5 text-emerald-800">
+                  Mục tiêu này đã được áp dụng tự động sang trang Nhật Ký Dinh Dưỡng và Ghép Mâm Cơm.
+                </span>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <Link
+                href="/nhat-ky"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold shadow-2xs transition-colors"
+              >
+                <HeartPulse className="w-3.5 h-3.5" />
+                <span>Mở Nhật ký Bữa ăn &rarr;</span>
+              </Link>
+            </div>
+          </div>
+        )}
       </section>
 
       {/* Main Full-Width 12-Column Grid */}
@@ -897,7 +998,20 @@ export default function CalorieCalculatorPage() {
               </div>
             </div>
 
-            <div className="pt-2 flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3">
+            <div className="pt-2 flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 no-print">
+              <button
+                type="button"
+                onClick={handleSavePersonalTarget}
+                className="min-h-11 inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] text-white text-xs sm:text-sm font-bold shadow-xs transition-colors cursor-pointer"
+              >
+                <BookmarkCheck className="w-4 h-4 shrink-0" />
+                <span>
+                  {savedTargetKcal === metrics.targetCalories
+                    ? `✓ Đã đồng bộ sang Nhật ký (${metrics.targetCalories} kcal)`
+                    : `Lưu làm Mục tiêu Nhật ký (${metrics.targetCalories} kcal/ngày)`}
+                </span>
+              </button>
+
               <Link
                 href={
                   metrics.goalObj.mealProfile
@@ -907,7 +1021,7 @@ export default function CalorieCalculatorPage() {
                 className="min-h-11 inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-hover)] text-white text-xs sm:text-sm font-bold shadow-xs transition-colors"
               >
                 <Utensils className="w-4 h-4 shrink-0" />
-                <span>Ghép ngay Mâm cơm 3 món khớp mức {metrics.dinnerKcal} kcal/bữa tối</span>
+                <span>Ghép Mâm cơm 3 món khớp mức {metrics.dinnerKcal} kcal/bữa tối</span>
                 <ArrowRight className="w-4 h-4 shrink-0" />
               </Link>
 
@@ -920,16 +1034,17 @@ export default function CalorieCalculatorPage() {
                 className="min-h-11 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-950 border border-amber-300 text-xs sm:text-sm font-bold transition-colors"
               >
                 <Flame className="w-4 h-4 text-amber-600 shrink-0" />
-                <span>Xem các món ăn ≤ {recommendedMainMaxKcal} kcal/khẩu phần</span>
+                <span>Xem các món ≤ {recommendedMainMaxKcal} kcal</span>
               </Link>
 
-              <Link
-                href="/ke-hoach-tuan"
-                className="min-h-11 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[var(--color-surface-raised)] hover:bg-[var(--color-border-base)] text-[var(--color-text-primary)] border border-[var(--color-border-base)] text-xs sm:text-sm font-bold transition-colors"
+              <button
+                type="button"
+                onClick={handlePrintProtocol}
+                className="min-h-11 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[var(--color-surface-raised)] hover:bg-[var(--color-border-base)] text-[var(--color-text-primary)] border border-[var(--color-border-base)] text-xs sm:text-sm font-bold transition-colors cursor-pointer"
               >
-                <ShoppingBag className="w-4 h-4 text-[var(--color-brand-primary)] shrink-0" />
-                <span>Lập thực đơn 7 ngày</span>
-              </Link>
+                <Printer className="w-4 h-4 text-[var(--color-brand-primary)] shrink-0" />
+                <span>In Phác đồ / Lưu PDF</span>
+              </button>
             </div>
           </div>
 

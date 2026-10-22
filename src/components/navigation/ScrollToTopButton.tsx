@@ -37,7 +37,7 @@ export function ScrollToTopButton() {
       aria-label={title}
       title={title}
       data-no-i18n="true"
-      className="fixed right-4 sm:right-6 bottom-20 md:bottom-7 z-40 inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-full bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-hover)] text-white text-xs sm:text-sm font-bold shadow-lg border border-white/25 transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
+      className="no-print fixed right-4 sm:right-6 bottom-20 md:bottom-7 z-40 inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-full bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-hover)] text-white text-xs sm:text-sm font-bold shadow-lg border border-white/25 transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
     >
       <ArrowUp className="w-4 h-4 stroke-[2.5] shrink-0" />
       <span className="hidden sm:inline">{label}</span>

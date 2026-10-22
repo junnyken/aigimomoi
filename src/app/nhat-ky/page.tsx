@@ -25,7 +25,12 @@ import {
   Loader2,
   X,
   Check,
+  Scale,
 } from 'lucide-react';
+import {
+  loadPersonalNutritionTarget,
+  type PersonalNutritionTarget,
+} from '@/lib/nutrition/personalTarget';
 
 interface DiaryEntry {
   id: number;
@@ -119,6 +124,7 @@ function MealDiaryContent() {
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState(false);
   const [targetCalories, setTargetCalories] = useState(2000);
+  const [personalTarget, setPersonalTarget] = useState<PersonalNutritionTarget | null>(null);
 
   // Modal Add Entry
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -131,6 +137,12 @@ function MealDiaryContent() {
   useEffect(() => {
     const today = new Date().toISOString().split('T')[0];
     setSelectedDate(today);
+
+    const saved = loadPersonalNutritionTarget();
+    if (saved) {
+      setPersonalTarget(saved);
+      setTargetCalories(saved.targetCalories);
+    }
   }, []);
 
   async function loadDiary(dateStr: string) {
@@ -321,6 +333,19 @@ function MealDiaryContent() {
                     </span>
                   </div>
                   <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                    {personalTarget && (
+                      <button
+                        type="button"
+                        onClick={() => setTargetCalories(personalTarget.targetCalories)}
+                        className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold border transition-colors ${
+                          targetCalories === personalTarget.targetCalories
+                            ? 'bg-[var(--color-accent-primary)] text-white border-[var(--color-accent-primary)]'
+                            : 'bg-amber-50 text-amber-900 border-amber-300 hover:bg-amber-100'
+                        }`}
+                      >
+                        🎯 Phác đồ của tôi ({personalTarget.targetCalories} kcal)
+                      </button>
+                    )}
                     {DAILY_CALORIE_TARGETS.map((t) => (
                       <button
                         key={t.value}
@@ -335,11 +360,18 @@ function MealDiaryContent() {
                         {t.label}
                       </button>
                     ))}
+                    <Link
+                      href="/tinh-calo"
+                      className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100 inline-flex items-center gap-1 transition-colors"
+                    >
+                      <Scale className="w-3 h-3" />
+                      <span>{personalTarget ? 'Cập nhật TDEE' : 'Tính TDEE cá nhân'}</span>
+                    </Link>
                   </div>
                 </div>
 
                 {/* Macro % Pills */}
-                <div className="flex items-center gap-2 text-xs">
+                <div className="flex flex-wrap items-center gap-2 text-xs">
                   <span className="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 font-semibold border border-blue-200">
                     🥩 Đạm: {summary.macroPercentages.protein}%
                   </span>
@@ -370,23 +402,73 @@ function MealDiaryContent() {
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs pt-3 border-t border-[var(--color-border-subtle)]">
                 <div>
                   <span className="text-[var(--color-text-muted)]">Chất đạm (Protein)</span>
-                  <p className="font-bold text-[var(--color-text-primary)] text-sm">{summary.totalProtein} g</p>
+                  <p className="font-bold text-[var(--color-text-primary)] text-sm">
+                    {summary.totalProtein}
+                    {personalTarget ? (
+                      <span className="text-xs font-medium text-[var(--color-text-muted)]">
+                        {' '}
+                        / {personalTarget.proteinGrams}g
+                      </span>
+                    ) : (
+                      ' g'
+                    )}
+                  </p>
                 </div>
                 <div>
                   <span className="text-[var(--color-text-muted)]">Chất béo (Lipid)</span>
-                  <p className="font-bold text-[var(--color-text-primary)] text-sm">{summary.totalFat} g</p>
+                  <p className="font-bold text-[var(--color-text-primary)] text-sm">
+                    {summary.totalFat}
+                    {personalTarget ? (
+                      <span className="text-xs font-medium text-[var(--color-text-muted)]">
+                        {' '}
+                        / {personalTarget.fatGrams}g
+                      </span>
+                    ) : (
+                      ' g'
+                    )}
+                  </p>
                 </div>
                 <div>
                   <span className="text-[var(--color-text-muted)]">Đường bột (Carbs)</span>
-                  <p className="font-bold text-[var(--color-text-primary)] text-sm">{summary.totalCarbs} g</p>
+                  <p className="font-bold text-[var(--color-text-primary)] text-sm">
+                    {summary.totalCarbs}
+                    {personalTarget ? (
+                      <span className="text-xs font-medium text-[var(--color-text-muted)]">
+                        {' '}
+                        / {personalTarget.carbsGrams}g
+                      </span>
+                    ) : (
+                      ' g'
+                    )}
+                  </p>
                 </div>
                 <div>
                   <span className="text-[var(--color-text-muted)]">Muối / Natri</span>
                   <p className="font-bold text-[var(--color-text-primary)] text-sm">
                     {summary.totalSodium !== null ? `${summary.totalSodium} mg` : '—'}
+                    <span className="text-[11px] font-normal text-[var(--color-text-muted)]"> (&lt;2000mg)</span>
                   </p>
                 </div>
               </div>
+
+              {/* Khẩu phần bếp nhà đã đồng bộ từ trang Tính Calo */}
+              {personalTarget && (
+                <div className="mt-4 p-3 rounded-xl bg-[#FAF7F0] border border-[#EADBC8] text-xs text-[#4A3C2F] flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <strong className="text-[#3F6240]">📌 Định lượng Bếp Nhà của bạn hôm nay:</strong>{' '}
+                    ~<strong>{personalTarget.rawMeatFishEquivalentGrams}g</strong> thịt/cá tươi sống •{' '}
+                    <strong>{personalTarget.whiteRiceBowlsPerDay} chén</strong> cơm trắng (hoặc{' '}
+                    <strong>{personalTarget.brownRiceBowlsPerDay} chén</strong> gạo lứt) •{' '}
+                    <strong>400–500g</strong> rau xanh • <strong>{personalTarget.waterLiters} lít</strong> nước.
+                  </div>
+                  <Link
+                    href="/meal"
+                    className="shrink-0 font-bold text-[var(--color-brand-primary)] hover:underline"
+                  >
+                    Ghép mâm tối (~{personalTarget.dinnerKcal} kcal) &rarr;
+                  </Link>
+                </div>
+              )}
 
               {/* Health Alerts */}
               {summary.alerts && summary.alerts.length > 0 && (

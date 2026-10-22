@@ -14,7 +14,8 @@ import {
   Utensils, 
   CheckCircle2, 
   ExternalLink,
-  LogIn
+  LogIn,
+  Printer,
 } from 'lucide-react';
 
 interface MealPlan {
@@ -303,7 +304,15 @@ function WeeklyPlannerContent() {
         </div>
 
         {/* Nút thao tác nhanh */}
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2.5 no-print">
+          <button
+            type="button"
+            onClick={() => typeof window !== 'undefined' && window.print()}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-stone-300 text-stone-700 bg-white hover:bg-stone-50 font-semibold text-sm transition-colors shadow-xs cursor-pointer"
+          >
+            <Printer className="w-4 h-4 text-[var(--color-brand-primary)]" />
+            <span>In Thực đơn 7 ngày / PDF</span>
+          </button>
           <Link
             href="/tu-lanh"
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-stone-300 text-stone-700 bg-white hover:bg-stone-50 font-medium text-sm transition-colors shadow-xs"
@@ -313,7 +322,7 @@ function WeeklyPlannerContent() {
           <button
             onClick={() => handleAggregateShopping()}
             disabled={aggregating || plans.length === 0}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 font-bold text-sm transition-all shadow-xs disabled:opacity-50"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 font-bold text-sm transition-all shadow-xs disabled:opacity-50 cursor-pointer"
           >
             <ShoppingBag className="w-4 h-4" />
             <span>{aggregating ? 'Đang tính...' : '🛒 Tổng hợp giỏ đi chợ tuần'}</span>

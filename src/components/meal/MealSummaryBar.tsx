@@ -1,10 +1,15 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ShoppingCart, Sparkles, Clock, CheckCircle2 } from 'lucide-react';
+import { ShoppingCart, Sparkles, Clock, CheckCircle2, Scale } from 'lucide-react';
 import type { MealDishSummary } from '@/lib/meal/mealQueries';
 import { formatDuration } from '@/lib/recipes/labels';
 import { buildMealQuery } from '@/lib/meal/flowUrls';
+import {
+  loadPersonalNutritionTarget,
+  type PersonalNutritionTarget,
+} from '@/lib/nutrition/personalTarget';
 
 interface MealSummaryBarProps {
   main: MealDishSummary | null;
@@ -15,6 +20,12 @@ interface MealSummaryBarProps {
 }
 
 export function MealSummaryBar({ main, soup, side, sauce, servings }: MealSummaryBarProps) {
+  const [personalTarget, setPersonalTarget] = useState<PersonalNutritionTarget | null>(null);
+
+  useEffect(() => {
+    setPersonalTarget(loadPersonalNutritionTarget());
+  }, []);
+
   const dishes = [main, soup, side].filter((d): d is MealDishSummary => Boolean(d));
 
   // Thời gian ước tính: người nấu thường làm song song các món (luộc rau trong lúc kho thịt)
@@ -53,6 +64,17 @@ export function MealSummaryBar({ main, soup, side, sauce, servings }: MealSummar
             <CheckCircle2 className="w-4 h-4 text-emerald-600" />
             Đầy đủ Đạm · Canh thanh · Rau xanh
           </span>
+          {personalTarget && (
+            <Link
+              href="/tinh-calo"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 text-amber-900 border border-amber-200 font-semibold hover:bg-amber-100 transition-colors"
+            >
+              <Scale className="w-3.5 h-3.5 text-[var(--color-accent-primary)]" />
+              <span>
+                🎯 Mục tiêu của bạn: ~{personalTarget.dinnerKcal} kcal/bữa tối ({personalTarget.targetCalories} kcal/ngày)
+              </span>
+            </Link>
+          )}
         </div>
       </div>
 
