@@ -3,6 +3,8 @@
 import React, { Suspense } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useI18n } from '@/lib/i18n/I18nProvider';
+import { HEADER_LABELS } from '@/lib/i18n/dictionary';
 
 const HEADER_NAV_ITEMS = [
   { href: '/', label: 'Trang chủ', inMobileBottomBar: true },
@@ -16,10 +18,14 @@ const HEADER_NAV_ITEMS = [
 ];
 
 function HeaderNavList({ activePath }: { activePath: string | null }) {
+  const { locale } = useI18n();
+  const labels = HEADER_LABELS[locale];
+
   return (
     <nav
       className="flex items-center gap-1 sm:gap-1.5 overflow-x-auto whitespace-nowrap scrollbar-none py-1 min-w-0"
       aria-label="Điều hướng chính"
+      data-no-i18n="true"
     >
       {HEADER_NAV_ITEMS.map((item) => {
         const isActive =
@@ -30,6 +36,7 @@ function HeaderNavList({ activePath }: { activePath: string | null }) {
 
         // Trên mobile (< md), ẩn các tab đã có ở MobileBottomNav để thanh Header trên cùng thoáng gọn, không tràn ngang
         const visibilityClass = item.inMobileBottomBar ? 'hidden md:inline-flex' : 'inline-flex';
+        const displayLabel = labels[item.href] || item.label;
 
         return (
           <Link
@@ -42,7 +49,7 @@ function HeaderNavList({ activePath }: { activePath: string | null }) {
                 : 'font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-brand-primary)] hover:bg-[var(--color-surface-raised)]'
             }`}
           >
-            <span>{item.label}</span>
+            <span>{displayLabel}</span>
           </Link>
         );
       })}

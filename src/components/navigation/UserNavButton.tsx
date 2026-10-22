@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { LogIn, ShieldCheck } from 'lucide-react';
+import { useI18n } from '@/lib/i18n/I18nProvider';
+import { HEADER_LABELS } from '@/lib/i18n/dictionary';
 
 interface AuthUser {
   id: number;
@@ -14,6 +16,8 @@ interface AuthUser {
 export function UserNavButton() {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const { locale } = useI18n();
+  const labels = HEADER_LABELS[locale];
 
   useEffect(() => {
     async function checkAuth() {
@@ -44,7 +48,7 @@ export function UserNavButton() {
     const initials = user.displayName?.slice(0, 2).toUpperCase() || 'AM';
     const isStaff = user.role === 'ADMIN' || user.role === 'EDITOR';
     return (
-      <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
+      <div className="flex items-center gap-1 sm:gap-1.5 shrink-0" data-no-i18n="true">
         {isStaff && (
           <Link
             href="/editor/recipes"
@@ -53,13 +57,13 @@ export function UserNavButton() {
             className="inline-flex items-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-full bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-[11px] sm:text-xs font-bold transition-colors"
           >
             <ShieldCheck className="w-3.5 h-3.5 text-amber-700 shrink-0" />
-            <span className="hidden xs:inline sm:inline">Quản trị</span>
+            <span className="hidden xs:inline sm:inline">{labels.admin}</span>
           </Link>
         )}
         <Link
           href="/profile"
           prefetch={false}
-          title={`Tài khoản: ${user.displayName}`}
+          title={`${labels.account}: ${user.displayName}`}
           className="inline-flex items-center gap-1.5 p-1 sm:px-2.5 sm:py-1 rounded-full bg-[var(--color-brand-light)] hover:bg-[var(--color-brand-border)]/40 text-[var(--color-brand-primary)] border border-[var(--color-brand-border)] text-xs font-semibold transition-colors shrink-0"
         >
           <span className="w-6 h-6 rounded-full bg-[var(--color-brand-primary)] text-white flex items-center justify-center text-[10px] font-bold">
@@ -75,10 +79,11 @@ export function UserNavButton() {
     <Link
       href="/login"
       prefetch={false}
+      data-no-i18n="true"
       className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs sm:text-sm font-semibold text-[var(--color-brand-primary)] bg-[var(--color-brand-light)] hover:bg-[var(--color-brand-border)]/40 border border-[var(--color-brand-border)] transition-colors shrink-0"
     >
       <LogIn className="w-3.5 h-3.5" />
-      <span>Đăng nhập</span>
+      <span>{labels.login}</span>
     </Link>
   );
 }
