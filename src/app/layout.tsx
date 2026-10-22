@@ -180,7 +180,7 @@ export default function RootLayout({
               </div>
 
               <div className="pt-6 border-t border-[var(--color-border-subtle)] flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-[var(--color-text-muted)]">
-                <p>© {new Date().getFullYear()} ĂN GÌ MOM — Bữa cơm nhà, bớt nghĩ hôm nay ăn gì.</p>
+                <p>© 2026 ĂN GÌ MOM — Bữa cơm nhà, bớt nghĩ hôm nay ăn gì.</p>
                 <div className="flex flex-wrap items-center gap-4">
                   <Link href="/contribute" prefetch={false} className="hover:text-[var(--color-brand-primary)]">Góp món ngon</Link>
                   <Link href="/profile" prefetch={false} className="hover:text-[var(--color-brand-primary)]">Tài khoản</Link>
