@@ -14,26 +14,51 @@ import type { RecipeNutritionSnapshot, NutrientValues, IngredientNutritionDetail
 import { logger } from '@/lib/logger';
 
 /**
- * Nạp hoặc cập nhật dữ liệu dinh dưỡng chuẩn Viện Dinh Dưỡng vào DB
+ * Nạp hoặc cập nhật toàn bộ Từ điển Nguyên liệu Việt Nam (~180+ loại) và Dữ liệu Dinh dưỡng chuẩn Viện Dinh Dưỡng vào DB
  */
 export async function seedNutritionStandards(): Promise<number> {
   let seededCount = 0;
 
   for (const item of VIETNAMESE_STANDARD_FCT) {
-    // Tìm tất cả nguyên liệu tương ứng trong từ điển ingredients
+    // 1. Đảm bảo nguyên liệu đã có mặt trong bảng `ingredients`
+    const [upsertedIng] = await db
+      .insert(ingredients)
+      .values({
+        slug: item.slug,
+        name: item.name,
+        category: item.category || 'Thực phẩm tươi sống',
+        standardUnit: item.standardUnit || 'g',
+        isPantryStaple: Boolean(item.isPantryStaple),
+      })
+      .onConflictDoUpdate({
+        target: ingredients.slug,
+        set: {
+          category: item.category || 'Thực phẩm tươi sống',
+          standardUnit: item.standardUnit || 'g',
+          isPantryStaple: Boolean(item.isPantryStaple),
+        },
+      })
+      .returning({ id: ingredients.id });
+
+    // Tìm tất cả nguyên liệu tương ứng trong từ điển ingredients (theo slug hoặc tên tương đồng)
     const foundIngs = await db.query.ingredients.findMany({
-      where: (ing, { or, eq, like }) =>
+      where: (ing, { or, eq, ilike }) =>
         or(
           eq(ing.slug, item.slug),
-          like(ing.name, `%${item.name}%`)
+          ilike(ing.name, `%${item.name.split('(')[0].trim()}%`)
         ),
     });
 
-    for (const foundIng of foundIngs) {
+    const targetIds = new Set<number>([
+      ...(upsertedIng ? [upsertedIng.id] : []),
+      ...foundIngs.map((f) => f.id),
+    ]);
+
+    for (const ingId of targetIds) {
       await db
         .insert(ingredientNutrition)
         .values({
-          ingredientId: foundIng.id,
+          ingredientId: ingId,
           source: item.source,
           edibleRate: item.edibleRate,
           calories100g: item.calories100g,
@@ -65,6 +90,17 @@ export async function seedNutritionStandards(): Promise<number> {
     }
   }
 
+  // 2. Tự động điền thông số dinh dưỡng FCT cho bất kỳ nguyên liệu nào trong DB chưa có bản ghi `ingredient_nutrition`
+  const allIngs = await db.query.ingredients.findMany({
+    with: { nutrition: true },
+  });
+  for (const ing of allIngs) {
+    if (!ing.nutrition || ing.nutrition.calories100g === null) {
+      await resolveOrSeedIngredientNutrition(ing.id, ing.name);
+      seededCount++;
+    }
+  }
+
   return seededCount;
 }
 
@@ -72,7 +108,7 @@ export async function seedNutritionStandards(): Promise<number> {
  * Tự động suy luận & lưu thông số dinh dưỡng chuẩn Viện Dinh Dưỡng (FCT) cho nguyên liệu mới
  * để đảm bảo mọi nguyên liệu trong công thức đều có chỉ số Calo / Đạm / Béo / Đường bột chính xác.
  */
-async function resolveOrSeedIngredientNutrition(ingredientId: number, ingName: string) {
+export async function resolveOrSeedIngredientNutrition(ingredientId: number, ingName: string) {
   const lower = ingName.toLowerCase().trim();
 
   // 1. Thử khớp mờ với danh mục gốc VIETNAMESE_STANDARD_FCT

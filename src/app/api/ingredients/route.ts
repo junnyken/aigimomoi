@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { ingredients } from '@/lib/db/schema';
+import { ingredients, ingredientNutrition } from '@/lib/db/schema';
+import { ensureDatabaseBootstrapped } from '@/lib/db/autoBootstrap';
 import { getSessionUser } from '@/lib/auth/session';
-import { ilike, eq, and, desc } from 'drizzle-orm';
+import { seedNutritionStandards, resolveOrSeedIngredientNutrition } from '@/lib/nutrition/calculator';
+import { ilike, eq, and, asc, or } from 'drizzle-orm';
 
 function slugify(text: string): string {
   return text
@@ -17,6 +19,8 @@ function slugify(text: string): string {
 // GET /api/ingredients?q=...&category=...&staple=true|false
 export async function GET(request: NextRequest) {
   try {
+    await ensureDatabaseBootstrapped();
+
     const { searchParams } = request.nextUrl;
     const query = searchParams.get('q');
     const category = searchParams.get('category');
@@ -24,23 +28,48 @@ export async function GET(request: NextRequest) {
 
     const conditions = [];
 
-    if (query) {
-      conditions.push(ilike(ingredients.name, `%${query.trim()}%`));
+    if (query && query.trim()) {
+      const qTrim = query.trim();
+      const qSlug = slugify(qTrim);
+      conditions.push(
+        or(
+          ilike(ingredients.name, `%${qTrim}%`),
+          ilike(ingredients.slug, `%${qSlug}%`)
+        )
+      );
     }
-    if (category) {
+    if (category && category !== 'Tất cả') {
       conditions.push(eq(ingredients.category, category));
     }
     if (stapleParam !== null) {
       conditions.push(eq(ingredients.isPantryStaple, stapleParam === 'true'));
     }
 
-    const items = await db
-      .select()
+    const rows = await db
+      .select({
+        id: ingredients.id,
+        slug: ingredients.slug,
+        name: ingredients.name,
+        category: ingredients.category,
+        standardUnit: ingredients.standardUnit,
+        isPantryStaple: ingredients.isPantryStaple,
+        createdAt: ingredients.createdAt,
+        calories100g: ingredientNutrition.calories100g,
+        protein100g: ingredientNutrition.protein100g,
+        fat100g: ingredientNutrition.fat100g,
+        carbs100g: ingredientNutrition.carbs100g,
+        fiber100g: ingredientNutrition.fiber100g,
+        sodium100g: ingredientNutrition.sodium100g,
+        edibleRate: ingredientNutrition.edibleRate,
+        nutritionSource: ingredientNutrition.source,
+        nutritionNotes: ingredientNutrition.notes,
+      })
       .from(ingredients)
+      .leftJoin(ingredientNutrition, eq(ingredientNutrition.ingredientId, ingredients.id))
       .where(conditions.length > 0 ? and(...conditions) : undefined)
-      .orderBy(desc(ingredients.createdAt));
+      .orderBy(asc(ingredients.category), asc(ingredients.name));
 
-    return NextResponse.json({ ingredients: items });
+    return NextResponse.json({ ingredients: rows });
   } catch (error) {
     console.error('Error fetching ingredients:', error);
     return NextResponse.json(
@@ -62,7 +91,30 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { name, category, standardUnit, isPantryStaple } = body;
+
+    // Cho phép đồng bộ toàn bộ kho nguyên liệu chuẩn Việt Nam (~180+ loại) chỉ với 1 chạm
+    if (body?.action === 'sync_vietnam_catalog') {
+      const syncedCount = await seedNutritionStandards();
+      return NextResponse.json({
+        ok: true,
+        syncedCount,
+        message: `Đã đồng bộ thành công ${syncedCount} nguyên liệu và chỉ số dinh dưỡng chuẩn Việt Nam!`,
+      });
+    }
+
+    const {
+      name,
+      category,
+      standardUnit,
+      isPantryStaple,
+      calories100g,
+      protein100g,
+      fat100g,
+      carbs100g,
+      edibleRate,
+      nutritionSource,
+      nutritionNotes,
+    } = body;
 
     if (!name || typeof name !== 'string' || !name.trim()) {
       return NextResponse.json(
@@ -97,6 +149,25 @@ export async function POST(request: NextRequest) {
         isPantryStaple: Boolean(isPantryStaple),
       })
       .returning();
+
+    if (typeof calories100g === 'number' && !Number.isNaN(calories100g)) {
+      await db
+        .insert(ingredientNutrition)
+        .values({
+          ingredientId: created.id,
+          source: nutritionSource || 'VIETNAM_FCT_2007',
+          edibleRate: typeof edibleRate === 'number' && edibleRate > 0 && edibleRate <= 1 ? edibleRate : 1.0,
+          calories100g: Number(calories100g),
+          protein100g: typeof protein100g === 'number' ? Number(protein100g) : 0,
+          fat100g: typeof fat100g === 'number' ? Number(fat100g) : 0,
+          carbs100g: typeof carbs100g === 'number' ? Number(carbs100g) : 0,
+          isVerified: true,
+          notes: nutritionNotes || 'Bổ sung bởi Ban biên tập',
+        })
+        .onConflictDoNothing();
+    } else {
+      await resolveOrSeedIngredientNutrition(created.id, created.name);
+    }
 
     return NextResponse.json({ ingredient: created }, { status: 201 });
   } catch (error) {

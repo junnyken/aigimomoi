@@ -1,10 +1,10 @@
 import fs from 'fs';
 import path from 'path';
 import { sql, eq } from 'drizzle-orm';
-import { db, recipes, users } from './index';
+import { db, recipes, users, ingredients } from './index';
 import { hashPassword } from '../auth/password';
 import { seedProductionCatalog } from '../../scripts/seed_production_catalog';
-import { calculateRecipeNutrition } from '../nutrition/calculator';
+import { calculateRecipeNutrition, seedNutritionStandards } from '../nutrition/calculator';
 import { logger } from '../logger';
 
 let bootstrapPromise: Promise<void> | null = null;
@@ -128,6 +128,19 @@ async function runBootstrap(): Promise<void> {
     logger.info('Seeding updated production catalog (including Weight-Loss & Gym/Macro recipes)...');
     await seedProductionCatalog();
     logger.info('Auto-seed production catalog completed!');
+  }
+
+  // 4b. Tự động seed Từ điển Nguyên liệu Việt Nam mở rộng (~185 nguyên liệu + FCT) nếu chưa có
+  const existingFullCatalogIng = await db
+    .select({ id: ingredients.id })
+    .from(ingredients)
+    .where(eq(ingredients.slug, 'yen-mach'))
+    .limit(1);
+
+  if (existingFullCatalogIng.length === 0) {
+    logger.info('Seeding expanded Vietnamese ingredients & FCT nutrition dictionary...');
+    await seedNutritionStandards();
+    logger.info('Expanded Vietnamese ingredients dictionary seeded!');
   }
 
   // 5. Đảm bảo tất cả công thức đều có Snapshot Dinh dưỡng 100% cho từng thành phần
