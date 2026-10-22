@@ -247,7 +247,14 @@ export async function resolveMealSelection(params: {
  * Thuật toán gợi ý ngẫu nhiên 1 mâm cơm 3 món từ kho công thức PUBLISHED.
  * R7: chỉ gợi ý từ món Bếp Mom (đã qua biên tập).
  */
-export async function getRandomMealSlugs(): Promise<{ mainSlug: string; soupSlug: string; sideSlug: string } | null> {
+export async function getRandomMealSlugs(): Promise<{
+  mainSlug: string;
+  soupSlug: string;
+  sideSlug: string;
+  main: MealDishSummary;
+  soup: MealDishSummary;
+  side: MealDishSummary;
+} | null> {
   const [mains, soups, sides] = await Promise.all([
     queryPublishedMealOptions('MAIN', { editorialOnly: true }),
     queryPublishedMealOptions('SOUP', { editorialOnly: true }),
@@ -266,6 +273,9 @@ export async function getRandomMealSlugs(): Promise<{ mainSlug: string; soupSlug
     mainSlug: randomMain.slug,
     soupSlug: randomSoup.slug,
     sideSlug: randomSide.slug,
+    main: randomMain,
+    soup: randomSoup,
+    side: randomSide,
   };
 }
 

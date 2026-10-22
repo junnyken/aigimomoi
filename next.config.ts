@@ -32,6 +32,8 @@ const nextConfig: NextConfig = {
       { source: '/recipes', destination: '/mon-an' },
       { source: '/recipe/:slug', destination: '/cong-thuc/:slug' },
       { source: '/recipes/:slug', destination: '/cong-thuc/:slug' },
+      { source: '/calorie-calculator', destination: '/tinh-calo' },
+      { source: '/tdee', destination: '/tinh-calo' },
       { source: '/meal-builder', destination: '/mam-com' },
       { source: '/shopping-list', destination: '/di-cho' },
       { source: '/pantry', destination: '/tu-lanh' },

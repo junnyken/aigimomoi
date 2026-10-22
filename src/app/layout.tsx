@@ -162,6 +162,7 @@ export default function RootLayout({
                     Mục tiêu Dinh dưỡng
                   </h2>
                   <ul className="space-y-1.5 text-xs text-[var(--color-text-secondary)]">
+                    <li><Link href="/tinh-calo" className="font-semibold text-[var(--color-brand-primary)] hover:underline">⚖️ Tính TDEE, BMI &amp; Calo cá nhân</Link></li>
                     <li><Link href="/mon-an?tax=giam-can-it-calo" className="hover:text-[var(--color-brand-primary)]">Thực đơn Giảm cân · Ít Calo</Link></li>
                     <li><Link href="/mon-an?tax=tap-gym-tang-co" className="hover:text-[var(--color-brand-primary)]">Thực đơn Tập Gym · Tăng cơ</Link></li>
                     <li><Link href="/mon-an?maxCalories=300&sort=calories_asc" className="hover:text-[var(--color-brand-primary)]">Món ăn dưới 300 kcal/khẩu phần</Link></li>

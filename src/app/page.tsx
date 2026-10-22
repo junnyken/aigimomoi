@@ -27,6 +27,7 @@ import { searchPublishedRecipes } from "@/lib/recipes/searchQueries";
 import { resolveMealSelection } from "@/lib/meal/mealQueries";
 import { buildMealQuery } from "@/lib/meal/flowUrls";
 import { RecipeCard } from "@/components/recipe/RecipeCard";
+import { QuickRandomMealSpinner } from "@/components/meal/QuickRandomMealSpinner";
 
 const QUICK_MOOD_CHIPS = [
   {
@@ -314,6 +315,9 @@ export default function HomePage() {
                 <span className="truncate">Tủ lạnh nhà</span>
               </Link>
             </div>
+
+            {/* Vòng quay 1 chạm Hôm nay ăn gì + Lối tắt Tính TDEE / BMI */}
+            <QuickRandomMealSpinner />
           </div>
 
           {/* Cột Phải: Khung Hình Ảnh Bữa Cơm Gia Đình Việt Nam Thân Thiện */}

@@ -6,6 +6,7 @@ export const HEADER_LABELS: Record<Locale, Record<string, string>> = {
   vi: {
     '/': 'Trang chủ',
     '/mon-an': 'Tìm món',
+    '/tinh-calo': 'Tính TDEE/Calo',
     '/da-luu': 'Đã lưu',
     '/meal': 'Mâm cơm',
     '/shopping': 'Đi chợ',
@@ -21,6 +22,7 @@ export const HEADER_LABELS: Record<Locale, Record<string, string>> = {
   en: {
     '/': 'Home',
     '/mon-an': 'Recipes',
+    '/tinh-calo': 'TDEE & Calories',
     '/da-luu': 'Saved',
     '/meal': 'Meal Tray',
     '/shopping': 'Grocery',

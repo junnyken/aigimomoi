@@ -2,11 +2,12 @@ import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound, permanentRedirect } from 'next/navigation';
-import { ArrowLeft, Clock, Flame, Gauge, Users, UtensilsCrossed, Tag, Store, Utensils, Droplets, ArrowRight } from 'lucide-react';
+import { ArrowLeft, Clock, Flame, Gauge, Users, UtensilsCrossed, Tag, Store, Utensils, Droplets, ArrowRight, Wallet, ShieldCheck } from 'lucide-react';
 import { getCurrentSlugForArchived, getPublishedRecipeBySlug, listPublishedRecipes } from '@/lib/recipes/public';
 import type { PublicRecipe } from '@/lib/recipes/publicQueries';
 import { RecipeCard } from '@/components/recipe/RecipeCard';
 import { ShareRecipeButton } from '@/components/recipe/ShareRecipeButton';
+import { estimateDishCostVnd, getFreshnessAndNutritionGuide } from '@/lib/recipes/marketTips';
 import {
   ROLE_LABELS,
   TAXONOMY_TYPE_LABELS,
@@ -226,11 +227,18 @@ export default async function PublicRecipePage({ params }: PageParams) {
             isNutritionVerified={rawRecipe.isNutritionVerified}
           />
 
-          <dl className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <dl className="grid grid-cols-2 sm:grid-cols-5 gap-3">
             <Stat icon={Clock} label="Sơ chế" value={formatDuration(rawRecipe.prepTimeMinutes)} />
             <Stat icon={Flame} label="Nấu" value={formatDuration(rawRecipe.cookTimeMinutes)} />
             <Stat icon={Gauge} label="Độ khó" value={rawRecipe.difficulty} />
             <Stat icon={Users} label="Khẩu phần gốc" value={`${rawRecipe.baseServings} người`} />
+            <div className="col-span-2 sm:col-span-1">
+              <Stat
+                icon={Wallet}
+                label="Chi phí chợ (Ước tính)"
+                value={estimateDishCostVnd(rawRecipe, rawRecipe.baseServings).formattedRange}
+              />
+            </div>
           </dl>
 
           {isPaidCommunityRecipe ? (
@@ -398,6 +406,7 @@ function FullRecipeBody({ recipe }: { recipe: PublicRecipe }) {
             nutritionSnapshot={recipe.nutritionSnapshot}
           />
           <RecommendedDippingSauceCard recipe={recipe} />
+          <FreshnessAndStorageGuideCard recipe={recipe} />
         </aside>
 
         <div className="flex flex-col gap-8">
@@ -569,6 +578,45 @@ function RecommendedDippingSauceCard({ recipe }: { recipe: PublicRecipe }) {
         <span>Ghép món này + nước chấm vào mâm</span>
         <span aria-hidden="true">&rarr;</span>
       </Link>
+    </section>
+  );
+}
+
+function FreshnessAndStorageGuideCard({ recipe }: { recipe: PublicRecipe }) {
+  const guide = getFreshnessAndNutritionGuide(recipe);
+  const costEst = estimateDishCostVnd(recipe, recipe.baseServings);
+
+  return (
+    <section
+      aria-labelledby="freshness-guide-heading"
+      className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-4 shadow-2xs flex flex-col gap-2.5"
+    >
+      <div className="flex items-center justify-between gap-2">
+        <h2
+          id="freshness-guide-heading"
+          className="text-xs font-bold uppercase tracking-wider text-emerald-900 flex items-center gap-1.5"
+        >
+          <ShieldCheck className="w-3.5 h-3.5 text-emerald-700" aria-hidden="true" />
+          <span>Mẹo đi chợ &amp; Giữ trọn dinh dưỡng</span>
+        </h2>
+        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white text-emerald-800 border border-emerald-200">
+          Mức giá: {costEst.tierLabel}
+        </span>
+      </div>
+
+      <p className="text-xs sm:text-sm font-bold text-[var(--color-text-primary)]">{guide.title}</p>
+
+      <div className="space-y-2 text-xs text-[var(--color-text-secondary)] leading-relaxed">
+        <div className="p-2.5 rounded-xl bg-white border border-emerald-200/70">
+          <strong className="text-emerald-900">🛒 Cách chọn tươi ngon:</strong> {guide.selectionTip}
+        </div>
+        <div className="p-2.5 rounded-xl bg-white border border-emerald-200/70">
+          <strong className="text-emerald-900">❄️ Bảo quản an toàn:</strong> {guide.storageTip}
+        </div>
+        <div className="p-2.5 rounded-xl bg-white border border-emerald-200/70">
+          <strong className="text-emerald-900">🔥 Giữ dưỡng chất:</strong> {guide.nutritionRetentionTip}
+        </div>
+      </div>
     </section>
   );
 }

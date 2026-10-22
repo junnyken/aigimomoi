@@ -15,6 +15,7 @@ import {
   Volume2,
   VolumeX,
   Square,
+  Sun,
 } from 'lucide-react';
 import type { PublicRecipe, PublicRecipeStep } from '@/lib/recipes/publicQueries';
 import { scaleRecipeIngredients, clampServings } from '@/lib/recipes/scaling';
@@ -47,8 +48,52 @@ export function CookingModeView({
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [autoReadStep, setAutoReadStep] = useState(false);
   const [speechSupported, setSpeechSupported] = useState(false);
+  const [keepScreenAwake, setKeepScreenAwake] = useState(true);
+  const [wakeLockActive, setWakeLockActive] = useState(false);
 
   const currentStep: PublicRecipeStep | undefined = steps[currentIdx];
+
+  // Screen Wake Lock API — Giữ màn hình điện thoại không tự tắt khi đang đứng bếp tay ướt
+  useEffect(() => {
+    let sentinel: any = null;
+    let cancelled = false;
+
+    async function requestWakeLock() {
+      if (!keepScreenAwake || typeof navigator === 'undefined' || !('wakeLock' in navigator)) {
+        setWakeLockActive(false);
+        return;
+      }
+      try {
+        sentinel = await (navigator as any).wakeLock.request('screen');
+        if (!cancelled) {
+          setWakeLockActive(true);
+        }
+        sentinel.addEventListener('release', () => {
+          if (!cancelled) setWakeLockActive(false);
+        });
+      } catch {
+        if (!cancelled) setWakeLockActive(false);
+      }
+    }
+
+    requestWakeLock();
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && keepScreenAwake) {
+        requestWakeLock();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      cancelled = true;
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      if (sentinel && typeof sentinel.release === 'function') {
+        sentinel.release().catch(() => {});
+      }
+    };
+  }, [keepScreenAwake]);
 
   useEffect(() => {
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
@@ -201,6 +246,26 @@ export function CookingModeView({
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={() => setKeepScreenAwake((prev) => !prev)}
+            title="Giữ màn hình điện thoại luôn sáng khi đang đứng bếp tay ướt (Screen Wake Lock)"
+            className={`min-h-11 min-w-11 justify-center inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border cursor-pointer ${
+              keepScreenAwake
+                ? 'bg-amber-50 text-amber-900 border-amber-300 shadow-2xs'
+                : 'bg-[var(--color-surface-raised)] text-[var(--color-text-secondary)] border-[var(--color-border-base)]'
+            }`}
+          >
+            <Sun className={`w-4 h-4 ${keepScreenAwake ? 'text-amber-600' : ''}`} />
+            <span className="hidden md:inline">
+              {keepScreenAwake
+                ? wakeLockActive
+                  ? 'Giữ sáng màn hình: BẬT'
+                  : 'Giữ sáng: Tự động'
+                : 'Giữ sáng: TẮT'}
+            </span>
+          </button>
+
           {speechSupported && (
             <button
               type="button"

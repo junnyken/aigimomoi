@@ -9,7 +9,7 @@ import { HEADER_LABELS } from '@/lib/i18n/dictionary';
 const HEADER_NAV_ITEMS = [
   { href: '/', label: 'Trang chủ', inMobileBottomBar: true },
   { href: '/mon-an', label: 'Tìm món', inMobileBottomBar: true },
-  { href: '/da-luu', label: 'Đã lưu', inMobileBottomBar: false },
+  { href: '/tinh-calo', label: 'Tính TDEE/Calo', inMobileBottomBar: false },
   { href: '/meal', label: 'Mâm cơm', inMobileBottomBar: true },
   { href: '/shopping', label: 'Đi chợ', inMobileBottomBar: false },
   { href: '/tu-lanh', label: 'Tủ lạnh', inMobileBottomBar: true },
