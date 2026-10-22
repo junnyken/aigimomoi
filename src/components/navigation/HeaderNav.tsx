@@ -23,7 +23,7 @@ function HeaderNavList({ activePath }: { activePath: string | null }) {
 
   return (
     <nav
-      className="flex items-center gap-1 sm:gap-1.5 overflow-x-auto whitespace-nowrap scrollbar-none py-1 min-w-0"
+      className="flex items-center gap-0.5 xl:gap-1 overflow-x-auto whitespace-nowrap scrollbar-none py-1 min-w-0"
       aria-label="Điều hướng chính"
       data-no-i18n="true"
     >
@@ -43,7 +43,7 @@ function HeaderNavList({ activePath }: { activePath: string | null }) {
             key={item.href}
             href={item.href}
             aria-current={isActive ? 'page' : undefined}
-            className={`${visibilityClass} items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-full text-xs sm:text-sm transition-colors shrink-0 ${
+            className={`${visibilityClass} items-center gap-1 px-2 xl:px-2.5 py-1.5 rounded-full text-xs xl:text-[13px] transition-colors shrink-0 ${
               isActive
                 ? 'bg-[var(--color-brand-light)] text-[var(--color-brand-primary)] font-bold border border-[var(--color-brand-border)]/70 shadow-2xs'
                 : 'font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-brand-primary)] hover:bg-[var(--color-surface-raised)]'
