@@ -2,9 +2,11 @@ import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound, permanentRedirect } from 'next/navigation';
-import { ArrowLeft, Clock, Flame, Gauge, Users, UtensilsCrossed, Tag, Store, Utensils, Droplets } from 'lucide-react';
-import { getCurrentSlugForArchived, getPublishedRecipeBySlug } from '@/lib/recipes/public';
+import { ArrowLeft, Clock, Flame, Gauge, Users, UtensilsCrossed, Tag, Store, Utensils, Droplets, ArrowRight } from 'lucide-react';
+import { getCurrentSlugForArchived, getPublishedRecipeBySlug, listPublishedRecipes } from '@/lib/recipes/public';
 import type { PublicRecipe } from '@/lib/recipes/publicQueries';
+import { RecipeCard } from '@/components/recipe/RecipeCard';
+import { ShareRecipeButton } from '@/components/recipe/ShareRecipeButton';
 import {
   ROLE_LABELS,
   TAXONOMY_TYPE_LABELS,
@@ -243,12 +245,8 @@ export default async function PublicRecipePage({ params }: PageParams) {
               <LogToDiaryButton
                 recipeId={rawRecipe.id}
                 recipeName={rawRecipe.name}
-                className={
-                  ['MAIN', 'SOUP', 'SIDE', 'DIPPING_SAUCE'].includes(rawRecipe.role)
-                    ? 'col-span-2 sm:col-span-1'
-                    : ''
-                }
               />
+              <ShareRecipeButton recipeName={rawRecipe.name} slug={rawRecipe.slug} />
             </div>
           )}
 
@@ -268,6 +266,11 @@ export default async function PublicRecipePage({ params }: PageParams) {
       ) : (
         <FullRecipeBody recipe={rawRecipe} />
       )}
+
+      {/* Kệ Gợi ý Món ngon nấu kèm & Liên kết nội bộ SEO */}
+      <Suspense fallback={null}>
+        <RelatedRecipesSection currentSlug={rawRecipe.slug} currentRole={rawRecipe.role} />
+      </Suspense>
     </article>
   );
 }
@@ -569,4 +572,56 @@ function RecommendedDippingSauceCard({ recipe }: { recipe: PublicRecipe }) {
     </section>
   );
 }
+
+async function RelatedRecipesSection({
+  currentSlug,
+  currentRole,
+}: {
+  currentSlug: string;
+  currentRole: string;
+}) {
+  const allRecipes = await listPublishedRecipes(16);
+  const candidates = allRecipes.filter((r) => r.slug !== currentSlug);
+  if (candidates.length === 0) return null;
+
+  // Ưu tiên 2 món cùng nhóm + 2 món bổ trợ mâm cơm (Canh / Rau / Mặn)
+  const sameRole = candidates.filter((r) => r.role === currentRole).slice(0, 2);
+  const otherRole = candidates.filter((r) => r.role !== currentRole).slice(0, 4 - sameRole.length);
+  const related = [...sameRole, ...otherRole].slice(0, 4);
+
+  return (
+    <section
+      aria-labelledby="related-recipes-heading"
+      className="pt-8 border-t border-[var(--color-border-base)] flex flex-col gap-5 print:hidden"
+    >
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2">
+        <div>
+          <span className="text-xs font-bold uppercase tracking-wider text-[var(--color-accent-primary)]">
+            Gợi ý mâm cơm tròn vị
+          </span>
+          <h2
+            id="related-recipes-heading"
+            className="text-xl sm:text-2xl font-bold text-[var(--color-text-primary)] mt-0.5"
+          >
+            Món ngon nấu kèm &amp; Công thức liên quan
+          </h2>
+        </div>
+        <Link
+          href="/mon-an"
+          className="text-xs sm:text-sm font-semibold text-[var(--color-brand-primary)] hover:underline inline-flex items-center gap-1"
+        >
+          <span>Xem tất cả món ăn</span>
+          <ArrowRight className="w-3.5 h-3.5" />
+        </Link>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {related.map((item) => (
+          <RecipeCard key={item.slug} recipe={item} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
 
