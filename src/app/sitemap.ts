@@ -3,41 +3,86 @@ import { eq, desc } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { recipes } from '@/lib/db/schema';
 import { recipePath } from '@/lib/recipes/labels';
+import { getSiteUrl } from '@/lib/seo/siteConfig';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://angimom.vn';
+  const baseUrl = getSiteUrl();
+  const now = new Date();
 
-  // 1. Các trang tĩnh công khai chính
+  // 1. Các trang tĩnh công khai chính + Landing pages chuyên mục SEO
   const staticRoutes: MetadataRoute.Sitemap = [
     {
       url: `${baseUrl}`,
-      lastModified: new Date(),
+      lastModified: now,
       changeFrequency: 'daily',
       priority: 1.0,
     },
     {
       url: `${baseUrl}/mon-an`,
-      lastModified: new Date(),
+      lastModified: now,
       changeFrequency: 'daily',
-      priority: 0.9,
+      priority: 0.95,
     },
     {
       url: `${baseUrl}/meal`,
-      lastModified: new Date(),
+      lastModified: now,
       changeFrequency: 'daily',
       priority: 0.9,
     },
     {
-      url: `${baseUrl}/da-luu`,
-      lastModified: new Date(),
+      url: `${baseUrl}/ke-hoach-tuan`,
+      lastModified: now,
       changeFrequency: 'weekly',
-      priority: 0.6,
+      priority: 0.85,
+    },
+    {
+      url: `${baseUrl}/tu-lanh`,
+      lastModified: now,
+      changeFrequency: 'weekly',
+      priority: 0.8,
     },
     {
       url: `${baseUrl}/shopping`,
-      lastModified: new Date(),
+      lastModified: now,
+      changeFrequency: 'weekly',
+      priority: 0.75,
+    },
+    {
+      url: `${baseUrl}/da-luu`,
+      lastModified: now,
       changeFrequency: 'weekly',
       priority: 0.6,
+    },
+    // Chuyên mục SEO trọng tâm (Món mặn, Món canh, Món rau, Giảm cân ít calo, Tập gym tăng cơ)
+    {
+      url: `${baseUrl}/mon-an?role=MAIN`,
+      lastModified: now,
+      changeFrequency: 'daily',
+      priority: 0.85,
+    },
+    {
+      url: `${baseUrl}/mon-an?role=SOUP`,
+      lastModified: now,
+      changeFrequency: 'daily',
+      priority: 0.85,
+    },
+    {
+      url: `${baseUrl}/mon-an?role=SIDE`,
+      lastModified: now,
+      changeFrequency: 'daily',
+      priority: 0.85,
+    },
+    {
+      url: `${baseUrl}/mon-an?tax=giam-can-it-calo`,
+      lastModified: now,
+      changeFrequency: 'daily',
+      priority: 0.9,
+    },
+    {
+      url: `${baseUrl}/mon-an?tax=tap-gym-tang-co`,
+      lastModified: now,
+      changeFrequency: 'daily',
+      priority: 0.9,
     },
   ];
 
@@ -55,7 +100,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     const recipeRoutes: MetadataRoute.Sitemap = publishedRecipes.map((r) => ({
       url: `${baseUrl}${recipePath(r.slug)}`,
-      lastModified: r.updatedAt || r.publishedAt || new Date(),
+      lastModified: r.updatedAt || r.publishedAt || now,
       changeFrequency: 'weekly',
       priority: 0.8,
     }));

@@ -1,14 +1,25 @@
 import type { MetadataRoute } from 'next';
+import { getSiteUrl } from '@/lib/seo/siteConfig';
 
 export default function robots(): MetadataRoute.Robots {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://angimom.vn';
+  const baseUrl = getSiteUrl();
 
   return {
     rules: {
       userAgent: '*',
       allow: '/',
-      disallow: ['/editor/', '/api/', '/login'],
+      disallow: [
+        '/editor/',
+        '/quan-tri/',
+        '/api/',
+        '/login',
+        '/register',
+        '/forgot-password',
+        '/reset-password',
+        '/profile',
+      ],
     },
     sitemap: `${baseUrl}/sitemap.xml`,
+    host: baseUrl,
   };
 }

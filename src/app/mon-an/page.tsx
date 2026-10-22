@@ -23,24 +23,47 @@ export async function generateMetadata({ searchParams }: SearchPageProps): Promi
   const params = await searchParams;
   const q = typeof params.q === 'string' ? params.q.trim() : '';
   const role = typeof params.role === 'string' ? params.role : '';
+  const tax = typeof params.tax === 'string' ? params.tax : '';
 
   if (q) {
     return {
-      title: `Tìm kiếm: "${q}" | Ăn Gì Mom`,
-      description: `Kết quả tìm kiếm công thức nấu ăn cho từ khóa "${q}". Bữa cơm nhà, bớt nghĩ hôm nay ăn gì.`,
+      title: `Tìm kiếm: "${q}" — Công thức nấu ăn`,
+      description: `Kết quả tìm kiếm công thức nấu ăn và chỉ số Calo cho từ khóa "${q}". Bữa cơm nhà, bớt nghĩ hôm nay ăn gì.`,
+      robots: { index: false, follow: true },
+    };
+  }
+
+  if (tax === 'giam-can-it-calo') {
+    return {
+      title: 'Thực đơn Giảm cân · Ít Calo (Eat Clean Việt Nam dưới 500 kcal)',
+      description:
+        'Tổng hợp các món ăn giảm cân, ít calo, giàu chất xơ chuẩn NHS Better Health, BBC Good Food & Viện Dinh Dưỡng Việt Nam dễ nấu tại nhà.',
+      alternates: { canonical: '/mon-an?tax=giam-can-it-calo' },
+    };
+  }
+
+  if (tax === 'tap-gym-tang-co') {
+    return {
+      title: 'Thực đơn Tập Gym · Tăng cơ – Giảm mỡ (Giàu Protein / Macro-Friendly)',
+      description:
+        'Kho công thức món ăn giàu Protein (Đạm cao) từ ức gà, bò thăn, cá hồi, tôm trứng chuẩn Eat the Gains & Fit Men Cook kèm bảng Macro chi tiết.',
+      alternates: { canonical: '/mon-an?tax=tap-gym-tang-co' },
     };
   }
 
   if (role && ROLE_LABELS[role]) {
     return {
-      title: `${ROLE_LABELS[role]} cho bữa cơm gia đình | Ăn Gì Mom`,
-      description: `Khám phá các món ${ROLE_LABELS[role].toLowerCase()} chuẩn vị, định lượng rõ ràng cho bữa cơm gia đình.`,
+      title: `${ROLE_LABELS[role]} cho bữa cơm gia đình`,
+      description: `Khám phá các công thức ${ROLE_LABELS[role].toLowerCase()} chuẩn vị 3 miền, định lượng rõ ràng và tự động tính Calo cho bữa cơm gia đình.`,
+      alternates: { canonical: `/mon-an?role=${role}` },
     };
   }
 
   return {
-    title: 'Khám phá món ăn — Tìm kiếm & Bộ lọc | Ăn Gì Mom',
-    description: 'Tìm kiếm công thức nấu ăn gia đình theo vai trò món, thời gian nấu, độ khó và nhãn kiểm chứng bếp thực tế.',
+    title: 'Khám phá Món ăn Cơm nhà — Tìm kiếm & Bộ lọc Dinh dưỡng',
+    description:
+      'Tìm kiếm công thức nấu ăn gia đình Việt Nam theo vai trò món (mặn, canh, xào), mục tiêu giảm cân / tập gym, thời gian nấu và lượng Calo.',
+    alternates: { canonical: '/mon-an' },
   };
 }
 

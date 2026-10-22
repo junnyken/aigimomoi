@@ -64,16 +64,39 @@ export async function generateMetadata({ params }: PageParams): Promise<Metadata
   const recipe = await getPublishedRecipeBySlug(slug);
   if (!recipe) return { title: 'Không tìm thấy công thức — ĂN GÌ MOM', robots: { index: false } };
 
-  const title = `${recipe.name} — Công thức nấu cơm nhà | ĂN GÌ MOM`;
+  const title = `${recipe.name} — Công thức nấu cơm nhà${recipe.caloriesPerServing ? ` (${recipe.caloriesPerServing} kcal)` : ''} | ĂN GÌ MOM`;
+  const keywords = [
+    recipe.name,
+    `cách làm ${recipe.name.toLowerCase()}`,
+    `công thức ${recipe.name.toLowerCase()}`,
+    ROLE_LABELS[recipe.role] || recipe.role,
+    ...(recipe.dish?.aliases || []),
+    ...recipe.tags.map((t) => t.name),
+  ];
+
   return {
     title,
     description: recipe.shortDescription,
-    alternates: { canonical: recipePath(recipe.slug) },
+    keywords,
+    alternates: {
+      canonical: recipePath(recipe.slug),
+      languages: {
+        'vi-VN': recipePath(recipe.slug),
+        'en-US': `/recipe/${recipe.slug}`,
+      },
+    },
     openGraph: {
       type: 'article',
       title,
       description: recipe.shortDescription,
+      url: recipePath(recipe.slug),
       ...(recipe.heroImage ? { images: [{ url: recipe.heroImage, alt: recipe.name }] } : {}),
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description: recipe.shortDescription,
+      ...(recipe.heroImage ? { images: [recipe.heroImage] } : {}),
     },
   };
 }
@@ -94,15 +117,30 @@ export default async function PublicRecipePage({ params }: PageParams) {
     : rawRecipe;
 
   return (
-    <article className="flex flex-col gap-8 pb-12">
+    <article className="flex flex-col gap-6 sm:gap-8 pb-12">
       <RecipeJsonLd recipe={jsonLdRecipe} />
-      <Link
-        href="/"
-        className="inline-flex w-fit items-center gap-1.5 text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-brand-primary)] transition-colors"
-      >
-        <ArrowLeft className="w-4 h-4" aria-hidden="true" />
-        Khám phá món khác
-      </Link>
+
+      {/* Semantic Breadcrumb Navigation cho SEO & Người dùng */}
+      <nav aria-label="Breadcrumb" className="flex flex-wrap items-center gap-1.5 text-xs sm:text-sm text-[var(--color-text-secondary)]">
+        <Link href="/" className="hover:text-[var(--color-brand-primary)] transition-colors font-medium">
+          Trang chủ
+        </Link>
+        <span aria-hidden="true" className="text-[var(--color-text-muted)]">/</span>
+        <Link href="/mon-an" className="hover:text-[var(--color-brand-primary)] transition-colors font-medium">
+          Món ăn
+        </Link>
+        <span aria-hidden="true" className="text-[var(--color-text-muted)]">/</span>
+        <Link
+          href={`/mon-an?role=${encodeURIComponent(rawRecipe.role)}`}
+          className="hover:text-[var(--color-brand-primary)] transition-colors font-medium"
+        >
+          {ROLE_LABELS[rawRecipe.role] ?? rawRecipe.role}
+        </Link>
+        <span aria-hidden="true" className="text-[var(--color-text-muted)]">/</span>
+        <span className="font-semibold text-[var(--color-text-primary)] truncate max-w-[220px] sm:max-w-md" aria-current="page">
+          {rawRecipe.name}
+        </span>
+      </nav>
 
       {/* Hero */}
       <header className="grid gap-6 lg:grid-cols-[1.1fr_1fr] lg:items-center">
