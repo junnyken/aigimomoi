@@ -6,6 +6,7 @@ import { HeaderNav } from "@/components/navigation/HeaderNav";
 import { MobileBottomNav } from "@/components/navigation/MobileBottomNav";
 import { UserNavButton } from "@/components/navigation/UserNavButton";
 import { LanguageSwitcher } from "@/components/navigation/LanguageSwitcher";
+import { ScrollToTopButton } from "@/components/navigation/ScrollToTopButton";
 import { I18nProvider } from "@/lib/i18n/I18nProvider";
 import { getSiteUrl, buildWebsiteJsonLd } from "@/lib/seo/siteConfig";
 import "./globals.css";
@@ -129,8 +130,9 @@ export default function RootLayout({
             {children}
           </main>
 
-          {/* Mobile Bottom Navigation Bar */}
+          {/* Mobile Bottom Navigation Bar & Floating Scroll-to-Top Button */}
           <MobileBottomNav />
+          <ScrollToTopButton />
 
           {/* Semantic SEO Footer with Internal Link Silos */}
           <footer className="bg-[var(--color-surface-white)] border-t border-[var(--color-border-base)] pt-10 pb-28 md:pb-10 mt-auto">
