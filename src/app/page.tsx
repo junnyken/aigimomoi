@@ -268,40 +268,40 @@ export default function HomePage() {
             })}
           </div>
 
-          <div className="flex flex-wrap items-center justify-center gap-3">
+          <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center justify-center gap-2.5 sm:gap-3 w-full sm:w-auto">
             <Link
               href="/meal"
-              className="min-h-11 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold bg-[var(--color-accent-primary)] text-white shadow-sm hover:bg-[var(--color-accent-hover)] transition-transform hover:-translate-y-0.5"
+              className="col-span-2 sm:col-span-1 min-h-11 inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-semibold bg-[var(--color-accent-primary)] text-white shadow-sm hover:bg-[var(--color-accent-hover)] transition-transform hover:-translate-y-0.5 text-sm sm:text-base"
             >
-              <Utensils className="w-4 h-4" />
+              <Utensils className="w-4 h-4 shrink-0" />
               <span>Ghép mâm cơm 3 món</span>
             </Link>
             <Link
               href="/shopping"
-              className="min-h-11 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold bg-[var(--color-surface-white)] text-[var(--color-text-primary)] border border-[var(--color-border-base)] hover:bg-[var(--color-surface-raised)] transition-colors"
+              className="min-h-11 inline-flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-2.5 rounded-xl font-semibold bg-[var(--color-surface-white)] text-[var(--color-text-primary)] border border-[var(--color-border-base)] hover:bg-[var(--color-surface-raised)] transition-colors text-xs sm:text-sm"
             >
-              <ShoppingBag className="w-4 h-4 text-[var(--color-brand-primary)]" />
-              <span>Xem danh sách đi chợ</span>
+              <ShoppingBag className="w-4 h-4 text-[var(--color-brand-primary)] shrink-0" />
+              <span className="truncate">Đi chợ</span>
             </Link>
             <Link
               href="/tu-lanh"
-              className="min-h-11 inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium bg-[var(--color-surface-raised)] text-[var(--color-text-secondary)] hover:text-[var(--color-brand-primary)] border border-[var(--color-border-subtle)] transition-colors text-sm"
+              className="min-h-11 inline-flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 rounded-xl font-medium bg-[var(--color-surface-raised)] text-[var(--color-text-secondary)] hover:text-[var(--color-brand-primary)] border border-[var(--color-border-subtle)] transition-colors text-xs sm:text-sm"
             >
-              <Refrigerator className="w-4 h-4 text-[var(--color-brand-primary)]" />
-              <span>Tủ lạnh nhà mình</span>
+              <Refrigerator className="w-4 h-4 text-[var(--color-brand-primary)] shrink-0" />
+              <span className="truncate">Tủ lạnh nhà</span>
             </Link>
           </div>
         </div>
       </section>
 
       {/* TẦNG 2: Khám Phá 8 Nhóm Món Cơm Nhà (Bento Category Grid) */}
-      <section aria-labelledby="categories-heading" className="flex flex-col gap-5">
+      <section aria-labelledby="categories-heading" className="flex flex-col gap-4 sm:gap-5">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2">
           <div>
             <span className="text-xs font-bold uppercase tracking-wider text-[var(--color-accent-primary)]">
               Danh mục bếp nhà
             </span>
-            <h2 id="categories-heading" className="text-2xl font-bold text-[var(--color-text-primary)] mt-0.5">
+            <h2 id="categories-heading" className="text-xl sm:text-2xl font-bold text-[var(--color-text-primary)] mt-0.5">
               Chọn món theo đúng vị & mục tiêu hôm nay
             </h2>
           </div>
@@ -314,33 +314,33 @@ export default function HomePage() {
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {CULINARY_CATEGORIES.map((cat) => {
             const Icon = cat.icon;
             return (
               <Link
                 key={cat.title}
                 href={cat.href}
-                className="group p-5 rounded-2xl bg-[var(--color-surface-white)] border border-[var(--color-border-base)] hover:border-[var(--color-brand-border)] hover:shadow-sm transition-all flex flex-col justify-between gap-3.5"
+                className="group p-3.5 sm:p-5 rounded-2xl bg-[var(--color-surface-white)] border border-[var(--color-border-base)] hover:border-[var(--color-brand-border)] hover:shadow-sm transition-all flex flex-col justify-between gap-2.5 sm:gap-3.5 h-full"
               >
-                <div className="flex items-start justify-between gap-2">
-                  <div className={`w-11 h-11 rounded-xl border flex items-center justify-center shrink-0 ${cat.tone}`}>
-                    <Icon className="w-5 h-5" />
+                <div className="flex items-start justify-between gap-1.5 sm:gap-2">
+                  <div className={`w-9 h-9 sm:w-11 sm:h-11 rounded-xl border flex items-center justify-center shrink-0 ${cat.tone}`}>
+                    <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
                   </div>
-                  <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-[var(--color-surface-raised)] text-[var(--color-text-secondary)]">
+                  <span className="text-[10px] sm:text-xs font-semibold px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full bg-[var(--color-surface-raised)] text-[var(--color-text-secondary)] truncate max-w-[110px] sm:max-w-none">
                     {cat.badge}
                   </span>
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-[var(--color-text-primary)] group-hover:text-[var(--color-brand-primary)] transition-colors">
+                  <h3 className="text-sm sm:text-lg font-bold text-[var(--color-text-primary)] group-hover:text-[var(--color-brand-primary)] transition-colors leading-snug">
                     {cat.title}
                   </h3>
-                  <p className="text-sm text-[var(--color-text-secondary)] mt-1 leading-relaxed line-clamp-2">
+                  <p className="text-xs sm:text-sm text-[var(--color-text-secondary)] mt-1 leading-relaxed line-clamp-2">
                     {cat.subtitle}
                   </p>
                 </div>
-                <div className="pt-2.5 border-t border-[var(--color-border-subtle)] flex items-center justify-between text-sm font-semibold text-[var(--color-brand-primary)]">
-                  <span>Khám phá ngay</span>
+                <div className="pt-2 sm:pt-2.5 border-t border-[var(--color-border-subtle)] flex items-center justify-between text-xs sm:text-sm font-semibold text-[var(--color-brand-primary)]">
+                  <span>Khám phá</span>
                   <span className="group-hover:translate-x-0.5 transition-transform">&rarr;</span>
                 </div>
               </Link>
@@ -565,19 +565,19 @@ export default function HomePage() {
             Chia sẻ công thức của gia đình bạn lên Ăn Gì Mom để hệ thống tự động tính bảng dinh dưỡng chuẩn Viện Dinh Dưỡng và lưu giữ cho gian bếp Việt.
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-3 shrink-0">
+        <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2.5 w-full md:w-auto shrink-0">
           <Link
             href="/contribute/new"
-            className="min-h-11 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-hover)] text-white text-xs sm:text-sm font-semibold transition-colors shadow-xs"
+            className="min-h-11 inline-flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-2.5 rounded-xl bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-hover)] text-white text-xs sm:text-sm font-semibold transition-colors shadow-xs"
           >
-            <PlusCircle className="w-4 h-4" />
-            <span>Gửi công thức mới</span>
+            <PlusCircle className="w-4 h-4 shrink-0" />
+            <span className="truncate">Gửi công thức</span>
           </Link>
           <Link
             href="/nhat-ky"
-            className="min-h-11 inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[var(--color-surface-raised)] hover:bg-[var(--color-brand-light)] text-[var(--color-text-primary)] hover:text-[var(--color-brand-primary)] text-xs sm:text-sm font-semibold border border-[var(--color-border-base)] transition-colors"
+            className="min-h-11 inline-flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 rounded-xl bg-[var(--color-surface-raised)] hover:bg-[var(--color-brand-light)] text-[var(--color-text-primary)] hover:text-[var(--color-brand-primary)] text-xs sm:text-sm font-semibold border border-[var(--color-border-base)] transition-colors"
           >
-            <span>Xem nhật ký bữa cơm</span>
+            <span className="truncate">Nhật ký bữa cơm</span>
           </Link>
         </div>
       </section>
@@ -651,21 +651,21 @@ async function TodayMealTrayShowcase() {
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2.5">
+        <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2.5 w-full md:w-auto">
           <Link
             href={`/meal?${query}`}
-            className="min-h-11 inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[var(--color-surface-raised)] hover:bg-[var(--color-brand-light)] text-[var(--color-text-primary)] hover:text-[var(--color-brand-primary)] text-xs sm:text-sm font-semibold border border-[var(--color-border-base)] transition-colors"
+            className="min-h-11 inline-flex items-center justify-center gap-1.5 px-3 sm:px-4 py-2.5 rounded-xl bg-[var(--color-surface-raised)] hover:bg-[var(--color-brand-light)] text-[var(--color-text-primary)] hover:text-[var(--color-brand-primary)] text-xs sm:text-sm font-semibold border border-[var(--color-border-base)] transition-colors"
           >
-            <Utensils className="w-4 h-4 text-[var(--color-brand-primary)]" />
-            <span>Tùy chỉnh mâm này</span>
+            <Utensils className="w-4 h-4 text-[var(--color-brand-primary)] shrink-0" />
+            <span className="truncate">Tùy chỉnh mâm</span>
           </Link>
           <Link
             href={`/shopping?${query}`}
-            className="min-h-11 inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-hover)] text-white text-xs sm:text-sm font-semibold transition-colors shadow-xs"
+            className="min-h-11 inline-flex items-center justify-center gap-1.5 px-3 sm:px-4 py-2.5 rounded-xl bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-hover)] text-white text-xs sm:text-sm font-semibold transition-colors shadow-xs"
           >
-            <ShoppingBag className="w-4 h-4" />
-            <span>Lên danh sách đi chợ</span>
-            <ArrowRight className="w-3.5 h-3.5" />
+            <ShoppingBag className="w-4 h-4 shrink-0" />
+            <span className="truncate">Đi chợ ngay</span>
+            <ArrowRight className="w-3.5 h-3.5 hidden sm:inline shrink-0" />
           </Link>
         </div>
       </div>

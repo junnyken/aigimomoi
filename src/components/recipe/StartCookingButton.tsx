@@ -29,7 +29,7 @@ export function StartCookingButton({ slug, baseServings }: StartCookingButtonPro
         const current = new URL(window.location.href).searchParams.get('servings');
         router.push(buildCookingHref(slug, current, baseServings));
       }}
-      className="min-h-11 inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl font-bold bg-[var(--color-brand-primary)] text-white hover:opacity-95 transition-all shadow-xs w-full sm:w-auto"
+      className="min-h-11 col-span-2 sm:col-span-1 inline-flex items-center justify-center gap-2 px-5 sm:px-6 py-3 rounded-2xl font-bold bg-[var(--color-brand-primary)] text-white hover:opacity-95 transition-all shadow-xs w-full sm:w-auto text-sm sm:text-base"
     >
       <ChefHat className="w-5 h-5" />
       <span>Bắt đầu nấu món này</span>

@@ -6,19 +6,19 @@ import { usePathname } from 'next/navigation';
 
 const HEADER_NAV_ITEMS = [
   { href: '/', label: 'Trang chủ', inMobileBottomBar: true },
-  { href: '/mon-an', label: 'Tìm món', inMobileBottomBar: false },
+  { href: '/mon-an', label: 'Tìm món', inMobileBottomBar: true },
   { href: '/da-luu', label: 'Đã lưu', inMobileBottomBar: false },
   { href: '/meal', label: 'Mâm cơm', inMobileBottomBar: true },
   { href: '/shopping', label: 'Đi chợ', inMobileBottomBar: false },
   { href: '/tu-lanh', label: 'Tủ lạnh', inMobileBottomBar: true },
-  { href: '/ke-hoach-tuan', label: 'Kế hoạch', inMobileBottomBar: true },
+  { href: '/ke-hoach-tuan', label: 'Kế hoạch', inMobileBottomBar: false },
   { href: '/nhat-ky', label: 'Nhật ký', inMobileBottomBar: true },
 ];
 
 function HeaderNavList({ activePath }: { activePath: string | null }) {
   return (
     <nav
-      className="flex items-center gap-1 sm:gap-1.5 overflow-x-auto whitespace-nowrap scrollbar-none py-1 max-w-[calc(100vw-180px)] sm:max-w-none"
+      className="flex items-center gap-1 sm:gap-1.5 overflow-x-auto whitespace-nowrap scrollbar-none py-1 min-w-0"
       aria-label="Điều hướng chính"
     >
       {HEADER_NAV_ITEMS.map((item) => {
@@ -28,7 +28,7 @@ function HeaderNavList({ activePath }: { activePath: string | null }) {
             ? activePath === '/'
             : activePath === item.href || activePath.startsWith(`${item.href}/`));
 
-        // Trên mobile (< md), ẩn các tab đã có ở MobileBottomNav để thanh Header trên cùng thoáng gọn
+        // Trên mobile (< md), ẩn các tab đã có ở MobileBottomNav để thanh Header trên cùng thoáng gọn, không tràn ngang
         const visibilityClass = item.inMobileBottomBar ? 'hidden md:inline-flex' : 'inline-flex';
 
         return (
@@ -36,7 +36,7 @@ function HeaderNavList({ activePath }: { activePath: string | null }) {
             key={item.href}
             href={item.href}
             aria-current={isActive ? 'page' : undefined}
-            className={`${visibilityClass} items-center gap-1.5 px-3 sm:px-3.5 py-2 rounded-full text-sm sm:text-base transition-colors shrink-0 ${
+            className={`${visibilityClass} items-center gap-1 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-full text-xs sm:text-base transition-colors shrink-0 ${
               isActive
                 ? 'bg-[var(--color-brand-light)] text-[var(--color-brand-primary)] font-bold border border-[var(--color-brand-border)]/70 shadow-2xs'
                 : 'font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-brand-primary)] hover:bg-[var(--color-surface-raised)]'

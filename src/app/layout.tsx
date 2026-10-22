@@ -26,14 +26,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="vi" className={`${beVietnamPro.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col bg-[var(--color-bg-primary)] text-[var(--color-text-primary)]">
+    <html lang="vi" className={`${beVietnamPro.variable} h-full antialiased overflow-x-hidden`}>
+      <body className="min-h-full w-full max-w-full overflow-x-hidden flex flex-col bg-[var(--color-bg-primary)] text-[var(--color-text-primary)]">
         <ServiceWorkerRegister />
         {/* Sticky Header */}
-        <header className="sticky top-0 z-40 bg-[var(--color-surface-white)] border-b border-[var(--color-border-base)] shadow-xs">
-          <div className="max-w-[1680px] w-full mx-auto px-4 sm:px-6 lg:px-10 py-3 flex items-center justify-between gap-3">
+        <header className="sticky top-0 z-40 w-full bg-[var(--color-surface-white)] border-b border-[var(--color-border-base)] shadow-xs">
+          <div className="max-w-[1680px] w-full mx-auto px-3.5 sm:px-6 lg:px-10 py-2.5 sm:py-3 flex items-center justify-between gap-2 sm:gap-3">
             <Link href="/" className="flex flex-col no-underline shrink-0">
-              <div className="text-2xl font-bold tracking-tight leading-none">
+              <div className="text-xl sm:text-2xl font-bold tracking-tight leading-none">
                 <span className="text-[var(--color-brand-primary)]">ĂN GÌ</span>
                 <span className="text-[var(--color-accent-primary)] ml-1">MOM</span>
               </div>
@@ -42,7 +42,7 @@ export default function RootLayout({
               </span>
             </Link>
 
-            <div className="flex items-center gap-2 sm:gap-3">
+            <div className="flex items-center justify-end gap-1.5 sm:gap-3 min-w-0 flex-1">
               <HeaderNav />
 
               <UserNavButton />
@@ -51,7 +51,7 @@ export default function RootLayout({
         </header>
 
         {/* Main Page Content (có padding bottom trên mobile để không cấn bottom bar) */}
-        <main className="flex-1 max-w-[1680px] w-full mx-auto px-4 sm:px-6 lg:px-10 py-6 pb-24 md:pb-8">
+        <main className="flex-1 max-w-[1680px] w-full mx-auto px-3.5 sm:px-6 lg:px-10 py-5 sm:py-6 pb-24 md:pb-8 overflow-x-hidden">
           {children}
         </main>
 

@@ -8,9 +8,10 @@ import { HeartPulse, Plus, Check, X, Calendar } from 'lucide-react';
 interface LogToDiaryButtonProps {
   recipeId: number;
   recipeName: string;
+  className?: string;
 }
 
-export function LogToDiaryButton({ recipeId, recipeName }: LogToDiaryButtonProps) {
+export function LogToDiaryButton({ recipeId, recipeName, className = '' }: LogToDiaryButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [mealType, setMealType] = useState<'BREAKFAST' | 'LUNCH' | 'DINNER' | 'SNACK'>('LUNCH');
   const [portion, setPortion] = useState(1.0);
@@ -65,7 +66,7 @@ export function LogToDiaryButton({ recipeId, recipeName }: LogToDiaryButtonProps
       <button
         type="button"
         onClick={() => setIsOpen(true)}
-        className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-2xl font-semibold border border-[var(--color-border-base)] bg-[var(--color-surface-white)] hover:bg-[var(--color-surface-raised)] text-[var(--color-text-secondary)] hover:text-[var(--color-brand-primary)] transition-all shadow-xs text-sm"
+        className={`min-h-11 w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-3 rounded-2xl font-semibold border border-[var(--color-border-base)] bg-[var(--color-surface-white)] hover:bg-[var(--color-surface-raised)] text-[var(--color-text-secondary)] hover:text-[var(--color-brand-primary)] transition-all shadow-xs text-sm ${className}`}
         title="Ghi món ăn này vào nhật ký bữa cơm gia đình hôm nay"
       >
         <HeartPulse className="w-4 h-4 text-red-500" />

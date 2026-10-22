@@ -70,37 +70,41 @@ export default function SearchPage({ searchParams }: SearchPageProps) {
         </div>
 
         {/* Chuyên mục Dinh dưỡng Mục tiêu: Giảm cân · Ít Calo & Tập Gym · Tăng cơ */}
-        <div className="mt-5 pt-4 border-t border-[var(--color-border-subtle)]/80 flex flex-wrap items-center gap-2.5">
+        <div className="mt-5 pt-4 border-t border-[var(--color-border-subtle)]/80 flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2">
           <span className="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)] mr-1">
             Mục tiêu dinh dưỡng:
           </span>
-          <Link
-            href="/mon-an?tax=giam-can-it-calo"
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-200 text-xs font-bold transition-all shadow-2xs"
-          >
-            <Flame className="w-3.5 h-3.5 text-emerald-600" />
-            <span>🥗 Giảm cân · Ít Calo (NHS / BBC Good Food)</span>
-          </Link>
-          <Link
-            href="/mon-an?tax=tap-gym-tang-co"
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200 text-xs font-bold transition-all shadow-2xs"
-          >
-            <Dumbbell className="w-3.5 h-3.5 text-blue-600" />
-            <span>💪 Tập Gym · Tăng cơ – Giảm mỡ (High Protein)</span>
-          </Link>
-          <Link
-            href="/mon-an?maxCalories=300&sort=calories_asc"
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 text-xs font-semibold transition-all"
-          >
-            <Sparkles className="w-3.5 h-3.5 text-amber-600" />
-            <span>Dưới 300 kcal / khẩu phần</span>
-          </Link>
-          <Link
-            href="/mon-an"
-            className="inline-flex items-center gap-1 px-3 py-2 rounded-2xl bg-[var(--color-surface-white)] hover:bg-[var(--color-surface-raised)] text-[var(--color-text-secondary)] border border-[var(--color-border-base)] text-xs font-semibold transition-all"
-          >
-            <span>Tất cả món</span>
-          </Link>
+          <div className="grid grid-cols-1 sm:flex sm:flex-wrap items-center gap-2">
+            <Link
+              href="/mon-an?tax=giam-can-it-calo"
+              className="inline-flex items-center justify-center sm:justify-start gap-1.5 px-3.5 py-2.5 sm:py-2 rounded-2xl bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-200 text-xs font-bold transition-all shadow-2xs"
+            >
+              <Flame className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+              <span className="truncate">🥗 Giảm cân · Ít Calo (NHS / BBC Good Food)</span>
+            </Link>
+            <Link
+              href="/mon-an?tax=tap-gym-tang-co"
+              className="inline-flex items-center justify-center sm:justify-start gap-1.5 px-3.5 py-2.5 sm:py-2 rounded-2xl bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200 text-xs font-bold transition-all shadow-2xs"
+            >
+              <Dumbbell className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+              <span className="truncate">💪 Tập Gym · Tăng cơ – Giảm mỡ (High Protein)</span>
+            </Link>
+            <div className="grid grid-cols-2 sm:flex items-center gap-2">
+              <Link
+                href="/mon-an?maxCalories=300&sort=calories_asc"
+                className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-2xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 text-xs font-semibold transition-all"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                <span className="truncate">≤ 300 kcal/phần</span>
+              </Link>
+              <Link
+                href="/mon-an"
+                className="inline-flex items-center justify-center gap-1 px-3 py-2 rounded-2xl bg-[var(--color-surface-white)] hover:bg-[var(--color-surface-raised)] text-[var(--color-text-secondary)] border border-[var(--color-border-base)] text-xs font-semibold transition-all"
+              >
+                <span>Tất cả món</span>
+              </Link>
+            </div>
+          </div>
         </div>
       </section>
 

@@ -62,10 +62,10 @@ function MealLoadingShell() {
   return (
     <div className="w-full flex flex-col gap-8 pb-12 animate-pulse">
       {/* Header Banner Skeleton */}
-      <div className="h-44 rounded-3xl bg-[var(--color-surface-raised)] border border-[var(--color-border-subtle)] p-8 flex flex-col justify-center gap-3">
-        <div className="h-4 w-40 bg-[var(--color-border-base)] rounded-md" />
-        <div className="h-8 w-72 bg-[var(--color-border-base)] rounded-lg" />
-        <div className="h-4 w-96 bg-[var(--color-border-base)] rounded-md" />
+      <div className="h-44 rounded-3xl bg-[var(--color-surface-raised)] border border-[var(--color-border-subtle)] p-5 sm:p-8 flex flex-col justify-center gap-3">
+        <div className="h-4 w-36 max-w-full bg-[var(--color-border-base)] rounded-md" />
+        <div className="h-8 w-3/4 max-w-xs bg-[var(--color-border-base)] rounded-lg" />
+        <div className="h-4 w-full max-w-md bg-[var(--color-border-base)] rounded-md" />
       </div>
 
       {/* 3 Slots Skeleton */}

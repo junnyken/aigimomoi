@@ -37,7 +37,7 @@ export function BookmarkButton({
       className={`relative z-10 inline-flex items-center justify-center gap-2 transition-all ${
         showText
           ? size === 'lg'
-            ? `px-5 py-3 rounded-2xl text-sm font-semibold ${
+            ? `min-h-11 w-full sm:w-auto px-4 sm:px-5 py-3 rounded-2xl text-sm font-semibold ${
                 saved
                   ? 'bg-[var(--color-brand-primary)] text-white shadow-xs'
                   : 'bg-[var(--color-surface-white)] border border-[var(--color-border-base)] text-[var(--color-text-secondary)] hover:text-[var(--color-brand-primary)] hover:border-[var(--color-brand-primary)]'

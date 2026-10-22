@@ -44,16 +44,16 @@ export function UserNavButton() {
     const initials = user.displayName?.slice(0, 2).toUpperCase() || 'AM';
     const isStaff = user.role === 'ADMIN' || user.role === 'EDITOR';
     return (
-      <div className="flex items-center gap-1.5 shrink-0">
+      <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
         {isStaff && (
           <Link
             href="/editor/recipes"
             prefetch={false}
             title="Vào trang Quản trị & Ban biên tập"
-            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold transition-colors"
+            className="inline-flex items-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-full bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-[11px] sm:text-xs font-bold transition-colors"
           >
-            <ShieldCheck className="w-3.5 h-3.5 text-amber-700" />
-            <span>Quản trị</span>
+            <ShieldCheck className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+            <span className="hidden xs:inline sm:inline">Quản trị</span>
           </Link>
         )}
         <Link

@@ -198,11 +198,19 @@ export default async function PublicRecipePage({ params }: PageParams) {
               <PaidRecipeActions rawRecipe={rawRecipe} />
             </Suspense>
           ) : (
-            <div className="pt-1 flex flex-wrap items-center gap-3">
+            <div className="pt-1 grid grid-cols-2 sm:flex sm:flex-wrap items-stretch gap-2.5 w-full">
               <StartCookingButton slug={rawRecipe.slug} baseServings={rawRecipe.baseServings} />
               <AddToMealTrayLink slug={rawRecipe.slug} role={rawRecipe.role} baseServings={rawRecipe.baseServings} />
               <BookmarkButton slug={rawRecipe.slug} size="lg" showText={true} />
-              <LogToDiaryButton recipeId={rawRecipe.id} recipeName={rawRecipe.name} />
+              <LogToDiaryButton
+                recipeId={rawRecipe.id}
+                recipeName={rawRecipe.name}
+                className={
+                  ['MAIN', 'SOUP', 'SIDE', 'DIPPING_SAUCE'].includes(rawRecipe.role)
+                    ? 'col-span-2 sm:col-span-1'
+                    : ''
+                }
+              />
             </div>
           )}
 
@@ -242,11 +250,16 @@ async function PaidRecipeActions({ rawRecipe }: { rawRecipe: PublicRecipe }) {
   );
 
   return (
-    <div className="pt-1 flex flex-wrap items-center gap-3">
+    <div className="pt-1 grid grid-cols-2 sm:flex sm:flex-wrap items-stretch gap-2.5 w-full">
       {hasAccess && (
         <StartCookingButton slug={rawRecipe.slug} baseServings={rawRecipe.baseServings} />
       )}
-      <BookmarkButton slug={rawRecipe.slug} size="lg" showText={true} />
+      <BookmarkButton
+        slug={rawRecipe.slug}
+        size="lg"
+        showText={true}
+        className={!hasAccess ? 'col-span-2 sm:col-span-1' : ''}
+      />
       {hasAccess && (
         <LogToDiaryButton recipeId={rawRecipe.id} recipeName={rawRecipe.name} />
       )}
@@ -307,25 +320,25 @@ function FullRecipeBody({ recipe }: { recipe: PublicRecipe }) {
       {/* Thanh nhảy nhanh trên Điện thoại (< lg) giúp không phải cuộn dài qua danh sách nguyên liệu */}
       <nav
         aria-label="Nhảy nhanh tới phần nội dung"
-        className="lg:hidden flex items-center gap-2 p-2 rounded-2xl bg-[var(--color-surface-white)] border border-[var(--color-border-base)] shadow-2xs overflow-x-auto scrollbar-none"
+        className="lg:hidden grid grid-cols-3 gap-1.5 p-1.5 rounded-2xl bg-[var(--color-surface-white)] border border-[var(--color-border-base)] shadow-2xs"
       >
         <a
           href="#ingredients-heading"
-          className="flex-1 text-center px-3 py-2 rounded-xl text-xs font-bold bg-[var(--color-brand-light)] text-[var(--color-brand-primary)] whitespace-nowrap"
+          className="text-center px-2 py-2.5 rounded-xl text-xs font-bold bg-[var(--color-brand-light)] text-[var(--color-brand-primary)] truncate"
         >
           1. Nguyên liệu ({recipe.ingredients.length})
         </a>
         <a
           href="#recipe-steps-section"
-          className="flex-1 text-center px-3 py-2 rounded-xl text-xs font-bold bg-[var(--color-accent-light)] text-[var(--color-accent-text)] whitespace-nowrap"
+          className="text-center px-2 py-2.5 rounded-xl text-xs font-bold bg-[var(--color-accent-light)] text-[var(--color-accent-text)] truncate"
         >
           2. Cách làm ({recipe.steps.length} bước)
         </a>
         <a
           href="#cooked-it-heading"
-          className="px-3 py-2 rounded-xl text-xs font-semibold bg-[var(--color-surface-raised)] text-[var(--color-text-secondary)] whitespace-nowrap"
+          className="text-center px-2 py-2.5 rounded-xl text-xs font-semibold bg-[var(--color-surface-raised)] text-[var(--color-text-secondary)] truncate"
         >
-          Cảm nhận
+          3. Cảm nhận
         </a>
       </nav>
 
@@ -395,9 +408,9 @@ function FullRecipeBody({ recipe }: { recipe: PublicRecipe }) {
 
 function PaidRecipeBodySkeleton() {
   return (
-    <div className="rounded-3xl border border-amber-200 bg-amber-50/50 p-8 text-center animate-pulse">
-      <div className="h-6 w-48 bg-amber-200/60 rounded-full mx-auto mb-3" />
-      <div className="h-4 w-72 bg-amber-200/40 rounded-full mx-auto" />
+    <div className="rounded-3xl border border-amber-200 bg-amber-50/50 p-6 sm:p-8 text-center animate-pulse">
+      <div className="h-6 w-48 max-w-full bg-amber-200/60 rounded-full mx-auto mb-3" />
+      <div className="h-4 w-72 max-w-full bg-amber-200/40 rounded-full mx-auto" />
     </div>
   );
 }
@@ -439,10 +452,10 @@ function AddToMealTrayLink({
   return (
     <Link
       href={`/meal?${paramKey}=${encodeURIComponent(slug)}&servings=${baseServings}`}
-      className="min-h-11 inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-light)]/70 hover:bg-[var(--color-brand-primary)] text-[var(--color-brand-primary)] hover:text-white text-sm font-semibold transition-colors shadow-2xs"
+      className="min-h-11 w-full sm:w-auto inline-flex items-center justify-center gap-2 px-3.5 sm:px-4 py-3 rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-light)]/70 hover:bg-[var(--color-brand-primary)] text-[var(--color-brand-primary)] hover:text-white text-sm font-semibold transition-colors shadow-2xs"
     >
-      <Utensils className="w-4 h-4" aria-hidden="true" />
-      <span>Đưa vào mâm cơm</span>
+      <Utensils className="w-4 h-4 shrink-0" aria-hidden="true" />
+      <span className="truncate">Đưa vào mâm</span>
     </Link>
   );
 }
