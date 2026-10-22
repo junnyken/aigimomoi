@@ -172,49 +172,44 @@ export default function ProfilePage() {
   const userRole = roleLabels[user.role] || roleLabels.COOK;
 
   return (
-    <div className="min-h-screen bg-[#faf8f5] py-6 px-2 sm:px-4">
-      <div className="w-full mx-auto space-y-6">
-        {/* Header navigation bar */}
-        <div className="flex items-center justify-between pb-4 border-b border-stone-200">
-          <Link href="/" className="inline-flex items-center gap-2">
-            <span className="text-2xl">🍲</span>
-            <span className="font-extrabold text-xl tracking-tight text-[#15803d]">ĂN GÌ MOM</span>
-          </Link>
-          <button
-            onClick={handleLogout}
-            className="inline-flex items-center gap-2 px-3.5 py-2 text-sm font-semibold text-red-600 bg-red-50 hover:bg-red-100 rounded-xl transition-colors cursor-pointer"
-          >
-            <LogOut className="w-4 h-4" />
-            Đăng xuất
-          </button>
-        </div>
-
+    <div className="w-full mx-auto space-y-6 pb-8">
+      <div className="w-full space-y-6">
         {/* Profile overview card */}
-        <div className="bg-white rounded-2xl p-6 sm:p-8 border border-stone-200 shadow-xs">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5">
-            <div className="w-20 h-20 bg-emerald-100 text-emerald-700 rounded-2xl flex items-center justify-center font-bold text-3xl shrink-0 shadow-inner">
-              {user.displayName.slice(0, 2).toUpperCase() || 'AM'}
-            </div>
-            <div className="space-y-1.5 flex-1 min-w-0">
-              <div className="flex flex-wrap items-center gap-2.5">
-                <h1 className="text-2xl font-bold text-gray-900 truncate">{user.displayName}</h1>
-                <span className={`px-2.5 py-0.5 text-xs font-semibold rounded-full border ${userRole.color}`}>
-                  {userRole.label}
-                </span>
+        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-[var(--color-border-base)] shadow-xs">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5 min-w-0">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 bg-[var(--color-brand-light)] text-[var(--color-brand-primary)] border border-[var(--color-brand-border)] rounded-2xl flex items-center justify-center font-bold text-2xl sm:text-3xl shrink-0 shadow-2xs">
+                {user.displayName.slice(0, 2).toUpperCase() || 'AM'}
               </div>
-              <div className="flex flex-wrap items-center gap-4 text-sm text-stone-500">
-                <span className="flex items-center gap-1.5">
-                  <Mail className="w-4 h-4 text-stone-400" />
-                  {user.email}
-                </span>
-                {user.createdAt && (
-                  <span className="flex items-center gap-1.5">
-                    <Calendar className="w-4 h-4 text-stone-400" />
-                    Tham gia: {new Date(user.createdAt).toLocaleDateString('vi-VN')}
+              <div className="space-y-1.5 flex-1 min-w-0">
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <h1 className="text-xl sm:text-2xl font-bold text-[var(--color-text-primary)] truncate">{user.displayName}</h1>
+                  <span className={`px-2.5 py-0.5 text-xs font-semibold rounded-full border ${userRole.color}`}>
+                    {userRole.label}
                   </span>
-                )}
+                </div>
+                <div className="flex flex-wrap items-center gap-4 text-xs sm:text-sm text-[var(--color-text-secondary)]">
+                  <span className="flex items-center gap-1.5">
+                    <Mail className="w-4 h-4 text-[var(--color-text-muted)]" />
+                    {user.email}
+                  </span>
+                  {user.createdAt && (
+                    <span className="flex items-center gap-1.5">
+                      <Calendar className="w-4 h-4 text-[var(--color-text-muted)]" />
+                      Tham gia: {new Date(user.createdAt).toLocaleDateString('vi-VN')}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
+
+            <button
+              onClick={handleLogout}
+              className="inline-flex items-center gap-2 px-4 py-2.5 text-xs sm:text-sm font-bold text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 rounded-xl transition-colors cursor-pointer shrink-0"
+            >
+              <LogOut className="w-4 h-4" />
+              <span>Đăng xuất</span>
+            </button>
           </div>
 
           {/* Quick Shortcuts: Hệ sinh thái Bếp Gia Đình Cá Nhân */}

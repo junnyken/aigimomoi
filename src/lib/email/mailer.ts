@@ -199,3 +199,37 @@ export async function sendPasswordResetEmail(email: string, resetUrl: string): P
     text: `Yêu cầu đặt lại mật khẩu Ăn Gì Mom cho ${safeEmail}. Vui lòng mở liên kết sau trong 15 phút: ${resetUrl}`,
   });
 }
+
+export async function sendWelcomeEmail(email: string, displayName: string): Promise<SendEmailResult> {
+  const safeEmail = email.replace(/[\r\n<>]/g, '').trim();
+  const escapedName = escapeHtml(displayName.trim());
+  const escapedEmail = escapeHtml(safeEmail);
+  const subject = 'ĂN GÌ MOM — Chào mừng bạn gia nhập Gian Bếp Gia Đình Việt!';
+  const html = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 560px; margin: 0 auto; padding: 24px; border: 1px solid #e5e7eb; border-radius: 12px; background-color: #ffffff;">
+      <div style="text-align: center; margin-bottom: 20px;">
+        <span style="display: inline-block; padding: 6px 14px; background: #EAF0EA; color: #3F6240; border-radius: 20px; font-weight: 700; font-size: 14px;">ĂN GÌ MOM</span>
+        <h1 style="color: #253126; font-size: 20px; margin-top: 12px; margin-bottom: 6px;">Chào mừng ${escapedName} đến với Ăn Gì Mom!</h1>
+        <p style="color: #596454; font-size: 14px; margin: 0;">Tài khoản bếp gia đình của bạn đã được kích hoạt thành công</p>
+      </div>
+
+      <div style="background-color: #FAF7F0; border: 1px solid #E5E7DE; border-radius: 10px; padding: 16px; margin-bottom: 20px;">
+        <p style="color: #253126; font-size: 14px; margin: 0; line-height: 1.6;">
+          <strong>Email đăng ký:</strong> ${escapedEmail}<br/>
+          <strong>Quyền hạn thành viên:</strong> Lưu công thức yêu thích, quản lý Tủ lạnh gia đình, lập Thực đơn 7 ngày, ghi Nhật ký Calo và đóng góp món ngon.
+        </p>
+      </div>
+
+      <p style="color: #9ca3af; font-size: 12px; text-align: center; margin: 0;">
+        Cảm ơn bạn đã đồng hành cùng Ăn Gì Mom — Bữa cơm nhà, bớt nghĩ hôm nay ăn gì.
+      </p>
+    </div>
+  `;
+
+  return sendEmail({
+    to: safeEmail,
+    subject,
+    html,
+    text: `Chào mừng ${displayName} đến với Ăn Gì Mom! Tài khoản ${safeEmail} của bạn đã được kích hoạt thành công.`,
+  });
+}

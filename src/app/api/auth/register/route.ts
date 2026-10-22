@@ -5,13 +5,35 @@ import { eq } from 'drizzle-orm';
 import { hashPassword } from '@/lib/auth/password';
 import { setSessionCookie, signToken, SESSION_COOKIE_NAME, SESSION_DURATION_MS, AuthConfigurationError, getAuthSecret } from '@/lib/auth/session';
 import { checkRateLimit, getClientIp } from '@/lib/auth/rateLimit';
+import { isCrossSiteRequest } from '@/lib/http/sameOrigin';
+import { sendWelcomeEmail } from '@/lib/email/mailer';
 import { logger } from '@/lib/logger';
 
 // Regex chuẩn kiểm tra cú pháp email cơ bản
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+// Danh sách tên miền email rác / dùng 1 lần bị chặn để bảo vệ dữ liệu cộng đồng
+const DISPOSABLE_EMAIL_DOMAINS = new Set([
+  'mailinator.com',
+  '10minutemail.com',
+  'tempmail.com',
+  'temp-mail.org',
+  'guerrillamail.com',
+  'yopmail.com',
+  'trashmail.com',
+  'sharklasers.com',
+  'getnada.com',
+]);
+
 export async function POST(request: NextRequest) {
   try {
+    if (isCrossSiteRequest(request)) {
+      return NextResponse.json(
+        { error: 'Yêu cầu bị từ chối do khác nguồn gốc (CSRF).' },
+        { status: 403 }
+      );
+    }
+
     // 1. Kiểm tra cấu hình xác thực trước khi xử lý (fail-closed)
     getAuthSecret();
 
@@ -26,22 +48,22 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { displayName, email, password } = body;
 
-    // 2. Validate Họ và tên
+    // 2. Validate Họ và tên (Chống XSS / ký tự điều khiển)
     if (!displayName || typeof displayName !== 'string') {
       return NextResponse.json(
         { error: 'Vui lòng nhập họ và tên của bạn' },
         { status: 400 }
       );
     }
-    const cleanName = displayName.trim();
+    const cleanName = displayName.replace(/[<>]/g, '').trim();
     if (cleanName.length < 2 || cleanName.length > 50) {
       return NextResponse.json(
-        { error: 'Họ và tên phải từ 2 đến 50 ký tự' },
+        { error: 'Họ và tên phải từ 2 đến 50 ký tự hợp lệ' },
         { status: 400 }
       );
     }
 
-    // 3. Validate Email
+    // 3. Validate Email & Chặn Email ảo dùng 1 lần
     if (!email || typeof email !== 'string') {
       return NextResponse.json(
         { error: 'Vui lòng nhập địa chỉ email hợp lệ' },
@@ -52,6 +74,13 @@ export async function POST(request: NextRequest) {
     if (!EMAIL_REGEX.test(cleanEmail) || cleanEmail.length > 255) {
       return NextResponse.json(
         { error: 'Địa chỉ email không đúng định dạng' },
+        { status: 400 }
+      );
+    }
+    const emailDomain = cleanEmail.split('@')[1] || '';
+    if (DISPOSABLE_EMAIL_DOMAINS.has(emailDomain)) {
+      return NextResponse.json(
+        { error: 'Vui lòng sử dụng địa chỉ email thật (Gmail, Outlook, iCloud, công ty...) để bảo vệ tài khoản.' },
         { status: 400 }
       );
     }
@@ -145,6 +174,9 @@ export async function POST(request: NextRequest) {
     });
 
     logger.info('Đăng ký tài khoản thành công', { userId: newUser.id, email: newUser.email });
+
+    // Gửi email chào mừng & xác nhận kích hoạt tài khoản (không chặn luồng phản hồi)
+    sendWelcomeEmail(newUser.email, newUser.displayName).catch(() => {});
 
     return response;
   } catch (error: unknown) {

@@ -5,10 +5,18 @@ import { eq } from 'drizzle-orm';
 import { verifyPassword } from '@/lib/auth/password';
 import { setSessionCookie, signToken, SESSION_COOKIE_NAME, SESSION_DURATION_MS, AuthConfigurationError, getAuthSecret } from '@/lib/auth/session';
 import { checkRateLimit, getClientIp } from '@/lib/auth/rateLimit';
+import { isCrossSiteRequest } from '@/lib/http/sameOrigin';
 import { logger } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
+    if (isCrossSiteRequest(request)) {
+      return NextResponse.json(
+        { error: 'Yêu cầu bị từ chối do khác nguồn gốc (CSRF).' },
+        { status: 403 }
+      );
+    }
+
     // Kiểm tra cấu hình xác thực trước khi xử lý (fail-closed)
     getAuthSecret();
 

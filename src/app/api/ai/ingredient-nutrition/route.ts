@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionUser } from '@/lib/auth/session';
+import { checkRateLimit, getClientIp } from '@/lib/auth/rateLimit';
+import { isCrossSiteRequest } from '@/lib/http/sameOrigin';
 import { VIETNAMESE_STANDARD_FCT } from '@/lib/nutrition/seedData';
 import { GeminiProvider } from '@/lib/ai/geminiProvider';
 
@@ -42,6 +44,21 @@ interface AiIngredientNutritionResult {
 
 export async function POST(request: NextRequest) {
   try {
+    if (isCrossSiteRequest(request)) {
+      return NextResponse.json(
+        { error: 'Yêu cầu bị từ chối do khác nguồn gốc (CSRF).' },
+        { status: 403 }
+      );
+    }
+
+    const rate = checkRateLimit('ai-ingredient-nutrition', getClientIp(request), 30, 60_000);
+    if (!rate.allowed) {
+      return NextResponse.json(
+        { error: 'Quá nhiều yêu cầu tra cứu AI. Vui lòng thử lại sau ít giây.' },
+        { status: 429, headers: { 'Retry-After': String(rate.retryAfterSeconds) } }
+      );
+    }
+
     const user = await getSessionUser();
     if (!user || (user.role !== 'ADMIN' && user.role !== 'EDITOR')) {
       return NextResponse.json(

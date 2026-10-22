@@ -3,6 +3,7 @@ import { db } from '@/lib/db';
 import { users } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { getSessionUser, setSessionCookie, SESSION_COOKIE_NAME, SESSION_DURATION_MS, signToken } from '@/lib/auth/session';
+import { isCrossSiteRequest } from '@/lib/http/sameOrigin';
 
 export async function GET(request?: Request) {
   const sessionUser = await getSessionUser(request);
@@ -55,6 +56,12 @@ export async function GET(request?: Request) {
 }
 
 export async function PATCH(request: Request) {
+  if (isCrossSiteRequest(request)) {
+    return NextResponse.json(
+      { error: 'Yêu cầu bị từ chối do khác nguồn gốc (CSRF).' },
+      { status: 403 }
+    );
+  }
   const sessionUser = await getSessionUser(request);
   if (!sessionUser) {
     return NextResponse.json(
@@ -82,21 +89,21 @@ export async function PATCH(request: Request) {
 
   const { displayName } = body as Record<string, unknown>;
 
-  if (typeof displayName !== 'string' || displayName.trim().length < 2) {
+  if (typeof displayName !== 'string' || displayName.replace(/[<>]/g, '').trim().length < 2) {
     return NextResponse.json(
-      { error: 'Tên hiển thị phải có ít nhất 2 ký tự' },
+      { error: 'Tên hiển thị phải có ít nhất 2 ký tự hợp lệ' },
       { status: 400 }
     );
   }
 
-  if (displayName.trim().length > 50) {
+  const cleanDisplayName = displayName.replace(/[<>]/g, '').trim();
+
+  if (cleanDisplayName.length > 50) {
     return NextResponse.json(
       { error: 'Tên hiển thị không được vượt quá 50 ký tự' },
       { status: 400 }
     );
   }
-
-  const cleanDisplayName = displayName.trim();
 
   try {
     await db
