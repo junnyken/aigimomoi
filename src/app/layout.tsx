@@ -126,8 +126,8 @@ export default function RootLayout({
           <footer className="bg-[var(--color-surface-white)] border-t border-[var(--color-border-base)] pt-10 pb-28 md:pb-10 mt-auto">
             <div className="max-w-[1680px] w-full mx-auto px-4 sm:px-6 lg:px-10 space-y-8">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 text-left">
-                {/* Col 1: Brand & Mission */}
-                <div className="space-y-2.5">
+                {/* Col 1: Brand & Mission + E-E-A-T Trust Links */}
+                <div className="space-y-3">
                   <div className="text-lg font-bold tracking-tight" data-no-i18n="true">
                     <span className="text-[var(--color-brand-primary)]">ĂN GÌ</span>
                     <span className="text-[var(--color-accent-primary)] ml-1">MOM</span>
@@ -135,6 +135,11 @@ export default function RootLayout({
                   <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
                     Nền tảng gợi ý bữa cơm gia đình Việt Nam, chuẩn hóa định lượng nguyên liệu theo khẩu phần và tính toán Calo/Macro dựa trên Bảng Thành Phần Thực Phẩm Việt Nam (Viện Dinh Dưỡng).
                   </p>
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 pt-1 text-xs font-semibold text-[var(--color-brand-primary)]">
+                    <Link href="/gioi-thieu" className="hover:underline">Về Ăn Gì Mom</Link>
+                    <span>•</span>
+                    <Link href="/hoi-dap" className="hover:underline">Hỏi đáp (FAQ)</Link>
+                  </div>
                 </div>
 
                 {/* Col 2: Danh mục Món ăn Cơm nhà */}
@@ -181,9 +186,12 @@ export default function RootLayout({
 
               <div className="pt-6 border-t border-[var(--color-border-subtle)] flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-[var(--color-text-muted)]">
                 <p>© 2026 ĂN GÌ MOM — Bữa cơm nhà, bớt nghĩ hôm nay ăn gì.</p>
-                <div className="flex flex-wrap items-center gap-4">
+                <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
+                  <Link href="/gioi-thieu" className="hover:text-[var(--color-brand-primary)]">Giới thiệu & Phương pháp FCT</Link>
+                  <Link href="/hoi-dap" className="hover:text-[var(--color-brand-primary)]">Câu hỏi thường gặp (FAQ)</Link>
+                  <Link href="/chinh-sach-bao-mat" className="hover:text-[var(--color-brand-primary)]">Chính sách Bảo mật</Link>
+                  <Link href="/dieu-khoan" className="hover:text-[var(--color-brand-primary)]">Điều khoản & Miễn trừ Y khoa</Link>
                   <Link href="/contribute" prefetch={false} className="hover:text-[var(--color-brand-primary)]">Góp món ngon</Link>
-                  <Link href="/profile" prefetch={false} className="hover:text-[var(--color-brand-primary)]">Tài khoản</Link>
                   <Link href="/editor/recipes" prefetch={false} className="hover:text-[var(--color-brand-primary)]">Ban biên tập</Link>
                 </div>
               </div>

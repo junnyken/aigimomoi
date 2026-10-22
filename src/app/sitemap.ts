@@ -53,6 +53,30 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: 'weekly',
       priority: 0.6,
     },
+    {
+      url: `${baseUrl}/gioi-thieu`,
+      lastModified: now,
+      changeFrequency: 'monthly',
+      priority: 0.75,
+    },
+    {
+      url: `${baseUrl}/hoi-dap`,
+      lastModified: now,
+      changeFrequency: 'monthly',
+      priority: 0.8,
+    },
+    {
+      url: `${baseUrl}/chinh-sach-bao-mat`,
+      lastModified: now,
+      changeFrequency: 'monthly',
+      priority: 0.5,
+    },
+    {
+      url: `${baseUrl}/dieu-khoan`,
+      lastModified: now,
+      changeFrequency: 'monthly',
+      priority: 0.5,
+    },
     // Chuyên mục SEO trọng tâm (Món mặn, Món canh, Món rau, Giảm cân ít calo, Tập gym tăng cơ)
     {
       url: `${baseUrl}/mon-an?role=MAIN`,

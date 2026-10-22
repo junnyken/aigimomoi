@@ -37,6 +37,10 @@ const nextConfig: NextConfig = {
       { source: '/pantry', destination: '/tu-lanh' },
       { source: '/weekly-planner', destination: '/ke-hoach-tuan' },
       { source: '/diary', destination: '/nhat-ky' },
+      { source: '/about', destination: '/gioi-thieu' },
+      { source: '/faq', destination: '/hoi-dap' },
+      { source: '/privacy', destination: '/chinh-sach-bao-mat' },
+      { source: '/terms', destination: '/dieu-khoan' },
       // Vietnamese URL aliases -> Editor routes
       { source: '/quan-tri/nguyen-lieu', destination: '/editor/ingredients' },
       { source: '/quan-tri/phan-loai', destination: '/editor/taxonomies' },

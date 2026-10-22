@@ -74,6 +74,7 @@ const CULINARY_CATEGORIES = [
     href: "/mon-an?role=MAIN",
     icon: Flame,
     tone: "bg-[var(--color-accent-light)]/70 text-[var(--color-accent-primary)] border-[var(--color-accent-primary)]/20",
+    image: "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=600&q=80",
   },
   {
     title: "Món Canh Thanh Mát",
@@ -82,6 +83,7 @@ const CULINARY_CATEGORIES = [
     href: "/mon-an?role=SOUP",
     icon: Soup,
     tone: "bg-[var(--color-brand-light)] text-[var(--color-brand-primary)] border-[var(--color-brand-border)]",
+    image: "https://images.unsplash.com/photo-1547592166-23ac45744acd?auto=format&fit=crop&w=600&q=80",
   },
   {
     title: "Rau Xào & Món Phụ",
@@ -90,6 +92,7 @@ const CULINARY_CATEGORIES = [
     href: "/mon-an?role=SIDE",
     icon: Salad,
     tone: "bg-emerald-50 text-emerald-700 border-emerald-200",
+    image: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=600&q=80",
   },
   {
     title: "Nước Chấm & Sốt",
@@ -98,14 +101,16 @@ const CULINARY_CATEGORIES = [
     href: "/mon-an?role=DIPPING_SAUCE",
     icon: Droplets,
     tone: "bg-amber-50 text-amber-700 border-amber-200",
+    image: "https://images.unsplash.com/photo-1472476443507-c7a5948772fc?auto=format&fit=crop&w=600&q=80",
   },
   {
     title: "Món Giảm Cân • Ít Calo",
     subtitle: "Hấp, luộc, áp chảo ít dầu mỡ ≤ 350 kcal/khẩu phần",
     badge: "Eat Clean kiểu Việt",
-    href: "/mon-an?maxCalories=350&sort=calories_asc",
+    href: "/mon-an?tax=giam-can-it-calo",
     icon: HeartPulse,
     tone: "bg-rose-50 text-rose-700 border-rose-200",
+    image: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=600&q=80",
   },
   {
     title: "Món Nước & Trọn Bữa",
@@ -114,6 +119,7 @@ const CULINARY_CATEGORIES = [
     href: "/mon-an?role=ONE_DISH_MEAL",
     icon: Utensils,
     tone: "bg-sky-50 text-sky-700 border-sky-200",
+    image: "https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?auto=format&fit=crop&w=600&q=80",
   },
   {
     title: "Tráng Miệng & Đồ Uống",
@@ -122,14 +128,16 @@ const CULINARY_CATEGORIES = [
     href: "/mon-an?role=DESSERT",
     icon: CupSoda,
     tone: "bg-purple-50 text-purple-700 border-purple-200",
+    image: "https://images.unsplash.com/photo-1551024709-8f23befc6f87?auto=format&fit=crop&w=600&q=80",
   },
   {
-    title: "Đã Kiểm Chứng Bếp Mẫu",
-    subtitle: "Công thức đã nấu thử thực tế và chuẩn hóa định lượng",
-    badge: "Chuẩn vị 100%",
-    href: "/mon-an?tested=true",
+    title: "Tập Gym • Giàu Protein",
+    subtitle: "Ức gà, thăn bò, cá hồi, tôm trứng chuẩn Macro tăng cơ",
+    badge: "25–45g Đạm/phần",
+    href: "/mon-an?tax=tap-gym-tang-co",
     icon: ShieldCheck,
     tone: "bg-[var(--color-surface-raised)] text-[var(--color-brand-primary)] border-[var(--color-border-base)]",
+    image: "https://images.unsplash.com/photo-1532550907401-a500c9a57435?auto=format&fit=crop&w=600&q=80",
   },
 ];
 
@@ -219,82 +227,169 @@ const FAMILY_HEALTH_MENUS = [
 export default function HomePage() {
   return (
     <div className="flex flex-col gap-12">
-      {/* TẦNG 1: Hero Section — Warm Kitchen */}
-      <section className="text-center py-8 sm:py-12 px-4 sm:px-8 lg:px-12 bg-gradient-to-b from-[var(--color-brand-light)]/70 via-[var(--color-accent-light)]/50 to-[var(--color-surface-white)] border border-[var(--color-border-subtle)] rounded-3xl shadow-xs">
-        <div className="max-w-5xl mx-auto flex flex-col items-center">
-          <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-semibold bg-[var(--color-brand-light)] text-[var(--color-brand-primary)] border border-[var(--color-brand-border)]/70 mb-3">
-            <ChefHat className="w-3.5 h-3.5 text-[var(--color-accent-primary)]" />
-            <span>Cơm nhà chuẩn vị • Bớt nghĩ hôm nay ăn gì</span>
-          </span>
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[var(--color-brand-primary)] tracking-tight mb-3">
-            Hôm nay nhà mình ăn gì?
-          </h1>
-          <p className="text-base sm:text-lg text-[var(--color-text-secondary)] mb-6 max-w-3xl leading-relaxed">
-            Từ món mặn đưa cơm, canh thanh mát, rau xào xanh giòn đến nước chấm gia truyền và thực đơn chuẩn Calo — tất cả đã cân chỉnh định lượng rõ ràng cho bếp Việt.
-          </p>
+      {/* TẦNG 1: Hero Section — Gian Bếp Gia Đình Ấm Áp (Warm Family Kitchen) */}
+      <section className="relative overflow-hidden py-7 sm:py-10 lg:py-12 px-4 sm:px-8 lg:px-10 bg-gradient-to-br from-[#EEF5EE] via-[#FDF8F2] to-[#FCEEE5] border border-[var(--color-border-base)] rounded-3xl shadow-xs">
+        {/* Điểm nhấn ánh sáng ấm áp nền sau */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -top-24 -right-24 w-80 h-80 rounded-full bg-amber-200/30 blur-3xl"
+        />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -bottom-24 -left-24 w-80 h-80 rounded-full bg-emerald-200/30 blur-3xl"
+        />
 
-          {/* Quick search input leading to /mon-an */}
-          <form action="/mon-an" method="GET" className="w-full max-w-2xl mb-5">
-            <div className="relative flex items-center">
-              <input
-                type="text"
-                name="q"
-                placeholder="Tìm món, nước chấm hoặc nguyên liệu: thịt kho, canh chua, nước mắm..."
-                className="w-full pl-4 pr-28 py-3.5 bg-[var(--color-surface-white)] border border-[var(--color-border-base)] rounded-2xl text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-primary)] shadow-xs"
-              />
-              <button
-                type="submit"
-                className="absolute right-2 px-4 py-2 bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-hover)] text-white text-xs font-semibold rounded-xl transition-colors"
-              >
-                Tìm món
-              </button>
-            </div>
-          </form>
+        <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center">
+          {/* Cột Trái: Câu chuyện Bữa cơm nhà + Thanh Tìm kiếm + Quick Mood Chips */}
+          <div className="lg:col-span-7 flex flex-col items-center lg:items-start text-center lg:text-left">
+            <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-[var(--color-surface-white)] text-[var(--color-brand-primary)] border border-[var(--color-brand-border)] shadow-2xs mb-3.5">
+              <ChefHat className="w-4 h-4 text-[var(--color-accent-primary)]" />
+              <span>Gian bếp của Mẹ • Bữa cơm gia đình ấm áp mỗi ngày</span>
+            </span>
 
-          {/* Quick Mood / Context Filter Chips */}
-          <div className="flex flex-wrap items-center justify-center gap-2 mb-7" aria-label="Gợi ý tìm món nhanh">
-            {QUICK_MOOD_CHIPS.map((chip) => {
-              const Icon = chip.icon;
-              return (
-                <Link
-                  key={chip.href}
-                  href={chip.href}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-[var(--color-surface-white)] text-[var(--color-text-secondary)] border border-[var(--color-border-base)] hover:border-[var(--color-brand-border)] hover:bg-[var(--color-brand-light)] hover:text-[var(--color-brand-primary)] transition-colors shadow-2xs"
+            <h1 className="text-3xl sm:text-4xl lg:text-[44px] font-bold text-[var(--color-brand-primary)] tracking-tight leading-[1.18] mb-3">
+              Hôm nay nhà mình ăn gì?
+            </h1>
+
+            <p className="text-sm sm:text-base lg:text-lg text-[var(--color-text-secondary)] mb-6 max-w-2xl leading-relaxed">
+              Từ mâm cơm 3 món sum vầy (Mặn • Canh • Rau), bát nước chấm gia truyền đến thực đơn{" "}
+              <strong className="text-[var(--color-text-primary)]">Giảm cân ít Calo &amp; Tập Gym</strong> — tất cả đã được cân chỉnh định lượng chuẩn xác cho gia đình Việt.
+            </p>
+
+            {/* Quick search input leading to /mon-an */}
+            <form action="/mon-an" method="GET" className="w-full max-w-2xl mb-4">
+              <div className="relative flex items-center">
+                <input
+                  type="text"
+                  name="q"
+                  placeholder="Tìm món ăn hoặc nguyên liệu: thịt kho trứng, canh chua, ức gà, cá hồi..."
+                  className="w-full pl-4 pr-28 py-3.5 bg-[var(--color-surface-white)] border border-[var(--color-border-base)] rounded-2xl text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-primary)] shadow-xs"
+                />
+                <button
+                  type="submit"
+                  className="absolute right-2 px-4 py-2 bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-hover)] text-white text-xs font-semibold rounded-xl transition-colors cursor-pointer"
                 >
-                  <Icon className="w-3.5 h-3.5 text-[var(--color-accent-primary)]" />
-                  <span>{chip.label}</span>
-                </Link>
-              );
-            })}
+                  Tìm món
+                </button>
+              </div>
+            </form>
+
+            {/* Quick Mood / Context Filter Chips */}
+            <div className="flex flex-wrap items-center justify-center lg:justify-start gap-2 mb-6" aria-label="Gợi ý tìm món nhanh">
+              {QUICK_MOOD_CHIPS.map((chip) => {
+                const Icon = chip.icon;
+                return (
+                  <Link
+                    key={chip.href}
+                    href={chip.href}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-[var(--color-surface-white)]/90 text-[var(--color-text-secondary)] border border-[var(--color-border-base)] hover:border-[var(--color-brand-border)] hover:bg-[var(--color-brand-light)] hover:text-[var(--color-brand-primary)] transition-colors shadow-2xs"
+                  >
+                    <Icon className="w-3.5 h-3.5 text-[var(--color-accent-primary)]" />
+                    <span>{chip.label}</span>
+                  </Link>
+                );
+              })}
+            </div>
+
+            <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center justify-center lg:justify-start gap-2.5 sm:gap-3 w-full sm:w-auto">
+              <Link
+                href="/meal"
+                className="col-span-2 sm:col-span-1 min-h-11 inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-semibold bg-[var(--color-accent-primary)] text-white shadow-sm hover:bg-[var(--color-accent-hover)] transition-transform hover:-translate-y-0.5 text-sm sm:text-base"
+              >
+                <Utensils className="w-4 h-4 shrink-0" />
+                <span>Ghép mâm cơm 3 món</span>
+              </Link>
+              <Link
+                href="/shopping"
+                className="min-h-11 inline-flex items-center justify-center gap-1.5 sm:gap-2 px-3.5 sm:px-5 py-2.5 rounded-xl font-semibold bg-[var(--color-surface-white)] text-[var(--color-text-primary)] border border-[var(--color-border-base)] hover:bg-[var(--color-surface-raised)] transition-colors text-xs sm:text-sm"
+              >
+                <ShoppingBag className="w-4 h-4 text-[var(--color-brand-primary)] shrink-0" />
+                <span className="truncate">Đi chợ</span>
+              </Link>
+              <Link
+                href="/tu-lanh"
+                className="min-h-11 inline-flex items-center justify-center gap-1.5 sm:gap-2 px-3.5 sm:px-4 py-2.5 rounded-xl font-medium bg-[var(--color-surface-white)]/80 text-[var(--color-text-secondary)] hover:text-[var(--color-brand-primary)] border border-[var(--color-border-base)] transition-colors text-xs sm:text-sm"
+              >
+                <Refrigerator className="w-4 h-4 text-[var(--color-brand-primary)] shrink-0" />
+                <span className="truncate">Tủ lạnh nhà</span>
+              </Link>
+            </div>
           </div>
 
-          <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center justify-center gap-2.5 sm:gap-3 w-full sm:w-auto">
-            <Link
-              href="/meal"
-              className="col-span-2 sm:col-span-1 min-h-11 inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-semibold bg-[var(--color-accent-primary)] text-white shadow-sm hover:bg-[var(--color-accent-hover)] transition-transform hover:-translate-y-0.5 text-sm sm:text-base"
-            >
-              <Utensils className="w-4 h-4 shrink-0" />
-              <span>Ghép mâm cơm 3 món</span>
-            </Link>
-            <Link
-              href="/shopping"
-              className="min-h-11 inline-flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-2.5 rounded-xl font-semibold bg-[var(--color-surface-white)] text-[var(--color-text-primary)] border border-[var(--color-border-base)] hover:bg-[var(--color-surface-raised)] transition-colors text-xs sm:text-sm"
-            >
-              <ShoppingBag className="w-4 h-4 text-[var(--color-brand-primary)] shrink-0" />
-              <span className="truncate">Đi chợ</span>
-            </Link>
-            <Link
-              href="/tu-lanh"
-              className="min-h-11 inline-flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 rounded-xl font-medium bg-[var(--color-surface-raised)] text-[var(--color-text-secondary)] hover:text-[var(--color-brand-primary)] border border-[var(--color-border-subtle)] transition-colors text-xs sm:text-sm"
-            >
-              <Refrigerator className="w-4 h-4 text-[var(--color-brand-primary)] shrink-0" />
-              <span className="truncate">Tủ lạnh nhà</span>
-            </Link>
+          {/* Cột Phải: Khung Hình Ảnh Bữa Cơm Gia Đình Việt Nam Thân Thiện */}
+          <div className="lg:col-span-5 flex flex-col gap-3">
+            <div className="relative rounded-3xl overflow-hidden border-2 border-white shadow-md aspect-[16/11] bg-[#E8DFD1] group">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=900&q=80"
+                alt="Mâm cơm gia đình Việt Nam ấm cúng đủ món mặn, canh, rau"
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+
+              {/* Huy hiệu góc trên */}
+              <div className="absolute top-3 left-3 right-3 flex items-center justify-between gap-2">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-white/95 text-[#3F6240] shadow-xs">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Chuẩn Viện Dinh Dưỡng VN</span>
+                </span>
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#B75B35] text-white shadow-xs">
+                  <span>👨‍👩‍👧‍👦 1 – 8 người ăn</span>
+                </span>
+              </div>
+
+              {/* Chú thích ấm cúng góc dưới */}
+              <div className="absolute bottom-3.5 left-4 right-4 text-white">
+                <p className="text-xs font-semibold uppercase tracking-wider text-amber-200">
+                  Mâm cơm chiều sum họp
+                </p>
+                <p className="text-sm sm:text-base font-bold leading-snug mt-0.5">
+                  Đủ đầy 3 món Mặn • Canh • Rau trong 30 phút vào bếp
+                </p>
+              </div>
+            </div>
+
+            {/* 2 Thẻ điểm nhấn nhanh dưới ảnh */}
+            <div className="grid grid-cols-2 gap-3">
+              <Link
+                href="/mon-an?tax=giam-can-it-calo"
+                className="p-3 rounded-2xl bg-[var(--color-surface-white)]/95 hover:bg-[var(--color-surface-white)] border border-emerald-200 shadow-2xs flex items-center gap-2.5 transition-all"
+              >
+                <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0">
+                  <HeartPulse className="w-4 h-4" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs font-bold text-[var(--color-text-primary)] truncate">
+                    Eat Clean Giảm Cân
+                  </p>
+                  <p className="text-[11px] text-emerald-700 font-medium truncate">
+                    ≤ 350 – 500 kcal/bữa
+                  </p>
+                </div>
+              </Link>
+
+              <Link
+                href="/mon-an?tax=tap-gym-tang-co"
+                className="p-3 rounded-2xl bg-[var(--color-surface-white)]/95 hover:bg-[var(--color-surface-white)] border border-amber-200 shadow-2xs flex items-center gap-2.5 transition-all"
+              >
+                <div className="w-9 h-9 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center shrink-0">
+                  <Flame className="w-4 h-4" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs font-bold text-[var(--color-text-primary)] truncate">
+                    Thực Đơn Tập Gym
+                  </p>
+                  <p className="text-[11px] text-amber-800 font-medium truncate">
+                    Giàu Đạm 25–45g/phần
+                  </p>
+                </div>
+              </Link>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* TẦNG 2: Khám Phá 8 Nhóm Món Cơm Nhà (Bento Category Grid) */}
+      {/* TẦNG 2: Khám Phá 8 Nhóm Món Cơm Nhà (Bento Category Grid Kèm Hình Ảnh Trực Quan) */}
       <section aria-labelledby="categories-heading" className="flex flex-col gap-4 sm:gap-5">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2">
           <div>
@@ -321,27 +416,41 @@ export default function HomePage() {
               <Link
                 key={cat.title}
                 href={cat.href}
-                className="group p-3.5 sm:p-5 rounded-2xl bg-[var(--color-surface-white)] border border-[var(--color-border-base)] hover:border-[var(--color-brand-border)] hover:shadow-sm transition-all flex flex-col justify-between gap-2.5 sm:gap-3.5 h-full"
+                className="group rounded-2xl bg-[var(--color-surface-white)] border border-[var(--color-border-base)] hover:border-[var(--color-brand-border)] hover:shadow-md transition-all flex flex-col justify-between overflow-hidden h-full"
               >
-                <div className="flex items-start justify-between gap-1.5 sm:gap-2">
-                  <div className={`w-9 h-9 sm:w-11 sm:h-11 rounded-xl border flex items-center justify-center shrink-0 ${cat.tone}`}>
-                    <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
+                {/* Ảnh đại diện danh mục bắt mắt */}
+                <div className="relative h-24 sm:h-32 w-full overflow-hidden bg-[var(--color-surface-raised)]">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={cat.image}
+                    alt={cat.title}
+                    loading="lazy"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent" />
+                  <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between gap-1.5">
+                    <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl border flex items-center justify-center shrink-0 shadow-xs backdrop-blur-xs bg-white/95 ${cat.tone}`}>
+                      <Icon className="w-4 h-4" />
+                    </div>
+                    <span className="text-[10px] sm:text-xs font-bold px-2.5 py-0.5 rounded-full bg-white/95 text-[var(--color-text-primary)] shadow-xs truncate max-w-[125px] sm:max-w-none">
+                      {cat.badge}
+                    </span>
                   </div>
-                  <span className="text-[10px] sm:text-xs font-semibold px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full bg-[var(--color-surface-raised)] text-[var(--color-text-secondary)] truncate max-w-[110px] sm:max-w-none">
-                    {cat.badge}
-                  </span>
                 </div>
-                <div>
-                  <h3 className="text-sm sm:text-lg font-bold text-[var(--color-text-primary)] group-hover:text-[var(--color-brand-primary)] transition-colors leading-snug">
-                    {cat.title}
-                  </h3>
-                  <p className="text-xs sm:text-sm text-[var(--color-text-secondary)] mt-1 leading-relaxed line-clamp-2">
-                    {cat.subtitle}
-                  </p>
-                </div>
-                <div className="pt-2 sm:pt-2.5 border-t border-[var(--color-border-subtle)] flex items-center justify-between text-xs sm:text-sm font-semibold text-[var(--color-brand-primary)]">
-                  <span>Khám phá</span>
-                  <span className="group-hover:translate-x-0.5 transition-transform">&rarr;</span>
+
+                <div className="p-3.5 sm:p-4 flex-1 flex flex-col justify-between gap-2.5">
+                  <div>
+                    <h3 className="text-sm sm:text-base font-bold text-[var(--color-text-primary)] group-hover:text-[var(--color-brand-primary)] transition-colors leading-snug">
+                      {cat.title}
+                    </h3>
+                    <p className="text-xs text-[var(--color-text-secondary)] mt-1 leading-relaxed line-clamp-2">
+                      {cat.subtitle}
+                    </p>
+                  </div>
+                  <div className="pt-2 border-t border-[var(--color-border-subtle)] flex items-center justify-between text-xs font-semibold text-[var(--color-brand-primary)]">
+                    <span>Khám phá</span>
+                    <span className="group-hover:translate-x-0.5 transition-transform">&rarr;</span>
+                  </div>
                 </div>
               </Link>
             );
@@ -579,6 +688,65 @@ export default function HomePage() {
           >
             <span className="truncate">Nhật ký bữa cơm</span>
           </Link>
+        </div>
+      </section>
+
+      {/* TẦNG 7: Câu hỏi thường gặp (FAQ) chuẩn Google SEO E-E-A-T */}
+      <section aria-labelledby="home-faq-heading" className="rounded-3xl bg-[var(--color-surface-white)] border border-[var(--color-border-base)] p-6 sm:p-8 shadow-2xs space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2 pb-3 border-b border-[var(--color-border-subtle)]">
+          <div>
+            <span className="text-xs font-bold uppercase tracking-wider text-[var(--color-brand-primary)]">
+              Giải đáp nhanh cho Bếp Nhà
+            </span>
+            <h2 id="home-faq-heading" className="text-xl sm:text-2xl font-bold text-[var(--color-text-primary)] mt-0.5">
+              Câu hỏi thường gặp về Ăn Gì Mom &amp; Tính Calo Cơm Nhà
+            </h2>
+          </div>
+          <Link
+            href="/hoi-dap"
+            className="text-xs sm:text-sm font-semibold text-[var(--color-brand-primary)] hover:underline inline-flex items-center gap-1 shrink-0"
+          >
+            <span>Xem toàn bộ Câu hỏi thường gặp (FAQ)</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="p-4 rounded-2xl bg-[var(--color-bg-primary)]/70 border border-[var(--color-border-subtle)] space-y-1.5">
+            <h3 className="text-sm font-bold text-[var(--color-text-primary)]">
+              1. Chỉ số Calo &amp; Đạm trên Ăn Gì Mom được tính như thế nào?
+            </h3>
+            <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
+              Mọi công thức được đối chiếu từ <strong>Bảng Thành Phần Thực Phẩm Việt Nam (Viện Dinh Dưỡng — Bộ Y Tế)</strong> và <strong>USDA</strong>, đã trừ hao hụt phần thải bỏ (xương, vỏ, gốc rau) để tính đúng năng lượng thực ăn trên 1 người.
+            </p>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-[var(--color-bg-primary)]/70 border border-[var(--color-border-subtle)] space-y-1.5">
+            <h3 className="text-sm font-bold text-[var(--color-text-primary)]">
+              2. Làm sao ghép mâm cơm 3 món dưới 500–600 kcal/bữa?
+            </h3>
+            <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
+              Bạn chỉ cần vào mục <Link href="/meal" className="text-[var(--color-brand-primary)] font-semibold underline">Ghép mâm cơm</Link> hoặc chọn chế độ <strong>Eat Clean • Giảm mỡ</strong>, hệ thống sẽ tự chọn 1 Món Mặn + 1 Canh + 1 Rau xào cân bằng định lượng và tổng kết Calo cả mâm.
+            </p>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-[var(--color-bg-primary)]/70 border border-[var(--color-border-subtle)] space-y-1.5">
+            <h3 className="text-sm font-bold text-[var(--color-text-primary)]">
+              3. Tôi có thể đổi số người ăn từ 4 người sang 2 hoặc 6 người không?
+            </h3>
+            <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
+              Có! Trên mọi trang công thức và mâm cơm, khi bạn bấm tăng/giảm số người ăn, định lượng từng nguyên liệu (thịt, cá, rau, gia vị) sẽ tự động co giãn theo quy tắc bếp thực tế.
+            </p>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-[var(--color-bg-primary)]/70 border border-[var(--color-border-subtle)] space-y-1.5">
+            <h3 className="text-sm font-bold text-[var(--color-text-primary)]">
+              4. Danh sách đi chợ có gộp chung nguyên liệu nhiều món không?
+            </h3>
+            <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
+              Có! Tính năng <Link href="/shopping" className="text-[var(--color-brand-primary)] font-semibold underline">Đi chợ</Link> tự động cộng dồn hành, tỏi, thịt cá của tất cả các món trong mâm hoặc cả tuần và chia sẵn theo từng quầy hàng chợ Việt.
+            </p>
+          </div>
         </div>
       </section>
     </div>
