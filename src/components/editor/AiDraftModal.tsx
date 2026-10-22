@@ -32,6 +32,28 @@ interface AiDraftModalProps {
 
 const PRESET_BATCH_SETS = [
   {
+    label: '🥗 Bộ 5 món Giảm cân · Ít Calo (NHS / BBC Good Food)',
+    role: 'MAIN' as const,
+    items: [
+      'Ức gà nướng chanh thảo mộc nồi chiên không dầu (Ít Calo)',
+      'Cá thu áp chảo sốt cà chua tươi ít dầu (Giảm cân)',
+      'Tôm rim tỏi ớt mật ong thanh đạm ít béo',
+      'Đậu hũ non hấp trứng thịt bằm nấm hương (Ít Calo)',
+      'Thăn heo áp chảo măng tây & bông cải xanh (Giảm cân)',
+    ],
+  },
+  {
+    label: '💪 Bộ 5 món Tập Gym · Tăng cơ – Giảm mỡ (Eat the Gains / Fit Men Cook)',
+    role: 'MAIN' as const,
+    items: [
+      'Bò lúc lắc ức gà & ớt chuông giàu Protein (Tập Gym)',
+      'Cá hồi nướng bơ tỏi chanh & bông cải xanh (Tăng cơ)',
+      'Ức gà sốt teriyaki mè rang Meal Prep 20 phút (Tăng cơ)',
+      'Thăn bò xào nấm đùi gà & đậu Hà Lan giàu đạm (Tập Gym)',
+      'Tôm áp chảo tỏi đen & trứng lòng đào giàu Protein',
+    ],
+  },
+  {
     label: 'Bộ 5 món mặn cơm nhà kinh điển',
     role: 'MAIN' as const,
     items: [
@@ -62,6 +84,30 @@ const PRESET_BATCH_SETS = [
       'Khổ qua xào trứng gà không đắng',
       'Cải thìa xào nấm đông cô sốt dầu hào',
       'Giá hẹ xào đậu hũ thanh đạm',
+    ],
+  },
+];
+
+const EXTERNAL_RECIPE_PORTALS = [
+  {
+    group: '🥗 Giảm cân · Ít Calo (Dưới 350–500 kcal)',
+    badgeClass: 'bg-emerald-50 text-emerald-800 border-emerald-200',
+    sites: [
+      { name: 'NHS Better Health', url: 'https://www.nhs.uk/healthier-families/recipes/', desc: 'Chuẩn y tế Anh, ít muối & đường' },
+      { name: 'BBC Good Food Weight Loss', url: 'https://www.bbcgoodfood.com/recipes/collection/healthy-recipes-for-weight-loss', desc: '70+ món giảm cân dưới 500 kcal' },
+      { name: 'BBC Food Low-Calorie', url: 'https://www.bbc.co.uk/food/diets/low-calorie_diet', desc: 'Chia rõ mốc 200–600 kcal' },
+      { name: 'WeightWatchers', url: 'https://www.weightwatchers.com/us/recipe', desc: 'Món nồi chiên không dầu, dễ ăn' },
+      { name: 'Hungry Girl', url: 'https://www.hungry-girl.com/', desc: 'Món nhẹ bụng, ít calo' },
+    ],
+  },
+  {
+    group: '💪 Tập Gym · Tăng cơ – Giảm mỡ (High-Protein / Macro)',
+    badgeClass: 'bg-blue-50 text-blue-800 border-blue-200',
+    sites: [
+      { name: 'Eat the Gains', url: 'https://eatthegains.com/', desc: 'Giàu protein, One-Pan 30 phút' },
+      { name: 'Fit Men Cook', url: 'https://fitmencook.com/recipes/', desc: 'Chuyên Meal Prep tăng cơ giảm mỡ' },
+      { name: 'Strongr Fastr', url: 'https://www.strongrfastr.com/', desc: 'Thực đơn theo Macro chuẩn tập luyện' },
+      { name: 'Muscle & Fitness', url: 'https://www.muscleandfitness.com/nutrition/', desc: 'Dinh dưỡng thể hình chuyên sâu' },
     ],
   },
 ];
@@ -396,12 +442,43 @@ export function AiDraftModal({ isOpen, onClose, onApplyDraft, onBatchSaved }: Ai
                     type="url"
                     value={sourceUrl}
                     onChange={(e) => setSourceUrl(e.target.value)}
-                    placeholder="https://www.dienmayxanh.com/vao-bep/... hoặc Cookpad, Bách Hóa Xanh, VnExpress..."
+                    placeholder="Dán link NHS, BBC Good Food, Eat the Gains, Fit Men Cook, Điện Máy Xanh..."
                     className="w-full px-4 py-3 rounded-2xl border border-stone-300 focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm text-stone-900"
                   />
                   <p className="text-[11px] text-stone-500 mt-1">
-                    Hệ thống tự động tải bài viết từ đường link, lọc bỏ quảng cáo và bóc tách nguyên liệu + bước nấu chuẩn cấu trúc Ăn Gì Mom.
+                    Hỗ trợ cả trang Tiếng Việt lẫn Tiếng Anh (NHS, BBC, Eat the Gains, Fit Men Cook...) — AI tự động dịch sang Tiếng Việt, đổi oz/cup sang gram/muỗng và gắn nhãn Giảm cân / Tập Gym.
                   </p>
+                </div>
+
+                {/* Kho nguồn tham khảo quốc tế Giảm cân & Tập Gym */}
+                <div className="p-3.5 rounded-2xl bg-stone-50 border border-stone-200 space-y-2.5">
+                  <p className="text-[11px] font-bold text-stone-700 uppercase tracking-wider">
+                    🌐 Nguồn khai thác món Giảm cân & Tập Gym uy tín (Bấm để mở trang → Copy link món dán vào ô trên):
+                  </p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {EXTERNAL_RECIPE_PORTALS.map((grp) => (
+                      <div key={grp.group} className="space-y-1.5">
+                        <span className={`inline-block text-[11px] font-bold px-2 py-0.5 rounded-md border ${grp.badgeClass}`}>
+                          {grp.group}
+                        </span>
+                        <div className="flex flex-wrap gap-1.5">
+                          {grp.sites.map((s) => (
+                            <a
+                              key={s.name}
+                              href={s.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              title={s.desc}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white hover:bg-amber-50 border border-stone-200 hover:border-amber-300 text-[11px] font-semibold text-stone-800 transition-colors"
+                            >
+                              <span>{s.name}</span>
+                              <ExternalLink className="w-3 h-3 text-stone-400" />
+                            </a>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
                 <div>

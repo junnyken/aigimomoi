@@ -103,16 +103,26 @@ async function resolveOrSeedIngredientNutrition(ingredientId: number, ingName: s
       resolved = { source: 'VIETNAM_FCT_2007', edibleRate: 0.75, calories100g: 187, protein100g: 18.2, fat100g: 12.6, carbs100g: 0, fiber100g: 0, sodium100g: 62, notes: 'Sườn heo có xương (trừ 25% xương)' };
     } else if (lower.includes('thịt heo') || lower.includes('thịt lợn') || lower.includes('nạc') || lower.includes('thịt băm')) {
       resolved = { source: 'VIETNAM_FCT_2007', edibleRate: 1.0, calories100g: 139, protein100g: 19.0, fat100g: 7.0, carbs100g: 0, fiber100g: 0, sodium100g: 68, notes: 'Thịt heo nạc / băm' };
-    } else if (lower.includes('thịt bò') || lower.includes('bắp bò') || lower.includes('thăn bò')) {
+    } else if (lower.includes('ức gà')) {
+      resolved = { source: 'VIETNAM_FCT_2007', edibleRate: 1.0, calories100g: 110, protein100g: 23.1, fat100g: 1.2, carbs100g: 0, fiber100g: 0, sodium100g: 65, notes: 'Ức gà phi lê không da giàu Protein' };
+    } else if (lower.includes('thăn bò')) {
+      resolved = { source: 'VIETNAM_FCT_2007', edibleRate: 1.0, calories100g: 127, protein100g: 22.8, fat100g: 3.8, carbs100g: 0, fiber100g: 0, sodium100g: 75, notes: 'Thăn bò nạc giàu Protein & Sắt' };
+    } else if (lower.includes('thịt bò') || lower.includes('bắp bò')) {
       resolved = { source: 'VIETNAM_FCT_2007', edibleRate: 1.0, calories100g: 130, protein100g: 21.0, fat100g: 5.0, carbs100g: 0, fiber100g: 0, sodium100g: 83, notes: 'Thịt bò tươi' };
     } else if (lower.includes('gà') || lower.includes('vịt')) {
       resolved = { source: 'VIETNAM_FCT_2007', edibleRate: 0.75, calories100g: 199, protein100g: 20.3, fat100g: 13.1, carbs100g: 0, fiber100g: 0, sodium100g: 70, notes: 'Thịt gia cầm' };
-    } else if (lower.includes('cá hú') || lower.includes('cá basa') || lower.includes('cá tra') || lower.includes('cá thu') || lower.includes('cá hồi')) {
+    } else if (lower.includes('cá hồi')) {
+      resolved = { source: 'VIETNAM_FCT_2007', edibleRate: 1.0, calories100g: 208, protein100g: 20.4, fat100g: 13.4, carbs100g: 0, fiber100g: 0, sodium100g: 59, notes: 'Cá hồi phi lê giàu Omega-3' };
+    } else if (lower.includes('cá hú') || lower.includes('cá basa') || lower.includes('cá tra') || lower.includes('cá thu')) {
       resolved = { source: 'VIETNAM_FCT_2007', edibleRate: 0.75, calories100g: 165, protein100g: 18.5, fat100g: 9.8, carbs100g: 0, fiber100g: 0, sodium100g: 75, notes: 'Cá béo giàu Omega' };
     } else if (lower.includes('cá') || lower.includes('lươn') || lower.includes('ếch')) {
-      resolved = { source: 'VIETNAM_FCT_2007', edibleRate: 0.68, calories100g: 102, protein100g: 18.4, fat100g: 2.8, carbs100g: 0, fiber100g: 0, sodium100g: 85, notes: 'Cá thịt trắng chuẩn FCT' };
+      resolved = { source: 'VIETNAM_FCT_2007', edibleRate: 0.68, calories100g: 98, protein100g: 19.2, fat100g: 2.2, carbs100g: 0, fiber100g: 0, sodium100g: 85, notes: 'Cá thịt trắng chuẩn FCT' };
+    } else if (lower.includes('tôm nõn') || lower.includes('tôm bóc')) {
+      resolved = { source: 'VIETNAM_FCT_2007', edibleRate: 1.0, calories100g: 90, protein100g: 18.4, fat100g: 1.4, carbs100g: 0.9, fiber100g: 0, sodium100g: 148, notes: 'Tôm bóc nõn 100% thịt' };
     } else if (lower.includes('tôm') || lower.includes('tép')) {
       resolved = { source: 'VIETNAM_FCT_2007', edibleRate: 0.60, calories100g: 90, protein100g: 18.4, fat100g: 1.4, carbs100g: 0.9, fiber100g: 0, sodium100g: 148, notes: 'Tôm tươi (trừ vỏ đầu)' };
+    } else if (lower.includes('hạt điều') || lower.includes('đậu phộng') || lower.includes('lạc') || lower.includes('vừng') || lower.includes('mè')) {
+      resolved = { source: 'VIETNAM_FCT_2007', edibleRate: 1.0, calories100g: 553, protein100g: 18.2, fat100g: 43.8, carbs100g: 30.2, fiber100g: 3.3, sodium100g: 12, notes: 'Hạt dinh dưỡng giàu chất béo tốt' };
     } else if (lower.includes('cua') || lower.includes('ghẹ') || lower.includes('hến') || lower.includes('ngao') || lower.includes('mực')) {
       resolved = { source: 'VIETNAM_FCT_2007', edibleRate: 0.55, calories100g: 85, protein100g: 16.0, fat100g: 1.5, carbs100g: 1.8, fiber100g: 0, sodium100g: 180, notes: 'Thủy hải sản tươi' };
     } else if (lower.includes('trứng')) {

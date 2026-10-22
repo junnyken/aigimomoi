@@ -5,8 +5,8 @@
 // - Cấm tự động xuất bản (status luôn là 'DRAFT', isCookTested = false, isEditorialReviewed = false).
 
 import { db } from '../db';
-import { ingredients, recipes, recipeIngredients, cookingSteps, dishes } from '../db/schema';
-import { eq, ilike } from 'drizzle-orm';
+import { ingredients, recipes, recipeIngredients, cookingSteps, dishes, taxonomies, recipeTags } from '../db/schema';
+import { eq, ilike, inArray } from 'drizzle-orm';
 import { aiGateway } from './gateway';
 import { calculateRecipeNutrition } from '../nutrition/calculator';
 
@@ -301,7 +301,7 @@ NỘI DUNG NGUỒN CẦN BÓC TÁCH:
 ${sourceText.slice(0, 6000)}
 """
 
-Hãy bóc tách nguyên liệu (quy đổi định lượng rõ ràng sang g, ml, muỗng canh, muỗng cà phê, củ, trái), chia các bước thành 3 giai đoạn (Sơ chế, Chế biến, Hoàn thành), ước tính timerSeconds cho các bước cần canh giờ, và diễn đạt lại bằng văn phong hướng dẫn nấu ăn ấm cúng, mạch lạc của Ăn Gì Mom.`
+Hãy bóc tách nguyên liệu (nếu nguồn bằng tiếng Anh từ NHS, BBC Good Food, WeightWatchers, Eat the Gains, Fit Men Cook... hãy dịch sang tiếng Việt tự nhiên, quy đổi toàn bộ oz/lb/cup/tbsp/tsp sang g, ml, muỗng canh, muỗng cà phê và ưu tiên nguyên liệu dễ mua tại chợ/siêu thị Việt Nam nhưng giữ nguyên chuẩn Ít Calo / Giàu Protein của bài gốc), chia các bước thành 3 giai đoạn (Sơ chế, Chế biến, Hoàn thành), ước tính timerSeconds cho các bước cần canh giờ, và diễn đạt lại bằng văn phong hướng dẫn nấu ăn ấm cúng, mạch lạc của Ăn Gì Mom.`
     : `YÊU CẦU SOẠN THẢO CÔNG THỨC:
 - Tên món ăn: ${title}
 - Vai trò dự kiến: ${role}
@@ -567,6 +567,54 @@ export async function saveAiDraftToDatabase(
           tipText: st.tipText || null,
         }))
       );
+    }
+
+    // 5. Tự động gắn thẻ Taxonomy Giảm cân · Ít Calo / Tập Gym · Tăng cơ nếu phù hợp
+    const combinedText = `${draft.name} ${draft.shortDescription} ${draft.sourceUrl || ''}`.toLowerCase();
+    const targetTaxSlugs: string[] = [];
+    if (
+      combinedText.includes('giảm cân') ||
+      combinedText.includes('ít calo') ||
+      combinedText.includes('ít béo') ||
+      combinedText.includes('thanh đạm') ||
+      combinedText.includes('nhs.uk') ||
+      combinedText.includes('bbcgoodfood') ||
+      combinedText.includes('bbc.co.uk') ||
+      combinedText.includes('weightwatchers') ||
+      combinedText.includes('hungry-girl')
+    ) {
+      targetTaxSlugs.push('giam-can-it-calo');
+    }
+    if (
+      combinedText.includes('tập gym') ||
+      combinedText.includes('tăng cơ') ||
+      combinedText.includes('protein') ||
+      combinedText.includes('giàu đạm') ||
+      combinedText.includes('meal prep') ||
+      combinedText.includes('ức gà') ||
+      combinedText.includes('thăn bò') ||
+      combinedText.includes('cá hồi') ||
+      combinedText.includes('eatthegains') ||
+      combinedText.includes('fitmencook') ||
+      combinedText.includes('strongrfastr')
+    ) {
+      targetTaxSlugs.push('tap-gym-tang-co');
+    }
+
+    if (targetTaxSlugs.length > 0) {
+      const matchedTax = await tx
+        .select({ id: taxonomies.id })
+        .from(taxonomies)
+        .where(inArray(taxonomies.slug, targetTaxSlugs));
+      for (const t of matchedTax) {
+        await tx
+          .insert(recipeTags)
+          .values({
+            recipeId: insertedRecipe.id,
+            taxonomyId: t.id,
+          })
+          .onConflictDoNothing();
+      }
     }
 
     return {

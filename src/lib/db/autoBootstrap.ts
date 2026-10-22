@@ -117,15 +117,15 @@ async function runBootstrap(): Promise<void> {
     }
   }
 
-  // 4. Tự động seed bộ công thức món Việt chuẩn nếu DB mới tinh (chưa có công thức PUBLISHED nào)
-  const existingPublished = await db
+  // 4. Tự động seed bộ công thức món Việt chuẩn (bao gồm bộ Giảm cân · Ít Calo & Tập Gym · Tăng cơ) nếu chưa có
+  const existingGymOrDiet = await db
     .select({ id: recipes.id })
     .from(recipes)
-    .where(eq(recipes.status, 'PUBLISHED'))
+    .where(eq(recipes.slug, 'uc-ga-ap-chao-mat-ong-toi-it-calo'))
     .limit(1);
 
-  if (existingPublished.length === 0) {
-    logger.info('Fresh PostgreSQL 16 database detected — auto-seeding production catalog...');
+  if (existingGymOrDiet.length === 0) {
+    logger.info('Seeding updated production catalog (including Weight-Loss & Gym/Macro recipes)...');
     await seedProductionCatalog();
     logger.info('Auto-seed production catalog completed!');
   }
