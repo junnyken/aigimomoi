@@ -215,10 +215,10 @@ function MealDiaryContent() {
   const caloriePercent = Math.min(100, Math.round((summary.totalCalories / targetCalories) * 100));
 
   return (
-    <div className="min-h-screen bg-[var(--color-surface-subtle)] pb-20">
+    <div className="min-h-screen bg-[var(--color-surface-subtle)] pb-20 rounded-3xl overflow-hidden border border-[var(--color-border-base)]">
       {/* Header */}
       <div className="bg-[var(--color-surface-white)] border-b border-[var(--color-border-base)] sticky top-0 z-20">
-        <div className="max-w-4xl mx-auto px-4 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="w-full mx-auto px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-xl font-bold text-[var(--color-text-primary)] flex items-center gap-2">
               <HeartPulse className="w-5 h-5 text-red-500" />
@@ -242,7 +242,7 @@ function MealDiaryContent() {
         </div>
 
         {/* Date Selector */}
-        <div className="max-w-4xl mx-auto px-4 py-3 border-t border-[var(--color-border-subtle)] flex items-center justify-between">
+        <div className="w-full mx-auto px-4 sm:px-6 py-3 border-t border-[var(--color-border-subtle)] flex items-center justify-between">
           <button
             type="button"
             onClick={() => changeDay(-1)}
@@ -273,7 +273,7 @@ function MealDiaryContent() {
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 mt-6">
+      <div className="w-full mx-auto px-4 sm:px-6 mt-6">
         {authError ? (
           <div className="bg-[var(--color-surface-white)] border border-[var(--color-border-base)] rounded-2xl p-10 text-center">
             <HeartPulse className="w-12 h-12 text-red-400 mx-auto mb-3" />

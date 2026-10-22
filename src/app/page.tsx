@@ -252,13 +252,13 @@ export default function HomePage() {
               Hôm nay nhà mình ăn gì?
             </h1>
 
-            <p className="text-sm sm:text-base lg:text-lg text-[var(--color-text-secondary)] mb-6 max-w-2xl leading-relaxed">
+            <p className="text-sm sm:text-base lg:text-lg text-[var(--color-text-secondary)] mb-6 max-w-3xl leading-relaxed">
               Từ mâm cơm 3 món sum vầy (Mặn • Canh • Rau), bát nước chấm gia truyền đến thực đơn{" "}
               <strong className="text-[var(--color-text-primary)]">Giảm cân ít Calo &amp; Tập Gym</strong> — tất cả đã được cân chỉnh định lượng chuẩn xác cho gia đình Việt.
             </p>
 
             {/* Quick search input leading to /mon-an */}
-            <form action="/mon-an" method="GET" className="w-full max-w-2xl mb-4">
+            <form action="/mon-an" method="GET" className="w-full max-w-3xl mb-4">
               <div className="relative flex items-center">
                 <input
                   type="text"
