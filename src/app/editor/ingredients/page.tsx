@@ -16,6 +16,8 @@ import {
   ShieldCheck,
   ChevronLeft,
   ChevronRight,
+  Sparkles,
+  Loader2,
 } from 'lucide-react';
 
 interface Ingredient {
@@ -100,8 +102,54 @@ export default function EditorIngredientsPage() {
   const [newCarbs, setNewCarbs] = useState('');
   const [newEdiblePercent, setNewEdiblePercent] = useState('100');
   const [newNotes, setNewNotes] = useState('');
+  const [newSource, setNewSource] = useState('VIETNAM_FCT_2007');
+  const [aiLookingUp, setAiLookingUp] = useState(false);
+  const [aiLookupBadge, setAiLookupBadge] = useState<string | null>(null);
   const [modalError, setModalError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  const handleAiLookupNutrition = async () => {
+    const trimmed = newName.trim();
+    if (!trimmed) {
+      setModalError('Vui lòng nhập tên nguyên liệu trước khi bấm AI tự động điền dinh dưỡng.');
+      return;
+    }
+    setModalError(null);
+    setAiLookupBadge(null);
+    setAiLookingUp(true);
+    try {
+      const res = await fetch('/api/ai/ingredient-nutrition', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: trimmed }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.nutrition) {
+        throw new Error(data.error || 'Không thể tra cứu dinh dưỡng tự động');
+      }
+      const nut = data.nutrition;
+      if (nut.category) setNewCategory(nut.category);
+      if (nut.standardUnit) setNewUnit(nut.standardUnit);
+      if (typeof nut.isPantryStaple === 'boolean') setNewIsStaple(nut.isPantryStaple);
+      if (nut.calories100g !== undefined) setNewCalories(String(nut.calories100g));
+      if (nut.protein100g !== undefined) setNewProtein(String(nut.protein100g));
+      if (nut.fat100g !== undefined) setNewFat(String(nut.fat100g));
+      if (nut.carbs100g !== undefined) setNewCarbs(String(nut.carbs100g));
+      if (nut.ediblePercent !== undefined) setNewEdiblePercent(String(nut.ediblePercent));
+      if (nut.notes) setNewNotes(nut.notes);
+      if (nut.source) setNewSource(nut.source);
+
+      const providerLabel =
+        data.provider === 'VIETNAM_FCT_CATALOG'
+          ? 'Tra cứu khớp 100% từ Bảng Thành Phần Thực Phẩm Việt Nam (Bộ Y Tế)'
+          : `Tra cứu bởi AI Chuyên gia Dinh dưỡng (${nut.source || 'VIETNAM_FCT_2007'})`;
+      setAiLookupBadge(providerLabel);
+    } catch (err: unknown) {
+      setModalError(err instanceof Error ? err.message : 'Lỗi khi gọi AI tra cứu dinh dưỡng');
+    } finally {
+      setAiLookingUp(false);
+    }
+  };
 
   const fetchIngredients = useCallback(async () => {
     try {
@@ -188,6 +236,7 @@ export default function EditorIngredientsPage() {
           fat100g: parsedFat,
           carbs100g: parsedCarb,
           edibleRate: parsedEdible,
+          nutritionSource: newSource || 'VIETNAM_FCT_2007',
           nutritionNotes: newNotes.trim() || undefined,
         }),
       });
@@ -205,6 +254,7 @@ export default function EditorIngredientsPage() {
       setNewCarbs('');
       setNewEdiblePercent('100');
       setNewNotes('');
+      setAiLookupBadge(null);
       fetchIngredients();
     } catch (err: unknown) {
       if (err instanceof Error) {
@@ -581,16 +631,50 @@ export default function EditorIngredientsPage() {
 
             <form onSubmit={handleCreate} className="flex flex-col gap-3.5">
               <div>
-                <label className="block text-xs font-semibold mb-1">Tên nguyên liệu (*)</label>
-                <input
-                  type="text"
-                  required
-                  value={newName}
-                  onChange={(e) => setNewName(e.target.value)}
-                  placeholder="VD: Cá lăng tươi, Bông thiên lý, Hạt óc chó..."
-                  className="w-full px-3.5 py-2 bg-[var(--color-surface-raised)] border border-[var(--color-border-base)] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-primary)] text-[var(--color-text-primary)]"
-                />
+                <div className="flex items-center justify-between gap-2 mb-1">
+                  <label className="block text-xs font-semibold">Tên nguyên liệu (*)</label>
+                  <span className="text-[11px] text-amber-800 font-medium">
+                    Nhập tên rồi bấm nút AI bên dưới để tự điền Calo, Đạm, Béo
+                  </span>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <input
+                    type="text"
+                    required
+                    value={newName}
+                    onChange={(e) => setNewName(e.target.value)}
+                    placeholder="VD: Cá lăng tươi, Bông thiên lý, Hạt óc chó..."
+                    className="flex-1 px-3.5 py-2 bg-[var(--color-surface-raised)] border border-[var(--color-border-base)] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-primary)] text-[var(--color-text-primary)]"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAiLookupNutrition}
+                    disabled={aiLookingUp || !newName.trim()}
+                    className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-xs transition-all disabled:opacity-50 shrink-0 cursor-pointer"
+                  >
+                    {aiLookingUp ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <span>AI đang tra cứu...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-3.5 h-3.5" />
+                        <span>✨ AI Tự điền Calo & Dinh dưỡng</span>
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
+
+              {aiLookupBadge && (
+                <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>
+                    <strong>Đã điền tự động:</strong> {aiLookupBadge}
+                  </span>
+                </div>
+              )}
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
@@ -631,9 +715,17 @@ export default function EditorIngredientsPage() {
               </div>
 
               <div className="p-3.5 rounded-xl bg-[var(--color-bg-primary)] border border-[var(--color-border-subtle)] space-y-3">
-                <div className="text-xs font-bold text-[var(--color-text-primary)] flex items-center justify-between">
-                  <span>Thông số dinh dưỡng / 100g ăn được (Tùy chọn)</span>
-                  <span className="text-[10px] font-normal text-[var(--color-text-muted)]">Bỏ trống để tự suy luận FCT</span>
+                <div className="text-xs font-bold text-[var(--color-text-primary)] flex flex-wrap items-center justify-between gap-2">
+                  <span>Thông số dinh dưỡng / 100g ăn được (AI hỗ trợ điền)</span>
+                  <button
+                    type="button"
+                    onClick={handleAiLookupNutrition}
+                    disabled={aiLookingUp || !newName.trim()}
+                    className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-800 bg-amber-100 hover:bg-amber-200 px-2.5 py-1 rounded-full border border-amber-300 transition-colors disabled:opacity-50 cursor-pointer"
+                  >
+                    <Sparkles className="w-3 h-3 text-amber-700" />
+                    <span>{aiLookingUp ? 'Đang tính...' : 'Tự động tính từ tên nguyên liệu'}</span>
+                  </button>
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
                   <div>

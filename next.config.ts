@@ -20,7 +20,29 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: 'images.unsplash.com',
       },
+      {
+        protocol: 'https',
+        hostname: '**',
+      },
     ],
+  },
+  async rewrites() {
+    return [
+      // English URL aliases -> Public Vietnamese routes
+      { source: '/recipes', destination: '/mon-an' },
+      { source: '/recipe/:slug', destination: '/cong-thuc/:slug' },
+      { source: '/recipes/:slug', destination: '/cong-thuc/:slug' },
+      { source: '/meal-builder', destination: '/mam-com' },
+      { source: '/shopping-list', destination: '/di-cho' },
+      { source: '/pantry', destination: '/tu-lanh' },
+      { source: '/weekly-planner', destination: '/ke-hoach-tuan' },
+      { source: '/diary', destination: '/nhat-ky' },
+      // Vietnamese URL aliases -> Editor routes
+      { source: '/quan-tri/nguyen-lieu', destination: '/editor/ingredients' },
+      { source: '/quan-tri/phan-loai', destination: '/editor/taxonomies' },
+      { source: '/quan-tri/cong-thuc', destination: '/editor/recipes' },
+      { source: '/quan-tri/cong-thuc/:path*', destination: '/editor/recipes/:path*' },
+    ];
   },
   async headers() {
     return [

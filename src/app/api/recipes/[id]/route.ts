@@ -279,6 +279,64 @@ export async function PUT(
   }
 }
 
+// PATCH /api/recipes/[id] — Cho phép ADMIN/EDITOR cập nhật nhanh ảnh đại diện (heroImage) kể cả khi công thức đã PUBLISHED
+export async function PATCH(
+  request: NextRequest,
+  context: RouteContext
+) {
+  try {
+    if (!isSameOrigin(request)) {
+      return NextResponse.json({ error: 'Yêu cầu không hợp lệ (origin)' }, { status: 403 });
+    }
+
+    const user = await getSessionUser();
+    if (!user || (user.role !== 'ADMIN' && user.role !== 'EDITOR')) {
+      return NextResponse.json(
+        { error: 'Yêu cầu quyền Biên tập viên (EDITOR) hoặc Quản trị viên (ADMIN)' },
+        { status: 403 }
+      );
+    }
+
+    const { id } = await context.params;
+    const recipeId = Number(id);
+    if (isNaN(recipeId)) {
+      return NextResponse.json({ error: 'ID công thức không hợp lệ' }, { status: 400 });
+    }
+
+    const existing = await db.query.recipes.findFirst({
+      where: eq(recipes.id, recipeId),
+    });
+
+    if (!existing) {
+      return NextResponse.json({ error: 'Không tìm thấy công thức' }, { status: 404 });
+    }
+
+    const body = await request.json();
+    const nextHeroImage =
+      body.heroImage !== undefined ? (body.heroImage ? String(body.heroImage).trim() : null) : existing.heroImage;
+
+    const [updated] = await db
+      .update(recipes)
+      .set({
+        heroImage: nextHeroImage,
+        updatedAt: new Date(),
+      })
+      .where(eq(recipes.id, recipeId))
+      .returning();
+
+    return NextResponse.json({
+      recipe: updated,
+      message: 'Đã cập nhật ảnh đại diện món ăn thành công!',
+    });
+  } catch (error) {
+    console.error('Error patching recipe hero image:', error);
+    return NextResponse.json(
+      { error: 'Không thể cập nhật ảnh đại diện công thức' },
+      { status: 500 }
+    );
+  }
+}
+
 // DELETE /api/recipes/[id] (Requires EDITOR or ADMIN)
 export async function DELETE(
   request: NextRequest,

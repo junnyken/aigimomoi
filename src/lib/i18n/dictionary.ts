@@ -295,6 +295,18 @@ export const EXACT_VI_TO_EN: Record<string, string> = {
   'Mua tươi': 'Buy Fresh',
   'Trước': 'Prev',
   'Sau': 'Next',
+  '✨ AI Tự điền Calo & Dinh dưỡng': '✨ AI Auto-Fill Calories & Nutrition',
+  'AI đang tra cứu...': 'AI Looking up...',
+  'Tự động tính từ tên nguyên liệu': 'Auto-calculate from name',
+  'Thêm nguyên liệu mới vào Từ điển': 'Add New Ingredient to Dictionary',
+  'Thông số dinh dưỡng / 100g ăn được (AI hỗ trợ điền)': 'Nutrition per 100g Edible Portion (AI-Assisted)',
+  'Tải ảnh mới từ thiết bị': 'Upload New Image from Device',
+  'Chọn ảnh từ thiết bị': 'Choose Image from Device',
+  'Dán link ảnh (URL)': 'Paste Image Link (URL)',
+  'Gỡ ảnh hiện tại': 'Remove Current Image',
+  'Áp dụng ảnh': 'Apply Image',
+  'Đổi ảnh từ máy': 'Change Image',
+  'Ảnh đại diện món ăn (Hero image — Có thể đổi ảnh trực tiếp bất kỳ lúc nào)': 'Recipe Hero Image (Can be updated directly anytime)',
 };
 
 const PATTERN_REPLACEMENTS: Array<[RegExp, string]> = [

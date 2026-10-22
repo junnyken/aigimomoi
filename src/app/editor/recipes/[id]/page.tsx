@@ -111,6 +111,35 @@ function EditRecipeContent() {
   const [creatingRevision, setCreatingRevision] = useState(false);
   const [provenance, setProvenance] = useState<string>('MANUAL');
   const [calculatingNut, setCalculatingNut] = useState(false);
+  const [savingHeroImage, setSavingHeroImage] = useState(false);
+  const [heroImageSavedMsg, setHeroImageSavedMsg] = useState<string | null>(null);
+
+  const handleQuickSaveHeroImage = async (newUrl: string) => {
+    setHeroImage(newUrl);
+    setHeroImageSavedMsg(null);
+    try {
+      setSavingHeroImage(true);
+      const res = await fetch(`/api/recipes/${recipeId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ heroImage: newUrl || null }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setErrorMsg(data.error || 'Không thể lưu ảnh đại diện mới');
+      } else {
+        setHeroImageSavedMsg(
+          newUrl
+            ? 'Đã cập nhật & lưu ảnh đại diện mới lên hệ thống!'
+            : 'Đã gỡ ảnh đại diện của món ăn.'
+        );
+      }
+    } catch {
+      setErrorMsg('Lỗi kết nối khi lưu ảnh đại diện');
+    } finally {
+      setSavingHeroImage(false);
+    }
+  };
 
   const handleRecalculateNutrition = async () => {
     try {
@@ -687,16 +716,27 @@ function EditRecipeContent() {
             </button>
           </div>
 
-          <div>
+          <div className="space-y-2">
             <ImageUpload
-              label="Ảnh đại diện món ăn (Hero image)"
+              label="Ảnh đại diện món ăn (Hero image — Có thể đổi ảnh trực tiếp bất kỳ lúc nào)"
               value={heroImage}
-              onChange={setHeroImage}
-              onRemove={() => setHeroImage('')}
-              hint="Tải ảnh món cơm nhà hấp dẫn (JPG/PNG/WebP, tối đa 5MB)"
+              onChange={(url) => handleQuickSaveHeroImage(url)}
+              onRemove={() => handleQuickSaveHeroImage('')}
+              hint="Tải ảnh món cơm nhà hấp dẫn từ máy hoặc dán link ảnh (JPG/PNG/WebP, tối đa 5MB)"
               aspectRatio="video"
-              disabled={isReadOnly}
+              disabled={status === 'ARCHIVED'}
             />
+            {savingHeroImage && (
+              <p className="text-xs font-semibold text-amber-700">
+                Đang lưu ảnh đại diện mới vào cơ sở dữ liệu...
+              </p>
+            )}
+            {heroImageSavedMsg && (
+              <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center gap-2">
+                <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>{heroImageSavedMsg}</span>
+              </div>
+            )}
           </div>
         </section>
 
