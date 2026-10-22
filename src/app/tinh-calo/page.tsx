@@ -400,9 +400,9 @@ export default function CalorieCalculatorPage() {
       </section>
 
       {/* Main Full-Width 12-Column Grid */}
-      <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-7 xl:gap-8 items-start">
         {/* CỘT TRÁI (4/12): Bảng nhập thông số cơ thể & mục tiêu */}
-        <section className="lg:col-span-4 rounded-3xl bg-[var(--color-surface-white)] border border-[var(--color-border-base)] p-5 sm:p-6 shadow-xs space-y-5 lg:sticky lg:top-20">
+        <section className="lg:col-span-4 rounded-3xl bg-[var(--color-surface-white)] border border-[var(--color-border-base)] p-6 sm:p-7 shadow-xs space-y-6 lg:sticky lg:top-22">
           <div className="flex items-center justify-between border-b border-[var(--color-border-subtle)] pb-3">
             <h2 className="text-base font-bold text-[var(--color-text-primary)] flex items-center gap-2">
               <Activity className="w-4 h-4 text-[var(--color-brand-primary)]" />
@@ -629,9 +629,9 @@ export default function CalorieCalculatorPage() {
         </section>
 
         {/* CỘT PHẢI (8/12): Bảng Kết Quả Y Khoa, Quy Đổi Thực Phẩm Bếp Việt & Phân Bổ 3 Bữa */}
-        <section className="lg:col-span-8 flex flex-col gap-5">
+        <section className="lg:col-span-8 flex flex-col gap-6 xl:gap-7">
           {/* Hàng 1: 4 Thẻ chỉ số cốt lõi */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <div className="p-4 sm:p-5 rounded-2xl bg-[var(--color-surface-white)] border border-[var(--color-border-base)] shadow-2xs flex flex-col justify-between">
               <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
                 Chỉ số BMI

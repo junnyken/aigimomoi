@@ -93,7 +93,7 @@ export default function RootLayout({
           <ServiceWorkerRegister />
           {/* Sticky Header */}
           <header className="sticky top-0 z-40 w-full bg-[var(--color-surface-white)] border-b border-[var(--color-border-base)] shadow-xs">
-            <div className="w-full lg:max-w-[88vw] xl:max-w-[85vw] mx-auto px-3.5 sm:px-6 py-2.5 sm:py-3 flex items-center justify-between gap-2 sm:gap-3">
+            <div className="w-full lg:max-w-[88vw] xl:max-w-[85vw] mx-auto px-3.5 sm:px-6 py-3 sm:py-3.5 flex items-center justify-between gap-3 sm:gap-5">
               <Link href="/" className="flex flex-col no-underline shrink-0">
                 <div className="text-xl sm:text-2xl font-bold tracking-tight leading-none" data-no-i18n="true">
                   <span className="text-[var(--color-brand-primary)]">ĂN GÌ</span>
@@ -104,9 +104,11 @@ export default function RootLayout({
                 </span>
               </Link>
 
-              <div className="flex items-center justify-end gap-1.5 sm:gap-2 min-w-0 flex-1">
+              <div className="flex items-center justify-center min-w-0 flex-1">
                 <HeaderNav />
+              </div>
 
+              <div className="flex items-center justify-end gap-2 sm:gap-2.5 shrink-0">
                 <LanguageSwitcher />
 
                 <UserNavButton />
@@ -115,7 +117,7 @@ export default function RootLayout({
           </header>
 
           {/* Main Page Content (có padding bottom trên mobile để không cấn bottom bar) */}
-          <main className="flex-1 w-full lg:max-w-[88vw] xl:max-w-[85vw] mx-auto px-3.5 sm:px-6 py-5 sm:py-6 pb-24 md:pb-8 overflow-x-hidden">
+          <main className="flex-1 w-full lg:max-w-[88vw] xl:max-w-[85vw] mx-auto px-3.5 sm:px-6 py-6 sm:py-8 pb-24 md:pb-10 overflow-x-hidden">
             {children}
           </main>
 
