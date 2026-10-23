@@ -142,7 +142,7 @@ export default function CalorieCalculatorPage() {
   const [goal, setGoal] = useState<GoalKey>('lose_standard');
   const [savedToast, setSavedToast] = useState<boolean>(false);
   const [savedTargetKcal, setSavedTargetKcal] = useState<number | null>(null);
-  const [activeStepTab, setActiveStepTab] = useState<'meals' | 'roadmap' | 'clinical'>('meals');
+  const [activeStepTab, setActiveStepTab] = useState<'overview' | 'meals'>('overview');
 
   // Tự động khôi phục thông số đã lưu từ lần tính trước
   useEffect(() => {
@@ -868,123 +868,74 @@ export default function CalorieCalculatorPage() {
             </div>
           </div>
 
-          {/* Hàng 3: Thanh Chuyển Đổi 3 Bước Gọn Gàng (Tránh nhồi nhét gây rối mắt) */}
-          <div className="p-1.5 rounded-2xl bg-[var(--color-surface-white)] border border-[var(--color-border-base)] shadow-2xs grid grid-cols-1 sm:grid-cols-3 gap-1.5 no-print">
+          {/* Hàng 3: Thanh Chuyển Đổi 2 Bước Tổng Hợp & Chuẩn Chỉnh */}
+          <div className="p-1.5 rounded-2xl bg-[var(--color-surface-white)] border border-[var(--color-border-base)] shadow-2xs grid grid-cols-1 sm:grid-cols-2 gap-2 no-print">
+            <button
+              type="button"
+              onClick={() => setActiveStepTab('overview')}
+              className={`py-3.5 px-4 rounded-xl text-xs sm:text-sm font-extrabold transition-all cursor-pointer flex items-center justify-center gap-2 ${
+                activeStepTab === 'overview'
+                  ? 'bg-[var(--color-brand-primary)] text-white shadow-xs'
+                  : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]'
+              }`}
+            >
+              <span>🧭 1. Chia 3 Bữa, Cách Giảm Cân &amp; Chi Tiết Macro / Y Khoa</span>
+            </button>
+
             <button
               type="button"
               onClick={() => setActiveStepTab('meals')}
-              className={`py-3 px-4 rounded-xl text-xs sm:text-sm font-extrabold transition-all cursor-pointer flex items-center justify-center gap-2 ${
+              className={`py-3.5 px-4 rounded-xl text-xs sm:text-sm font-extrabold transition-all cursor-pointer flex items-center justify-center gap-2 ${
                 activeStepTab === 'meals'
                   ? 'bg-[var(--color-brand-primary)] text-white shadow-xs'
                   : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]'
               }`}
             >
-              <span>🍱 1. Chọn Thực Đơn &amp; Gắn Món Ăn</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveStepTab('roadmap')}
-              className={`py-3 px-4 rounded-xl text-xs sm:text-sm font-extrabold transition-all cursor-pointer flex items-center justify-center gap-2 ${
-                activeStepTab === 'roadmap'
-                  ? 'bg-[var(--color-brand-primary)] text-white shadow-xs'
-                  : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]'
-              }`}
-            >
-              <span>🧭 2. Chia 3 Bữa &amp; Cách Giảm Cân</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveStepTab('clinical')}
-              className={`py-3 px-4 rounded-xl text-xs sm:text-sm font-extrabold transition-all cursor-pointer flex items-center justify-center gap-2 ${
-                activeStepTab === 'clinical'
-                  ? 'bg-[var(--color-brand-primary)] text-white shadow-xs'
-                  : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]'
-              }`}
-            >
-              <span>🔬 3. Chi Tiết Macro &amp; Y Khoa</span>
+              <span>🍱 2. Chọn Thực Đơn &amp; Gắn Món Ăn Hàng Ngày</span>
             </button>
           </div>
 
-          {/* NỘI DUNG TAB 1 (MẶC ĐỊNH): CHỌN THỰC ĐƠN & GẮN MÓN ĂN HÀNG NGÀY */}
-          {activeStepTab === 'meals' && (
-            <PersonalizedMealActionPanel
-              mode="meals"
-              gender={gender}
-              safeWeight={metrics.safeWeight}
-              targetWeightKg={targetWeightKg}
-              idealTargetKg={metrics.idealTargetKg}
-              bmi={metrics.bmi}
-              tdee={metrics.tdee}
-              targetCalories={metrics.targetCalories}
-              actualDailyDelta={metrics.actualDailyDelta}
-              proteinGrams={metrics.proteinGrams}
-              carbsGrams={metrics.carbsGrams}
-              fatGrams={metrics.fatGrams}
-              fiberGrams={metrics.fiberGrams}
-              waterLiters={metrics.waterLiters}
-              breakfastKcal={metrics.breakfastKcal}
-              lunchKcal={metrics.lunchKcal}
-              dinnerKcal={metrics.dinnerKcal}
-              breakfastPro={metrics.breakfastPro}
-              lunchPro={metrics.lunchPro}
-              dinnerPro={metrics.dinnerPro}
-              whiteRiceBowlsPerDay={metrics.whiteRiceBowlsPerDay}
-              brownRiceBowlsPerDay={metrics.brownRiceBowlsPerDay}
-              lunchRiceBowls={metrics.lunchRiceBowls}
-              dinnerRiceBowls={metrics.dinnerRiceBowls}
-              rawMeatFishEquivalentGrams={metrics.rawMeatFishEquivalentGrams}
-              timelineWeeks={metrics.timelineWeeks}
-              weightDiffKg={metrics.weightDiffKg}
-              goal={goal}
-              activity={activity}
-            />
-          )}
-
-          {/* NỘI DUNG TAB 2: PHÂN BỔ 3 BỮA & NGUYÊN TẮC HÀNH ĐỘNG GIẢM CÂN */}
-          {activeStepTab === 'roadmap' && (
-            <PersonalizedMealActionPanel
-              mode="roadmap"
-              gender={gender}
-              safeWeight={metrics.safeWeight}
-              targetWeightKg={targetWeightKg}
-              idealTargetKg={metrics.idealTargetKg}
-              bmi={metrics.bmi}
-              tdee={metrics.tdee}
-              targetCalories={metrics.targetCalories}
-              actualDailyDelta={metrics.actualDailyDelta}
-              proteinGrams={metrics.proteinGrams}
-              carbsGrams={metrics.carbsGrams}
-              fatGrams={metrics.fatGrams}
-              fiberGrams={metrics.fiberGrams}
-              waterLiters={metrics.waterLiters}
-              breakfastKcal={metrics.breakfastKcal}
-              lunchKcal={metrics.lunchKcal}
-              dinnerKcal={metrics.dinnerKcal}
-              breakfastPro={metrics.breakfastPro}
-              lunchPro={metrics.lunchPro}
-              dinnerPro={metrics.dinnerPro}
-              whiteRiceBowlsPerDay={metrics.whiteRiceBowlsPerDay}
-              brownRiceBowlsPerDay={metrics.brownRiceBowlsPerDay}
-              lunchRiceBowls={metrics.lunchRiceBowls}
-              dinnerRiceBowls={metrics.dinnerRiceBowls}
-              rawMeatFishEquivalentGrams={metrics.rawMeatFishEquivalentGrams}
-              timelineWeeks={metrics.timelineWeeks}
-              weightDiffKg={metrics.weightDiffKg}
-              goal={goal}
-              activity={activity}
-            />
-          )}
-
-          {/* NỘI DUNG TAB 3: CHI TIẾT MACRO & BẢNG ĐỐI CHIẾU 3 PHƯƠNG TRÌNH Y KHOA */}
-          {activeStepTab === 'clinical' && (
+          {/* NỘI DUNG TAB 1 (MẶC ĐỊNH): GỘP CHUNG CHIA 3 BỮA & CÁCH GIẢM CÂN + CHI TIẾT MACRO & Y KHOA */}
+          {activeStepTab === 'overview' && (
             <div className="flex flex-col gap-5 animate-fade-in">
-              {/* 4 Thẻ Macro: Đạm - Tinh bột - Béo - Chất xơ */}
+              {/* Phần 1.1: Chia 3 Bữa & 3 Nguyên tắc Hành động Giảm Cân */}
+              <PersonalizedMealActionPanel
+                mode="roadmap"
+                gender={gender}
+                safeWeight={metrics.safeWeight}
+                targetWeightKg={targetWeightKg}
+                idealTargetKg={metrics.idealTargetKg}
+                bmi={metrics.bmi}
+                tdee={metrics.tdee}
+                targetCalories={metrics.targetCalories}
+                actualDailyDelta={metrics.actualDailyDelta}
+                proteinGrams={metrics.proteinGrams}
+                carbsGrams={metrics.carbsGrams}
+                fatGrams={metrics.fatGrams}
+                fiberGrams={metrics.fiberGrams}
+                waterLiters={metrics.waterLiters}
+                breakfastKcal={metrics.breakfastKcal}
+                lunchKcal={metrics.lunchKcal}
+                dinnerKcal={metrics.dinnerKcal}
+                breakfastPro={metrics.breakfastPro}
+                lunchPro={metrics.lunchPro}
+                dinnerPro={metrics.dinnerPro}
+                whiteRiceBowlsPerDay={metrics.whiteRiceBowlsPerDay}
+                brownRiceBowlsPerDay={metrics.brownRiceBowlsPerDay}
+                lunchRiceBowls={metrics.lunchRiceBowls}
+                dinnerRiceBowls={metrics.dinnerRiceBowls}
+                rawMeatFishEquivalentGrams={metrics.rawMeatFishEquivalentGrams}
+                timelineWeeks={metrics.timelineWeeks}
+                weightDiffKg={metrics.weightDiffKg}
+                goal={goal}
+                activity={activity}
+              />
+
+              {/* Phần 1.2: 4 Thẻ Macro Chi Tiết (Đạm - Tinh bột - Béo - Chất xơ) */}
               <div className="rounded-3xl bg-[var(--color-surface-white)] border border-[var(--color-border-base)] p-5 sm:p-6 shadow-xs space-y-4">
                 <div>
-                  <h2 className="text-base sm:text-lg font-bold text-[var(--color-text-primary)]">
-                    Định lượng Dinh dưỡng Đa lượng (Macro) Chi Tiết
+                  <h2 className="text-base sm:text-lg font-extrabold text-[var(--color-text-primary)]">
+                    3. Định Lượng Dinh Dưỡng Đa Lượng (Macro) Chi Tiết
                   </h2>
                   <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">
                     Đạm tính theo chuẩn <strong>{metrics.goalObj.proteinPerKgRef}g / kg cân nặng tham chiếu ({metrics.proteinReferenceWeightKg}kg)</strong> của Hiệp hội Dinh dưỡng Thể thao Quốc tế (ISSN) &amp; Viện Dinh Dưỡng.
@@ -1058,12 +1009,12 @@ export default function CalorieCalculatorPage() {
                 </div>
               </div>
 
-              {/* Bảng Đối Chiếu Minh Bạch 3 Phương Trình Y Khoa (Verification Table) */}
+              {/* Phần 1.3: Bảng Đối Chiếu Minh Bạch 3 Phương Trình Y Khoa (Verification Table) */}
               <div className="rounded-3xl bg-[var(--color-surface-white)] border border-[var(--color-border-base)] p-5 sm:p-6 shadow-xs space-y-4">
                 <div className="flex items-center justify-between gap-2">
-                  <h2 className="text-sm sm:text-base font-bold text-[var(--color-text-primary)] flex items-center gap-2">
+                  <h2 className="text-sm sm:text-base font-extrabold text-[var(--color-text-primary)] flex items-center gap-2">
                     <Award className="w-4 h-4 text-[var(--color-accent-primary)]" />
-                    <span>Bảng đối chiếu xác thực từ 3 Phương trình Y khoa Quốc tế</span>
+                    <span>4. Bảng đối chiếu xác thực từ 3 Phương trình Y khoa Quốc tế</span>
                   </h2>
                   <span className="text-[11px] font-mono text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
                     Verified Clinical Formulas
@@ -1153,8 +1104,55 @@ export default function CalorieCalculatorPage() {
                     <strong>Nguồn tài liệu xác thực:</strong> (1) <em>Nhu cầu Dinh dưỡng Khuyến nghị cho Người Việt Nam</em> — Viện Dinh Dưỡng Quốc Gia (Bộ Y Tế); (2) <em>The Asia-Pacific Perspective: Redefining Obesity and its Treatment</em> — WHO / IASO / IOTF (2000); (3) Mifflin MD, St Jeor ST et al., <em>Am J Clin Nutr</em> (1990); (4) Jäger R et al., <em>International Society of Sports Nutrition (ISSN) Position Stand: Protein and Exercise</em> (2017).
                   </div>
                 </div>
+
+                {/* Nút chuyển tiếp sang Tab 2: Chọn Thực Đơn & Gắn Món Ăn */}
+                <div className="pt-2 flex justify-end no-print">
+                  <button
+                    type="button"
+                    onClick={() => setActiveStepTab('meals')}
+                    className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-hover)] text-white text-xs sm:text-sm font-extrabold shadow-xs transition-all cursor-pointer"
+                  >
+                    <span>🍱 Tiếp theo: Chọn Thực Đơn &amp; Gắn Món Ăn Hàng Ngày</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
             </div>
+          )}
+
+          {/* NỘI DUNG TAB 2: CHỌN THỰC ĐƠN & GẮN MÓN ĂN HÀNG NGÀY */}
+          {activeStepTab === 'meals' && (
+            <PersonalizedMealActionPanel
+              mode="meals"
+              gender={gender}
+              safeWeight={metrics.safeWeight}
+              targetWeightKg={targetWeightKg}
+              idealTargetKg={metrics.idealTargetKg}
+              bmi={metrics.bmi}
+              tdee={metrics.tdee}
+              targetCalories={metrics.targetCalories}
+              actualDailyDelta={metrics.actualDailyDelta}
+              proteinGrams={metrics.proteinGrams}
+              carbsGrams={metrics.carbsGrams}
+              fatGrams={metrics.fatGrams}
+              fiberGrams={metrics.fiberGrams}
+              waterLiters={metrics.waterLiters}
+              breakfastKcal={metrics.breakfastKcal}
+              lunchKcal={metrics.lunchKcal}
+              dinnerKcal={metrics.dinnerKcal}
+              breakfastPro={metrics.breakfastPro}
+              lunchPro={metrics.lunchPro}
+              dinnerPro={metrics.dinnerPro}
+              whiteRiceBowlsPerDay={metrics.whiteRiceBowlsPerDay}
+              brownRiceBowlsPerDay={metrics.brownRiceBowlsPerDay}
+              lunchRiceBowls={metrics.lunchRiceBowls}
+              dinnerRiceBowls={metrics.dinnerRiceBowls}
+              rawMeatFishEquivalentGrams={metrics.rawMeatFishEquivalentGrams}
+              timelineWeeks={metrics.timelineWeeks}
+              weightDiffKg={metrics.weightDiffKg}
+              goal={goal}
+              activity={activity}
+            />
           )}
         </section>
       </div>
