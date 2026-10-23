@@ -433,7 +433,7 @@ function WeeklyPlannerContent() {
                   {/* Danh sách các bữa trong ngày */}
                   <div className="space-y-3">
                     {(['BREAKFAST', 'LUNCH', 'DINNER'] as const).map((mType) => {
-                      const mealItem = dayPlans.find((p) => p.mealType === mType);
+                      const mealItems = dayPlans.filter((p) => p.mealType === mType);
 
                       return (
                         <div key={mType} className="bg-stone-50/70 p-2.5 rounded-xl border border-stone-100">
@@ -442,56 +442,58 @@ function WeeklyPlannerContent() {
                               <span>{MEAL_LABELS[mType].icon}</span>
                               <span>{MEAL_LABELS[mType].label}</span>
                             </span>
-                            {!mealItem && (
-                              <button
-                                onClick={() => handleOpenAddModal(day.dateStr, mType)}
-                                className="text-[11px] font-semibold text-[var(--color-brand-primary)] hover:underline"
-                              >
-                                + Thêm
-                              </button>
-                            )}
+                            <button
+                              onClick={() => handleOpenAddModal(day.dateStr, mType)}
+                              className="text-[11px] font-semibold text-[var(--color-brand-primary)] hover:underline no-print"
+                            >
+                              + Thêm
+                            </button>
                           </div>
 
-                          {mealItem ? (
-                            <div className="bg-white p-2 rounded-lg border border-stone-200 shadow-xs">
-                              <div className="flex items-start justify-between gap-1 mb-1">
-                                <span className={`font-bold text-xs leading-tight ${mealItem.isCompleted ? 'line-through text-stone-400' : 'text-stone-800'}`}>
-                                  {mealItem.customDishName || mealItem.recipe?.name}
-                                </span>
-                                <button
-                                  onClick={() => handleDeletePlan(mealItem.id)}
-                                  className="text-stone-300 hover:text-red-500 p-0.5"
-                                  title="Xóa"
-                                >
-                                  <Trash2 className="w-3 h-3" />
-                                </button>
-                              </div>
+                          {mealItems.length > 0 ? (
+                            <div className="space-y-1.5">
+                              {mealItems.map((mealItem) => (
+                                <div key={mealItem.id} className="bg-white p-2 rounded-lg border border-stone-200 shadow-xs">
+                                  <div className="flex items-start justify-between gap-1 mb-1">
+                                    <span className={`font-bold text-xs leading-tight ${mealItem.isCompleted ? 'line-through text-stone-400' : 'text-stone-800'}`}>
+                                      {mealItem.customDishName || mealItem.recipe?.name}
+                                    </span>
+                                    <button
+                                      onClick={() => handleDeletePlan(mealItem.id)}
+                                      className="text-stone-300 hover:text-red-500 p-0.5 no-print"
+                                      title="Xóa"
+                                    >
+                                      <Trash2 className="w-3 h-3" />
+                                    </button>
+                                  </div>
 
-                              {mealItem.recipe && (
-                                <Link
-                                  href={`/cong-thuc/${mealItem.recipe.slug}`}
-                                  className="text-[10px] text-stone-400 hover:text-[var(--color-brand-primary)] flex items-center gap-0.5 mb-1.5"
-                                >
-                                  <span>Xem công thức</span>
-                                  <ExternalLink className="w-2.5 h-2.5" />
-                                </Link>
-                              )}
+                                  {mealItem.recipe && (
+                                    <Link
+                                      href={`/cong-thuc/${mealItem.recipe.slug}`}
+                                      className="text-[10px] text-stone-400 hover:text-[var(--color-brand-primary)] flex items-center gap-0.5 mb-1.5"
+                                    >
+                                      <span>Xem công thức</span>
+                                      <ExternalLink className="w-2.5 h-2.5" />
+                                    </Link>
+                                  )}
 
-                              {/* Nút nấu xong & ghi nhật ký */}
-                              {!mealItem.isCompleted ? (
-                                <button
-                                  onClick={() => handleLogToDiary(mealItem)}
-                                  className="w-full mt-1 py-1 px-1.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 rounded text-[10px] font-semibold flex items-center justify-center gap-1 transition-colors"
-                                >
-                                  <Check className="w-3 h-3" />
-                                  <span>Đã nấu xong</span>
-                                </button>
-                              ) : (
-                                <div className="mt-1 flex items-center gap-1 text-[10px] text-emerald-700 font-semibold justify-center bg-emerald-50/50 py-0.5 rounded">
-                                  <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                                  <span>Đã ghi nhật ký</span>
+                                  {/* Nút nấu xong & ghi nhật ký */}
+                                  {!mealItem.isCompleted ? (
+                                    <button
+                                      onClick={() => handleLogToDiary(mealItem)}
+                                      className="w-full mt-1 py-1 px-1.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 rounded text-[10px] font-semibold flex items-center justify-center gap-1 transition-colors no-print"
+                                    >
+                                      <Check className="w-3 h-3" />
+                                      <span>Đã nấu xong</span>
+                                    </button>
+                                  ) : (
+                                    <div className="mt-1 flex items-center gap-1 text-[10px] text-emerald-700 font-semibold justify-center bg-emerald-50/50 py-0.5 rounded">
+                                      <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                                      <span>Đã ghi nhật ký</span>
+                                    </div>
+                                  )}
                                 </div>
-                              )}
+                              ))}
                             </div>
                           ) : (
                             <div className="text-[11px] text-stone-300 italic py-1 text-center">

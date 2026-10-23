@@ -25,6 +25,7 @@ import {
   savePersonalNutritionTarget,
   loadPersonalNutritionTarget,
 } from '@/lib/nutrition/personalTarget';
+import { PersonalizedMealActionPanel } from '@/components/nutrition/PersonalizedMealActionPanel';
 
 type Gender = 'female' | 'male';
 type ActivityLevelKey = 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active';
@@ -292,10 +293,27 @@ export default function CalorieCalculatorPage() {
     const rawMeatFishEquivalentGrams = Math.round((proteinFromMeatFishGrams / 20.5) * 100 / 10) * 10;
 
     // - 1 chén cơm trắng chín (100g) ≈ 130 kcal & 28g Carbs; 1 chén cơm gạo lứt (100g) ≈ 110 kcal & 23g Carbs
-    // Trừ đi ~65g Carbs từ bữa sáng (bún/phở/yến mạch) + rau củ/trái cây trong ngày
-    const carbsForLunchDinnerRice = Math.max(25, carbsGrams - 75);
-    const whiteRiceBowlsPerDay = Math.max(0.5, Math.round((carbsForLunchDinnerRice / 28) * 2) / 2);
-    const brownRiceBowlsPerDay = Math.max(0.5, Math.round((carbsForLunchDinnerRice / 23) * 2) / 2);
+    // Trong thực đơn người Việt: ~45-50% tổng Carbs đến từ bữa sáng (bún/phở/yến mạch/khoai lang) + 400-500g rau củ & trái cây ít ngọt.
+    // Phần Carbs từ Cơm (Bữa Trưa + Bữa Tối) chiếm ~50% lượng Carbs ngày, và được khóa trần lâm sàng (2.0 – 3.0 chén/ngày khi giảm cân) để kiểm soát đường huyết & Insulin:
+    const rawCarbsForRice = Math.max(28, carbsGrams * 0.45);
+    const maxRiceBowlsCap =
+      goal === 'lose_standard'
+        ? 2.5
+        : goal === 'lose_mild'
+        ? 3.0
+        : goal === 'maintain'
+        ? 4.0
+        : 5.0;
+    const whiteRiceBowlsPerDay = Math.min(
+      maxRiceBowlsCap,
+      Math.max(1.0, Math.round((rawCarbsForRice / 28) * 2) / 2)
+    );
+    const brownRiceBowlsPerDay = Math.min(
+      maxRiceBowlsCap + 0.5,
+      Math.max(1.0, Math.round((rawCarbsForRice / 23) * 2) / 2)
+    );
+    const lunchRiceBowls = Math.max(0.5, Math.round(whiteRiceBowlsPerDay * 0.6 * 2) / 2);
+    const dinnerRiceBowls = Math.max(0.5, Math.round((whiteRiceBowlsPerDay - lunchRiceBowls) * 2) / 2);
 
     // 10. Lượng nước khuyến nghị chuẩn Bộ Y Tế (35ml / kg) + bù vận động
     const exerciseWaterBonus = activity === 'active' || activity === 'very_active' ? 0.5 : activity === 'moderate' ? 0.3 : 0;
@@ -351,6 +369,8 @@ export default function CalorieCalculatorPage() {
       rawMeatFishEquivalentGrams,
       whiteRiceBowlsPerDay,
       brownRiceBowlsPerDay,
+      lunchRiceBowls,
+      dinnerRiceBowls,
       waterLiters,
       weightDiffKg,
       timelineWeeks,
@@ -926,13 +946,13 @@ export default function CalorieCalculatorPage() {
 
                 <div className="p-3.5 rounded-xl bg-white border border-[#EADBC8] space-y-1">
                   <span className="text-xs font-bold text-amber-900">
-                    🍚 Số chén cơm (Bữa Trưa + Bữa Tối):
+                    🍚 Số chén cơm khuyến nghị (Bữa Trưa + Bữa Tối):
                   </span>
                   <p className="text-base font-extrabold text-[#2D2A26]">
                     {metrics.whiteRiceBowlsPerDay} chén cơm trắng <span className="text-xs font-normal text-[#7C6A59]">hoặc</span> {metrics.brownRiceBowlsPerDay} chén gạo lứt
                   </p>
                   <p className="text-[11px] text-[#7C6A59] leading-relaxed">
-                    Mỗi chén cơm vừa (100g chín) = 130 kcal (cơm trắng) hoặc 110 kcal (cơm gạo lứt), ăn kèm bún/phở/yến mạch vào bữa sáng.
+                    Chia thành Trưa {metrics.lunchRiceBowls} chén + Tối {metrics.dinnerRiceBowls} chén. Phần đường bột còn lại nạp từ bữa sáng (bún/phở/yến mạch/khoai lang) và rau củ/trái cây ít ngọt.
                   </p>
                 </div>
 
@@ -980,7 +1000,7 @@ export default function CalorieCalculatorPage() {
                   {metrics.lunchKcal} kcal
                 </p>
                 <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
-                  <strong>Khẩu phần gợi ý:</strong> {Math.max(0.5, Math.round(metrics.whiteRiceBowlsPerDay * 0.6 * 2) / 2)} chén cơm + ~{Math.round(metrics.rawMeatFishEquivalentGrams * 0.45)}g thịt/cá kho hoặc áp chảo + 1 đĩa rau xào/luộc + 1 chén canh.
+                  <strong>Khẩu phần gợi ý:</strong> {metrics.lunchRiceBowls} chén cơm + ~{Math.round(metrics.rawMeatFishEquivalentGrams * 0.45)}g thịt/cá kho hoặc áp chảo + 1 đĩa rau xào/luộc + 1 chén canh.
                 </p>
               </div>
 
@@ -993,7 +1013,7 @@ export default function CalorieCalculatorPage() {
                   {metrics.dinnerKcal} kcal
                 </p>
                 <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
-                  <strong>Khẩu phần gợi ý:</strong> {Math.max(0.5, Math.round(metrics.brownRiceBowlsPerDay * 0.4 * 2) / 2)} chén cơm gạo lứt + ~{Math.round(metrics.rawMeatFishEquivalentGrams * 0.4)}g cá hấp/ức gà/đậu hũ + 1 tô canh thanh mát.
+                  <strong>Khẩu phần gợi ý:</strong> {metrics.dinnerRiceBowls} chén cơm gạo lứt + ~{Math.round(metrics.rawMeatFishEquivalentGrams * 0.4)}g cá hấp/ức gà/đậu hũ + 1 tô canh thanh mát.
                 </p>
               </div>
             </div>
@@ -1048,12 +1068,42 @@ export default function CalorieCalculatorPage() {
             </div>
           </div>
 
+          {/* Hàng 4B: PHÁC ĐỒ HÀNH ĐỘNG CỤ THỂ & GỢI Ý MÓN ĂN THỰC TẾ TRÊN WEBSITE (GẮN VÀO THỰC ĐƠN MỖI NGÀY) */}
+          <PersonalizedMealActionPanel
+            gender={gender}
+            safeWeight={metrics.safeWeight}
+            targetWeightKg={targetWeightKg}
+            idealTargetKg={metrics.idealTargetKg}
+            bmi={metrics.bmi}
+            tdee={metrics.tdee}
+            targetCalories={metrics.targetCalories}
+            actualDailyDelta={metrics.actualDailyDelta}
+            proteinGrams={metrics.proteinGrams}
+            carbsGrams={metrics.carbsGrams}
+            fatGrams={metrics.fatGrams}
+            fiberGrams={metrics.fiberGrams}
+            waterLiters={metrics.waterLiters}
+            lunchKcal={metrics.lunchKcal}
+            dinnerKcal={metrics.dinnerKcal}
+            lunchPro={metrics.lunchPro}
+            dinnerPro={metrics.dinnerPro}
+            whiteRiceBowlsPerDay={metrics.whiteRiceBowlsPerDay}
+            brownRiceBowlsPerDay={metrics.brownRiceBowlsPerDay}
+            lunchRiceBowls={metrics.lunchRiceBowls}
+            dinnerRiceBowls={metrics.dinnerRiceBowls}
+            rawMeatFishEquivalentGrams={metrics.rawMeatFishEquivalentGrams}
+            timelineWeeks={metrics.timelineWeeks}
+            weightDiffKg={metrics.weightDiffKg}
+            goal={goal}
+            activity={activity}
+          />
+
           {/* Hàng 5: Bảng Đối Chiếu Minh Bạch 3 Phương Trình Y Khoa (Verification Table) */}
           <div className="rounded-3xl bg-[var(--color-surface-white)] border border-[var(--color-border-base)] p-5 sm:p-6 shadow-xs space-y-4">
             <div className="flex items-center justify-between gap-2">
               <h2 className="text-sm sm:text-base font-bold text-[var(--color-text-primary)] flex items-center gap-2">
                 <Award className="w-4 h-4 text-[var(--color-accent-primary)]" />
-                <span>4. Bảng đối chiếu xác thực từ 3 Phương trình Y khoa Quốc tế</span>
+                <span>5. Bảng đối chiếu xác thực từ 3 Phương trình Y khoa Quốc tế</span>
               </h2>
               <span className="text-[11px] font-mono text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
                 Verified Clinical Formulas
