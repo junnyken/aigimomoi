@@ -502,6 +502,7 @@ export function FoodPlateScannerPanel({
   const [scanResult, setScanResult] = useState<FoodScanResponse>(SAMPLE_PRESETS[0].scanData);
   const [items, setItems] = useState<ScannedFoodItem[]>(SAMPLE_PRESETS[0].scanData.items);
   const [cookingOilMode, setCookingOilMode] = useState<'NONE' | 'LIGHT_OIL' | 'SAUCE_RICH'>('LIGHT_OIL');
+  const [focusedItemId, setFocusedItemId] = useState<string | null>(null);
 
   // Thêm nguyên liệu thủ công từ từ điển Viện Dinh Dưỡng
   const [selectedQuickSlug, setSelectedQuickSlug] = useState<string>('trung-ga');
@@ -553,12 +554,28 @@ export function FoodPlateScannerPanel({
     const carbPct = Math.round((carbFoodGrams / safeTotal) * 100);
     const fatPct = Math.max(0, 100 - veggiePct - proteinPct - carbPct);
 
+    const finalKcal = Math.round(kcal + oilExtraKcal);
+    const finalProtein = Math.round(protein * 10) / 10;
+    const finalFiber = Math.round(fiber * 10) / 10;
+
+    let rawScore = 8.5;
+    if (finalProtein >= 25) rawScore += 0.6;
+    else if (finalProtein < 15) rawScore -= 0.7;
+
+    if (veggiePct >= 35) rawScore += 0.5;
+    else if (veggiePct < 20) rawScore -= 0.6;
+
+    if (cookingOilMode === 'NONE') rawScore += 0.3;
+    else if (cookingOilMode === 'SAUCE_RICH') rawScore -= 0.4;
+
+    const scoreOutOf10 = Math.min(9.9, Math.max(5.5, Math.round(rawScore * 10) / 10));
+
     return {
-      kcal: Math.round(kcal + oilExtraKcal),
-      protein: Math.round(protein * 10) / 10,
+      kcal: finalKcal,
+      protein: finalProtein,
       fat: Math.round((fat + oilExtraFat) * 10) / 10,
       carbs: Math.round(carbs * 10) / 10,
-      fiber: Math.round(fiber * 10) / 10,
+      fiber: finalFiber,
       totalGrams: Math.round(totalGrams),
       veggieGrams,
       proteinFoodGrams,
@@ -568,8 +585,9 @@ export function FoodPlateScannerPanel({
       proteinPct,
       carbPct,
       fatPct,
+      scoreOutOf10,
     };
-  }, [items, oilExtraKcal, oilExtraFat]);
+  }, [items, oilExtraKcal, oilExtraFat, cookingOilMode]);
 
   const targetSlotKcal =
     scanResult.mealFormat === 'DAILY_3_MEALS'
@@ -592,6 +610,99 @@ export function FoodPlateScannerPanel({
   const kcalPercentOfTarget =
     targetSlotKcal > 0 ? Math.round((totals.kcal / targetSlotKcal) * 100) : 100;
 
+  const kcalDeltaFromTarget = targetSlotKcal - totals.kcal;
+
+  // Gợi ý tối ưu hóa đĩa ăn tức thì (Actionable Plate Fix chuẩn Foodvisor / Cal AI)
+  const plateActionAdvice = useMemo(() => {
+    const proGap = Math.round(targetSlotPro - totals.protein);
+    if (proGap >= 7) {
+      return {
+        status: 'NEED_PROTEIN' as const,
+        badge: '🥩 Cần bổ sung thêm Đạm',
+        message: `Đĩa ăn đang thiếu ~${proGap}g Đạm so với mục tiêu bữa (${targetSlotPro}g). Bạn nên thêm 1 quả trứng luộc (+55g) hoặc +60g ức gà áp chảo để no lâu và giữ cơ.`,
+        quickSlug: 'trung-ga',
+        quickGrams: 55,
+        quickLabel: '+ Thêm 1 quả trứng luộc (55g)',
+      };
+    }
+    if (totals.veggiePct < 32) {
+      return {
+        status: 'NEED_VEGGIE' as const,
+        badge: '🥦 Cần tăng tỷ lệ Rau xanh',
+        message: `Rau củ mới chiếm ${totals.veggiePct}% khối lượng đĩa (chuẩn Đĩa Harvard là 40–50%). Hãy thêm ~80g bông cải xanh hoặc dưa leo để bổ sung chất xơ và kiểm soát đường huyết.`,
+        quickSlug: 'bong-cai-xanh',
+        quickGrams: 80,
+        quickLabel: '+ Thêm 80g bông cải xanh hấp',
+      };
+    }
+    if (totals.kcal > targetSlotKcal * 1.15) {
+      return {
+        status: 'OVER_KCAL' as const,
+        badge: '⚖️ Hơi vượt định mức Calo bữa',
+        message: `Đĩa ăn đang vượt ${Math.abs(kcalDeltaFromTarget)} kcal so với định mức bữa (${targetSlotKcal} kcal). Bạn có thể bấm [-] giảm ~35g tinh bột hoặc ưu tiên chế biến Hấp/Luộc.`,
+        quickSlug: null,
+        quickGrams: 0,
+        quickLabel: null,
+      };
+    }
+    return {
+      status: 'OPTIMAL' as const,
+      badge: '🌟 Đĩa ăn cân bằng chuẩn Vàng',
+      message: `Tuyệt vời! Tỷ lệ Đạm (${totals.protein}g) – Rau củ (${totals.veggiePct}%) – Năng lượng (${totals.kcal}/${targetSlotKcal} kcal) rất khớp với mục tiêu cá nhân của bạn.`,
+      quickSlug: null,
+      quickGrams: 0,
+      quickLabel: null,
+    };
+  }, [totals, targetSlotPro, targetSlotKcal, kcalDeltaFromTarget]);
+
+  // Gợi ý 3 công thức món ăn Eat Clean / Gym / Yoga tương đồng trên website
+  const matchedWebsiteRecipes = useMemo(() => {
+    const joined = items.map((i) => i.name.toLowerCase()).join(' ');
+    const list: Array<{ title: string; slug: string; kcal: string; tag: string }> = [];
+
+    if (joined.includes('tôm') || joined.includes('mỳ') || joined.includes('bơ')) {
+      list.push({
+        title: 'Salad Tôm Hấp Trứng Luộc Bơ Tươi',
+        slug: 'salad-tom-hap-trung-luoc-bo-tuoi',
+        kcal: '360 kcal • 29g Đạm',
+        tag: '🧘 Yoga & Eat Clean',
+      });
+    }
+    if (joined.includes('gà') || joined.includes('bông cải') || joined.includes('khoai')) {
+      list.push({
+        title: 'Ức Gà Áp Chảo Mè Rang & Bông Cải Xanh Hấp',
+        slug: 'uc-ga-ap-chao-me-rang-bong-cai-xanh',
+        kcal: '390 kcal • 42g Đạm',
+        tag: '💪 Gym Tăng Cơ',
+      });
+    }
+    if (joined.includes('bò') || joined.includes('khoai tây') || joined.includes('cải')) {
+      list.push({
+        title: 'Thăn Bò Áp Chảo Lúc Lắc & Đậu Que Luộc',
+        slug: 'than-bo-ap-chao-luc-lac-dau-que-luoc',
+        kcal: '420 kcal • 38g Đạm',
+        tag: '💪 Giàu Sắt & Cơ Bắp',
+      });
+    }
+    if (list.length < 3) {
+      list.push({
+        title: 'Cơm Gạo Lứt Cá Hồi Áp Chảo & Đậu Nành Edamame',
+        slug: 'com-gao-lut-ca-hoi-ap-chao-edamame',
+        kcal: '460 kcal • 34g Đạm',
+        tag: '🥗 Poke Bowl Chuẩn',
+      });
+    }
+    if (list.length < 3) {
+      list.push({
+        title: 'Đậu Hũ Non Sốt Nấm Đông Cô & Cải Thìa Hấp',
+        slug: 'dau-hu-non-sot-nam-dong-co-cai-thia',
+        kcal: '260 kcal • 18g Đạm',
+        tag: '🌿 Thanh Đạm Nhẹ Bụng',
+      });
+    }
+    return list.slice(0, 3);
+  }, [items]);
+
   function handleSelectPreset(preset: SamplePreset) {
     setActivePresetId(preset.id);
     setPreviewImageUrl(preset.imageUrl);
@@ -600,6 +711,7 @@ export function FoodPlateScannerPanel({
     setItems(preset.scanData.items.map((it) => ({ ...it })));
     setSelectedMealSlot(preset.defaultMealType);
     setCookingOilMode(preset.id === 'gym-protein-plate' || preset.id === 'yoga-eatclean-plate' ? 'NONE' : 'LIGHT_OIL');
+    setFocusedItemId(null);
     setDiaryFeedback(null);
   }
 
@@ -618,10 +730,11 @@ export function FoodPlateScannerPanel({
 
   function removeItem(id: string) {
     setItems((prev) => prev.filter((it) => it.id !== id));
+    if (focusedItemId === id) setFocusedItemId(null);
   }
 
-  function handleAddQuickIngredient() {
-    const fct = VIETNAMESE_STANDARD_FCT.find((f) => f.slug === selectedQuickSlug);
+  function addIngredientBySlugAndGrams(slug: string, grams: number) {
+    const fct = VIETNAMESE_STANDARD_FCT.find((f) => f.slug === slug);
     if (!fct) return;
 
     const category: ScannedFoodItem['category'] =
@@ -633,14 +746,23 @@ export function FoodPlateScannerPanel({
         ? 'CARB'
         : 'VEGGIE_FRUIT';
 
+    const pinPresets = [
+      { x: 35, y: 35 },
+      { x: 65, y: 35 },
+      { x: 35, y: 65 },
+      { x: 65, y: 65 },
+    ];
+    const pos = pinPresets[items.length % pinPresets.length];
+    const newId = `manual-${Date.now()}`;
+
     const newItem: ScannedFoodItem = {
-      id: `manual-${Date.now()}`,
+      id: newId,
       name: fct.name.split('(')[0].trim(),
       category,
-      estimatedGrams: selectedQuickGrams,
-      portionNote: `Bổ sung thêm (~${selectedQuickGrams}g)`,
-      pinX: 50,
-      pinY: 50,
+      estimatedGrams: grams,
+      portionNote: `Bổ sung thêm (~${grams}g)`,
+      pinX: pos.x,
+      pinY: pos.y,
       calories100g: fct.calories100g,
       protein100g: fct.protein100g,
       fat100g: fct.fat100g,
@@ -651,6 +773,11 @@ export function FoodPlateScannerPanel({
     };
 
     setItems((prev) => [...prev, newItem]);
+    setFocusedItemId(newId);
+  }
+
+  function handleAddQuickIngredient() {
+    addIngredientBySlugAndGrams(selectedQuickSlug, selectedQuickGrams);
   }
 
   async function compressImageFileToBase64(file: File): Promise<{ dataUrl: string; base64: string }> {
@@ -958,25 +1085,33 @@ export function FoodPlateScannerPanel({
               </div>
             )}
 
-            {/* Các Nhãn Bong Bóng (Smart Pin Tags) gắn trực tiếp lên từng món trên đĩa */}
+            {/* Các Nhãn Bong Bóng (Smart Pin Tags) gắn trực tiếp lên từng món trên đĩa (Bấm để chọn món) */}
             {!scanning &&
               showPinsOnImage &&
               items.map((item, idx) => {
                 const itemKcal = Math.round((item.calories100g * item.estimatedGrams) / 100);
                 const catStyle =
                   CATEGORY_BADGES[item.category]?.pinColor || 'bg-stone-800 text-white border-stone-400';
+                const isFocused = focusedItemId === item.id;
 
                 return (
-                  <div
+                  <button
                     key={item.id}
+                    type="button"
+                    onClick={() => setFocusedItemId(isFocused ? null : item.id)}
                     style={{
                       left: `${Math.min(86, Math.max(14, item.pinX))}%`,
                       top: `${Math.min(88, Math.max(12, item.pinY))}%`,
                     }}
-                    className="absolute -translate-x-1/2 -translate-y-1/2 z-10 pointer-events-auto"
+                    className={`absolute -translate-x-1/2 -translate-y-1/2 z-10 pointer-events-auto cursor-pointer transition-transform ${
+                      isFocused ? 'scale-110 z-20' : 'hover:scale-105'
+                    }`}
+                    title={`Bấm để chỉnh nhanh ${item.name}`}
                   >
                     <div
-                      className={`px-2.5 py-1 rounded-full border shadow-md text-[10px] sm:text-[11px] font-extrabold whitespace-nowrap flex items-center gap-1.5 backdrop-blur-xs ${catStyle}`}
+                      className={`px-2.5 py-1 rounded-full border shadow-md text-[10px] sm:text-[11px] font-extrabold whitespace-nowrap flex items-center gap-1.5 backdrop-blur-xs ${catStyle} ${
+                        isFocused ? 'ring-2 ring-amber-300' : ''
+                      }`}
                     >
                       <span className="w-4 h-4 rounded-full bg-white/25 inline-flex items-center justify-center text-[10px]">
                         {idx + 1}
@@ -984,14 +1119,15 @@ export function FoodPlateScannerPanel({
                       <span className="max-w-[125px] sm:max-w-[155px] truncate">{item.name}</span>
                       <span className="text-amber-200 font-black">• {itemKcal} kcal</span>
                     </div>
-                  </div>
+                  </button>
                 );
               })}
 
             {/* Thanh điều khiển dưới chân ảnh */}
             <div className="absolute bottom-2.5 inset-x-2.5 flex items-center justify-between gap-2 bg-black/70 backdrop-blur-xs text-white px-3 py-2 rounded-xl text-xs">
               <span className="font-bold truncate">
-                🎯 Điểm cân bằng: <strong className="text-emerald-300">{scanResult.healthScore}/100</strong>
+                ⭐ Điểm Đĩa Ăn: <strong className="text-amber-300">{totals.scoreOutOf10}/10</strong> •{' '}
+                <span className="text-emerald-300">{scanResult.overallConfidence || 94}% chuẩn</span>
               </span>
               <button
                 type="button"
@@ -1013,16 +1149,38 @@ export function FoodPlateScannerPanel({
             </div>
           </div>
 
-          {/* Cơ sở Đo Lường Thị Giác (Biological Reference Anchor) & Nhận xét Chuyên gia */}
+          {/* Cơ sở Đo Lường Thị Giác (Biological Reference Anchor) & Gợi Ý Tối Ưu Hóa Đĩa Ăn */}
           <div className="p-4 rounded-2xl bg-[#F4F8F4] border border-[var(--color-brand-border)] space-y-2.5">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="text-xs font-extrabold text-[#2F4F30] flex items-center gap-1.5">
                 <ShieldCheck className="w-4 h-4 text-emerald-700" />
-                <span>Độ tin cậy nhận diện: {scanResult.overallConfidence || 94}%</span>
+                <span>{plateActionAdvice.badge}</span>
               </span>
-              <span className="px-2 py-0.5 rounded-full bg-emerald-700 text-white text-[11px] font-extrabold">
-                Đạt {kcalPercentOfTarget}% định mức bữa
+              <span className="px-2.5 py-0.5 rounded-full bg-amber-500 text-stone-950 text-[11px] font-black">
+                ⭐ {totals.scoreOutOf10}/10 điểm
               </span>
+            </div>
+
+            {/* Hộp Gợi ý Sửa Đĩa Ăn 1-chạm (Actionable Plate Fix chuẩn Foodvisor / Cal AI) */}
+            <div className="p-3 rounded-xl bg-white border border-emerald-300 space-y-2">
+              <p className="text-xs font-semibold text-[#2F4F30] leading-relaxed">
+                💡 <strong>AI Gợi ý tối ưu đĩa ăn:</strong> {plateActionAdvice.message}
+              </p>
+              {plateActionAdvice.quickSlug && plateActionAdvice.quickLabel && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    addIngredientBySlugAndGrams(
+                      plateActionAdvice.quickSlug!,
+                      plateActionAdvice.quickGrams
+                    )
+                  }
+                  className="px-3 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-extrabold inline-flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>{plateActionAdvice.quickLabel}</span>
+                </button>
+              )}
             </div>
 
             <div className="p-2.5 rounded-xl bg-white/90 border border-emerald-200 text-[11px] text-[#2F4F30]">
@@ -1039,7 +1197,7 @@ export function FoodPlateScannerPanel({
 
         {/* CỘT PHẢI (7/12): BẢNG BÓC TÁCH THÀNH PHẦN RAU CỦ / THỊT CÁ & TỔNG KCAL */}
         <div className="lg:col-span-7 space-y-4">
-          {/* Thanh Tổng Kcal & 4 Chỉ Số Macro Của Đĩa Ăn */}
+          {/* Thanh Tổng Kcal & Đối Chiếu Ngân Sách Bữa Ăn Của Riêng Bạn */}
           <div className="p-4 rounded-2xl bg-gradient-to-br from-[#FAF7F0] to-[#F3EFE6] border border-[#DFD2C0] space-y-3.5">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div>
@@ -1057,8 +1215,64 @@ export function FoodPlateScannerPanel({
                   {totals.kcal} kcal
                 </span>
                 <span className="text-[11px] text-[var(--color-text-muted)]">
-                  / mục tiêu {targetSlotKcal} kcal
+                  / định mức bữa {targetSlotKcal} kcal
                 </span>
+              </div>
+            </div>
+
+            {/* THANH ĐỐI CHIẾU NGÂN SÁCH BỮA ĂN CÁ NHÂN (Chuẩn Lose It! & MacroFactor) */}
+            <div className="p-3 rounded-xl bg-white border border-[#E5DAC8] space-y-2">
+              <div className="flex flex-wrap items-center justify-between gap-2 text-[11px]">
+                <div className="flex items-center gap-1.5">
+                  <span className="font-extrabold text-[#2F4F30]">
+                    🎯 So với định mức cá nhân của bạn:
+                  </span>
+                  {scanResult.mealFormat !== 'DAILY_3_MEALS' && (
+                    <div className="inline-flex items-center gap-1 bg-[#FAF7F0] p-0.5 rounded-lg border border-[#D8C7B0]">
+                      {(
+                        [
+                          { key: 'BREAKFAST', label: '☀️ Sáng' },
+                          { key: 'LUNCH', label: '🌤️ Trưa' },
+                          { key: 'DINNER', label: '🌙 Tối' },
+                        ] as const
+                      ).map((slot) => (
+                        <button
+                          key={slot.key}
+                          type="button"
+                          onClick={() => setSelectedMealSlot(slot.key)}
+                          className={`px-2 py-0.5 rounded-md text-[10px] font-bold cursor-pointer ${
+                            selectedMealSlot === slot.key
+                              ? 'bg-[var(--color-brand-primary)] text-white'
+                              : 'text-stone-600 hover:bg-stone-100'
+                          }`}
+                        >
+                          {slot.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <span
+                  className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
+                    kcalDeltaFromTarget >= 0
+                      ? 'bg-emerald-100 text-emerald-900'
+                      : 'bg-amber-100 text-amber-900'
+                  }`}
+                >
+                  {kcalDeltaFromTarget >= 0
+                    ? `Chiếm ${kcalPercentOfTarget}% ngân sách bữa (Còn dư ${kcalDeltaFromTarget} kcal)`
+                    : `Chiếm ${kcalPercentOfTarget}% ngân sách bữa (Vượt nhẹ ${Math.abs(kcalDeltaFromTarget)} kcal)`}
+                </span>
+              </div>
+
+              <div className="w-full h-2.5 rounded-full overflow-hidden bg-stone-100 border border-stone-200">
+                <div
+                  style={{ width: `${Math.min(100, kcalPercentOfTarget)}%` }}
+                  className={`h-full transition-all duration-300 ${
+                    kcalPercentOfTarget <= 105 ? 'bg-emerald-600' : 'bg-amber-500'
+                  }`}
+                />
               </div>
             </div>
 
@@ -1206,11 +1420,16 @@ export function FoodPlateScannerPanel({
                 const itemFat = Math.round(item.fat100g * ratio * 10) / 10;
                 const itemFiber = Math.round((item.fiber100g || 0) * ratio * 10) / 10;
                 const catMeta = CATEGORY_BADGES[item.category] || CATEGORY_BADGES.VEGGIE_FRUIT;
+                const isFocused = focusedItemId === item.id;
 
                 return (
                   <div
                     key={item.id}
-                    className="p-3 rounded-2xl bg-[var(--color-bg-primary)]/70 border border-[var(--color-border-base)] flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                    className={`p-3 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors ${
+                      isFocused
+                        ? 'bg-emerald-50/70 border-emerald-600 ring-1 ring-emerald-500'
+                        : 'bg-[var(--color-bg-primary)]/70 border-[var(--color-border-base)]'
+                    }`}
                   >
                     <div className="space-y-1 min-w-0">
                       <div className="flex flex-wrap items-center gap-1.5">
@@ -1277,44 +1496,100 @@ export function FoodPlateScannerPanel({
               })}
             </div>
 
-            {/* Thanh cộng thêm nhanh nguyên liệu nếu đĩa ăn còn món ẩn (VD: Dầu ô liu, Trứng, Cơm gạo lứt...) */}
-            <div className="p-3 rounded-2xl bg-[#FAF7F0] border border-[#E5DAC8] flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 no-print">
-              <span className="text-xs font-bold text-[#3F6240] shrink-0">
-                + Thêm thành phần khác trên đĩa:
-              </span>
-              <div className="flex flex-wrap items-center gap-2 flex-1">
-                <select
-                  value={selectedQuickSlug}
-                  onChange={(e) => setSelectedQuickSlug(e.target.value)}
-                  aria-label="Chọn nguyên liệu bổ sung"
-                  className="flex-1 min-w-[160px] px-2.5 py-1.5 rounded-xl bg-white border border-[#D8C7B0] text-xs font-semibold text-[var(--color-text-primary)]"
-                >
-                  {VIETNAMESE_STANDARD_FCT.map((ing) => (
-                    <option key={ing.slug} value={ing.slug}>
-                      {ing.name} ({ing.calories100g} kcal/100g)
-                    </option>
-                  ))}
-                </select>
+            {/* Thanh cộng thêm nhanh nguyên liệu 1-chạm + Chọn từ 195+ nguyên liệu Viện Dinh Dưỡng */}
+            <div className="p-3 rounded-2xl bg-[#FAF7F0] border border-[#E5DAC8] space-y-2.5 no-print">
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="text-xs font-extrabold text-[#3F6240] mr-1">
+                  ⚡ Thêm nhanh món bị khuất 1-chạm:
+                </span>
+                {[
+                  { label: '+1 Trứng luộc (55g)', slug: 'trung-ga', grams: 55 },
+                  { label: '+60g Ức gà', slug: 'uc-ga-phi-le', grams: 60 },
+                  { label: '+80g Bông cải xanh', slug: 'bong-cai-xanh', grams: 80 },
+                  { label: '+50g Bơ sáp', slug: 'bo-sap', grams: 50 },
+                  { label: '+100g Cơm gạo lứt', slug: 'com-gao-lut-chin', grams: 100 },
+                ].map((quick) => (
+                  <button
+                    key={quick.label}
+                    type="button"
+                    onClick={() => addIngredientBySlugAndGrams(quick.slug, quick.grams)}
+                    className="px-2.5 py-1 rounded-lg bg-white hover:bg-emerald-50 border border-[#D8C7B0] text-[11px] font-bold text-[#2F4F30] transition-colors cursor-pointer"
+                  >
+                    {quick.label}
+                  </button>
+                ))}
+              </div>
 
-                <input
-                  type="number"
-                  min={5}
-                  max={500}
-                  step={10}
-                  value={selectedQuickGrams}
-                  onChange={(e) => setSelectedQuickGrams(Number(e.target.value) || 50)}
-                  aria-label="Khối lượng gram bổ sung"
-                  className="w-20 px-2.5 py-1.5 rounded-xl bg-white border border-[#D8C7B0] text-xs font-bold text-center"
-                />
-                <span className="text-xs text-[var(--color-text-muted)]">g</span>
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 pt-1 border-t border-[#E5DAC8]">
+                <span className="text-xs font-bold text-[#3F6240] shrink-0">
+                  + Tra cứu 195+ nguyên liệu VDD:
+                </span>
+                <div className="flex flex-wrap items-center gap-2 flex-1">
+                  <select
+                    value={selectedQuickSlug}
+                    onChange={(e) => setSelectedQuickSlug(e.target.value)}
+                    aria-label="Chọn nguyên liệu bổ sung"
+                    className="flex-1 min-w-[160px] px-2.5 py-1.5 rounded-xl bg-white border border-[#D8C7B0] text-xs font-semibold text-[var(--color-text-primary)]"
+                  >
+                    {VIETNAMESE_STANDARD_FCT.map((ing) => (
+                      <option key={ing.slug} value={ing.slug}>
+                        {ing.name} ({ing.calories100g} kcal/100g)
+                      </option>
+                    ))}
+                  </select>
 
-                <button
-                  type="button"
-                  onClick={handleAddQuickIngredient}
-                  className="px-3 py-1.5 rounded-xl bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-hover)] text-white text-xs font-bold transition-colors cursor-pointer"
+                  <input
+                    type="number"
+                    min={5}
+                    max={500}
+                    step={10}
+                    value={selectedQuickGrams}
+                    onChange={(e) => setSelectedQuickGrams(Number(e.target.value) || 50)}
+                    aria-label="Khối lượng gram bổ sung"
+                    className="w-20 px-2.5 py-1.5 rounded-xl bg-white border border-[#D8C7B0] text-xs font-bold text-center"
+                  />
+                  <span className="text-xs text-[var(--color-text-muted)]">g</span>
+
+                  <button
+                    type="button"
+                    onClick={handleAddQuickIngredient}
+                    className="px-3 py-1.5 rounded-xl bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-hover)] text-white text-xs font-bold transition-colors cursor-pointer"
+                  >
+                    + Thêm vào đĩa
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Gợi ý 3 Công thức Món Ăn Eat Clean / Gym / Yoga tương đồng trên Website */}
+            <div className="p-3.5 rounded-2xl bg-white border border-[var(--color-border-base)] space-y-2.5 no-print">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs font-extrabold text-[var(--color-text-primary)]">
+                  🍲 Công thức chế biến tương tự trên Ăn Gì Mom (Bấm để xem cách nấu):
+                </span>
+                <Link
+                  href="/mon-an?tax=giam-can-it-calo"
+                  className="text-[11px] font-bold text-[var(--color-brand-primary)] hover:underline"
                 >
-                  + Thêm vào đĩa
-                </button>
+                  Xem tất cả 49 món →
+                </Link>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                {matchedWebsiteRecipes.map((rec) => (
+                  <Link
+                    key={rec.slug}
+                    href={`/mon-an/${rec.slug}`}
+                    className="p-2.5 rounded-xl bg-[#FAF7F0] hover:bg-emerald-50/60 border border-[#E5DAC8] hover:border-emerald-300 transition-colors flex flex-col justify-between gap-1"
+                  >
+                    <span className="text-[10px] font-extrabold text-emerald-800">{rec.tag}</span>
+                    <span className="text-xs font-bold text-[var(--color-text-primary)] line-clamp-2">
+                      {rec.title}
+                    </span>
+                    <span className="text-[10px] font-extrabold text-[var(--color-accent-primary)]">
+                      🔥 {rec.kcal}
+                    </span>
+                  </Link>
+                ))}
               </div>
             </div>
           </div>

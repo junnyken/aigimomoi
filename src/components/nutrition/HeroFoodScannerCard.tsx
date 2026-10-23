@@ -15,8 +15,77 @@ import {
   ArrowRight,
   CheckCircle2,
   ShieldCheck,
+  Trash2,
 } from 'lucide-react';
 import type { ScannedFoodItem, FoodScanResponse } from '@/app/api/ai/food-scanner/route';
+
+const QUICK_HIDDEN_ITEMS: Array<{
+  label: string;
+  name: string;
+  category: ScannedFoodItem['category'];
+  grams: number;
+  kcal100: number;
+  pro100: number;
+  fat100: number;
+  carb100: number;
+  fiber100: number;
+}> = [
+  {
+    label: '+1 Trứng luộc',
+    name: 'Trứng gà luộc',
+    category: 'PROTEIN',
+    grams: 55,
+    kcal100: 166,
+    pro100: 14.8,
+    fat100: 11.6,
+    carb100: 0.5,
+    fiber100: 0,
+  },
+  {
+    label: '+60g Ức gà',
+    name: 'Ức gà áp chảo',
+    category: 'PROTEIN',
+    grams: 60,
+    kcal100: 110,
+    pro100: 23.1,
+    fat100: 1.2,
+    carb100: 0,
+    fiber100: 0,
+  },
+  {
+    label: '+80g Bông cải',
+    name: 'Bông cải xanh hấp',
+    category: 'VEGGIE_FRUIT',
+    grams: 80,
+    kcal100: 30,
+    pro100: 3.0,
+    fat100: 0.3,
+    carb100: 5.2,
+    fiber100: 2.6,
+  },
+  {
+    label: '+50g Bơ sáp',
+    name: 'Quả bơ sáp chín',
+    category: 'HEALTHY_FAT',
+    grams: 50,
+    kcal100: 160,
+    pro100: 2.0,
+    fat100: 14.7,
+    carb100: 8.5,
+    fiber100: 6.7,
+  },
+  {
+    label: '+100g Cơm lứt',
+    name: 'Cơm gạo lứt chín',
+    category: 'CARB',
+    grams: 100,
+    kcal100: 112,
+    pro100: 2.6,
+    fat100: 0.9,
+    carb100: 23.5,
+    fiber100: 1.8,
+  },
+];
 
 interface HeroPreset {
   id: string;
@@ -372,6 +441,7 @@ export function HeroFoodScannerCard() {
   const [scanResult, setScanResult] = useState<FoodScanResponse>(HERO_PRESETS[0].scanData);
   const [items, setItems] = useState<ScannedFoodItem[]>(HERO_PRESETS[0].scanData.items);
   const [cookingOilMode, setCookingOilMode] = useState<'NONE' | 'LIGHT_OIL' | 'SAUCE_RICH'>('LIGHT_OIL');
+  const [focusedItemId, setFocusedItemId] = useState<string | null>(null);
   const [savedNotice, setSavedNotice] = useState<string | null>(null);
 
   const oilExtraKcal = cookingOilMode === 'LIGHT_OIL' ? 36 : cookingOilMode === 'SAUCE_RICH' ? 80 : 0;
@@ -409,19 +479,58 @@ export function HeroFoodScannerCard() {
     const carbPct = Math.round((carbGrams / safeTotal) * 100);
     const fatPct = Math.max(0, 100 - veggiePct - proteinPct - carbPct);
 
+    const finalKcal = Math.round(kcal + oilExtraKcal);
+    const finalProtein = Math.round(protein * 10) / 10;
+    const finalFiber = Math.round(fiber * 10) / 10;
+
+    // Chấm điểm Đĩa Ăn động (Thang điểm /10 chuẩn Foodvisor & Cal AI)
+    let rawScore = 8.4;
+    if (finalProtein >= 24) rawScore += 0.6;
+    else if (finalProtein < 15) rawScore -= 0.7;
+
+    if (veggiePct >= 35) rawScore += 0.5;
+    else if (veggiePct < 20) rawScore -= 0.6;
+
+    if (cookingOilMode === 'NONE') rawScore += 0.3;
+    else if (cookingOilMode === 'SAUCE_RICH') rawScore -= 0.4;
+
+    const scoreOutOf10 = Math.min(9.9, Math.max(5.5, Math.round(rawScore * 10) / 10));
+
+    // Gợi ý tối ưu hóa đĩa ăn tức thì (Actionable Plate Fix)
+    let actionTip = 'Đĩa ăn đạt tỷ lệ Vàng chuẩn Harvard! Đủ đạm & chất xơ.';
+    let suggestedQuickAddIndex: number | null = null;
+
+    if (finalProtein < 22) {
+      actionTip = `Thiếu ~${Math.max(5, Math.round(28 - finalProtein))}g Đạm để no lâu & giữ cơ → Nên thêm 1 quả trứng hoặc 60g ức gà.`;
+      suggestedQuickAddIndex = 0;
+    } else if (veggiePct < 30) {
+      actionTip = `Rau củ mới chiếm ${veggiePct}% đĩa (chuẩn 40–50%) → Nên thêm ~80g bông cải xanh.`;
+      suggestedQuickAddIndex = 2;
+    } else if (finalKcal > 680 && scanResult.mealFormat !== 'DAILY_3_MEALS') {
+      actionTip = `Đĩa ăn hơi cao năng lượng (${finalKcal} kcal) → Có thể chuyển sang Hấp/Luộc hoặc bớt 30g tinh bột.`;
+    }
+
+    const standardMealBudget = scanResult.mealFormat === 'DAILY_3_MEALS' ? 1550 : 550;
+    const budgetPercent = Math.round((finalKcal / standardMealBudget) * 100);
+
     return {
-      kcal: Math.round(kcal + oilExtraKcal),
-      protein: Math.round(protein * 10) / 10,
+      kcal: finalKcal,
+      protein: finalProtein,
       fat: Math.round((fat + oilExtraFat) * 10) / 10,
       carbs: Math.round(carbs * 10) / 10,
-      fiber: Math.round(fiber * 10) / 10,
+      fiber: finalFiber,
       totalGrams: Math.round(totalGrams),
       veggiePct,
       proteinPct,
       carbPct,
       fatPct,
+      scoreOutOf10,
+      actionTip,
+      suggestedQuickAddIndex,
+      standardMealBudget,
+      budgetPercent,
     };
-  }, [items, oilExtraKcal, oilExtraFat]);
+  }, [items, oilExtraKcal, oilExtraFat, cookingOilMode, scanResult.mealFormat]);
 
   function handleSelectPreset(preset: HeroPreset) {
     setActivePresetId(preset.id);
@@ -429,6 +538,7 @@ export function HeroFoodScannerCard() {
     setScanResult(preset.scanData);
     setItems(preset.scanData.items.map((i) => ({ ...i })));
     setCookingOilMode(preset.id === 'gym-plate' || preset.id === 'yoga-plate' ? 'NONE' : 'LIGHT_OIL');
+    setFocusedItemId(null);
     setSavedNotice(null);
   }
 
@@ -440,6 +550,43 @@ export function HeroFoodScannerCard() {
           : it
       )
     );
+  }
+
+  function removeHeroItem(id: string) {
+    setItems((prev) => prev.filter((it) => it.id !== id));
+    if (focusedItemId === id) setFocusedItemId(null);
+  }
+
+  function addQuickHiddenIngredient(idx: number) {
+    const q = QUICK_HIDDEN_ITEMS[idx];
+    if (!q) return;
+    const newId = `hero-add-${Date.now()}`;
+    const pinPositions = [
+      { x: 35, y: 35 },
+      { x: 65, y: 35 },
+      { x: 35, y: 65 },
+      { x: 65, y: 65 },
+    ];
+    const pos = pinPositions[items.length % pinPositions.length];
+    setItems((prev) => [
+      ...prev,
+      {
+        id: newId,
+        name: q.name,
+        category: q.category,
+        estimatedGrams: q.grams,
+        portionNote: `Bổ sung thêm (~${q.grams}g)`,
+        pinX: pos.x,
+        pinY: pos.y,
+        calories100g: q.kcal100,
+        protein100g: q.pro100,
+        fat100g: q.fat100,
+        carbs100g: q.carb100,
+        fiber100g: q.fiber100,
+        source: 'VIETNAM_FCT_2007',
+      },
+    ]);
+    setFocusedItemId(newId);
   }
 
   async function compressImageToBase64(file: File): Promise<{ dataUrl: string; base64: string }> {
@@ -593,44 +740,55 @@ export function HeroFoodScannerCard() {
             </button>
           </div>
 
-          {/* Các Nhãn Bong Bóng (Smart Pin Tags) gắn trực tiếp lên từng món trong ảnh */}
+          {/* Các Nhãn Bong Bóng (Smart Pin Tags) gắn trực tiếp lên từng món trong ảnh (Bấm vào để chọn món) */}
           {!scanning &&
             showPins &&
             items.map((item, idx) => {
               const itemKcal = Math.round((item.calories100g * item.estimatedGrams) / 100);
               const pinStyle =
                 PIN_COLOR_BY_CATEGORY[item.category] || 'bg-stone-800/95 text-white border-stone-400';
+              const isFocused = focusedItemId === item.id;
 
               return (
-                <div
+                <button
                   key={item.id}
+                  type="button"
+                  onClick={() => setFocusedItemId(isFocused ? null : item.id)}
                   style={{
                     left: `${Math.min(84, Math.max(16, item.pinX))}%`,
                     top: `${Math.min(82, Math.max(18, item.pinY))}%`,
                   }}
-                  className="absolute -translate-x-1/2 -translate-y-1/2 z-10"
+                  className={`absolute -translate-x-1/2 -translate-y-1/2 z-10 cursor-pointer transition-transform ${
+                    isFocused ? 'scale-110 z-20' : 'hover:scale-105'
+                  }`}
+                  title={`Bấm để chỉnh nhanh ${item.name}`}
                 >
                   <div
-                    className={`px-2 py-0.5 rounded-full border shadow-md text-[10px] font-extrabold whitespace-nowrap flex items-center gap-1 backdrop-blur-xs ${pinStyle}`}
+                    className={`px-2 py-0.5 rounded-full border shadow-md text-[10px] font-extrabold whitespace-nowrap flex items-center gap-1 backdrop-blur-xs ${pinStyle} ${
+                      isFocused ? 'ring-2 ring-amber-300' : ''
+                    }`}
                   >
                     <span className="w-3.5 h-3.5 rounded-full bg-white/25 inline-flex items-center justify-center text-[9px]">
                       {idx + 1}
                     </span>
-                    <span className="max-w-[110px] truncate">{item.name}</span>
+                    <span className="max-w-[105px] truncate">{item.name}</span>
                     <span className="text-amber-200 font-black">• {itemKcal} kcal</span>
                   </div>
-                </div>
+                </button>
               );
             })}
 
-          {/* Thanh Tổng Kcal + Nút Chụp / Tải Ảnh ở góc dưới ảnh */}
+          {/* Thanh Tổng Kcal + Điểm Đĩa Ăn /10 + Nút Chụp / Tải Ảnh ở góc dưới ảnh */}
           <div className="absolute bottom-3 left-3 right-3 flex items-end justify-between gap-2 z-10">
             <div className="text-white min-w-0">
               <div className="flex flex-wrap items-center gap-1.5">
                 <span className="px-2 py-0.5 rounded-md bg-emerald-600/95 text-white text-[11px] font-black">
-                  🔥 Tổng đĩa: {totals.kcal} kcal
+                  🔥 {totals.kcal} kcal
                 </span>
-                <span className="px-2 py-0.5 rounded-md bg-white/20 backdrop-blur-xs text-white text-[11px] font-bold">
+                <span className="px-2 py-0.5 rounded-md bg-amber-500/95 text-stone-950 text-[11px] font-black">
+                  ⭐ Điểm đĩa: {totals.scoreOutOf10}/10
+                </span>
+                <span className="px-2 py-0.5 rounded-md bg-white/20 backdrop-blur-xs text-white text-[10px] font-bold">
                   🥩 {totals.protein}g Đạm • 🥦 {totals.fiber}g Xơ
                 </span>
               </div>
@@ -678,14 +836,14 @@ export function HeroFoodScannerCard() {
             ))}
           </div>
 
-          {/* Thanh Tỷ Lệ % Cấu Trúc Đĩa Ăn (Chuẩn Harvard Plate) + Nút Chọn Dầu Sốt */}
+          {/* Thanh Tỷ Lệ % Cấu Trúc Đĩa Ăn (Chuẩn Harvard Plate) + So Sánh Ngân Sách Bữa + Gợi Ý Sửa Đĩa Ăn */}
           <div className="p-2.5 rounded-xl bg-white border border-[#E5DAC8] space-y-2">
             <div className="flex items-center justify-between gap-2 text-[10px]">
               <span className="font-extrabold text-[#2F4F30]">
-                📊 Tỷ lệ đĩa ({totals.totalGrams}g): 🥦 {totals.veggiePct}% Rau • 🥩 {totals.proteinPct}% Đạm • 🍚 {totals.carbPct}% Tinh bột
+                📊 Đĩa {totals.totalGrams}g: 🥦 {totals.veggiePct}% Rau • 🥩 {totals.proteinPct}% Đạm • 🍚 {totals.carbPct}% Tinh bột
               </span>
               <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-900 font-bold shrink-0">
-                🎯 {scanResult.overallConfidence || 94}% chuẩn
+                Chiếm {totals.budgetPercent}% bữa chuẩn ({totals.standardMealBudget} kcal)
               </span>
             </div>
 
@@ -701,6 +859,22 @@ export function HeroFoodScannerCard() {
               )}
               {totals.fatPct > 0 && (
                 <div style={{ width: `${totals.fatPct}%` }} className="bg-teal-600 h-full" />
+              )}
+            </div>
+
+            {/* Gợi ý tối ưu hóa đĩa ăn 1-chạm (Actionable Coach Fix chuẩn Foodvisor) */}
+            <div className="px-2 py-1.5 rounded-lg bg-[#F4F8F4] border border-emerald-200 flex items-center justify-between gap-2 text-[10px]">
+              <span className="text-[#2F4F30] font-semibold leading-snug">
+                💡 <strong>AI gợi ý:</strong> {totals.actionTip}
+              </span>
+              {totals.suggestedQuickAddIndex !== null && (
+                <button
+                  type="button"
+                  onClick={() => addQuickHiddenIngredient(totals.suggestedQuickAddIndex!)}
+                  className="shrink-0 px-2 py-0.5 rounded-md bg-emerald-700 hover:bg-emerald-800 text-white font-extrabold cursor-pointer"
+                >
+                  {QUICK_HIDDEN_ITEMS[totals.suggestedQuickAddIndex].label}
+                </button>
               )}
             </div>
 
@@ -731,14 +905,19 @@ export function HeroFoodScannerCard() {
             </div>
           </div>
 
-          {/* Danh sách gọn các thành phần trên đĩa (cho phép bấm +/- gram trực tiếp) */}
+          {/* Danh sách gọn các thành phần trên đĩa (cho phép bấm +/- gram hoặc Xóa món nhầm) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 max-h-36 overflow-y-auto pr-0.5">
             {items.map((item, idx) => {
               const itemKcal = Math.round((item.calories100g * item.estimatedGrams) / 100);
+              const isFocused = focusedItemId === item.id;
               return (
                 <div
                   key={item.id}
-                  className="px-2.5 py-1.5 rounded-xl bg-white border border-[#E5DAC8] flex items-center justify-between gap-1.5 text-[11px]"
+                  className={`px-2.5 py-1.5 rounded-xl bg-white border flex items-center justify-between gap-1.5 text-[11px] transition-colors ${
+                    isFocused
+                      ? 'border-emerald-600 ring-1 ring-emerald-500 bg-emerald-50/40'
+                      : 'border-[#E5DAC8]'
+                  }`}
                 >
                   <div className="min-w-0 truncate">
                     <span className="font-bold text-[var(--color-text-primary)]">
@@ -758,7 +937,7 @@ export function HeroFoodScannerCard() {
                     >
                       <Minus className="w-3 h-3" />
                     </button>
-                    <span className="min-w-[36px] text-center font-extrabold text-[10px] text-stone-800">
+                    <span className="min-w-[34px] text-center font-extrabold text-[10px] text-stone-800">
                       {item.estimatedGrams}g
                     </span>
                     <button
@@ -769,10 +948,33 @@ export function HeroFoodScannerCard() {
                     >
                       <Plus className="w-3 h-3" />
                     </button>
+                    <button
+                      type="button"
+                      onClick={() => removeHeroItem(item.id)}
+                      className="w-5 h-5 rounded-md bg-stone-100 hover:bg-red-50 text-stone-400 hover:text-red-600 inline-flex items-center justify-center cursor-pointer"
+                      title="Xóa thành phần này"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
                   </div>
                 </div>
               );
             })}
+          </div>
+
+          {/* Thanh + Thêm nhanh thành phần bị khuất 1-chạm (Chuẩn Cal AI) */}
+          <div className="flex items-center gap-1 overflow-x-auto pb-0.5">
+            <span className="text-[10px] font-bold text-stone-600 shrink-0">+ Món khuất:</span>
+            {QUICK_HIDDEN_ITEMS.map((q, qIdx) => (
+              <button
+                key={q.label}
+                type="button"
+                onClick={() => addQuickHiddenIngredient(qIdx)}
+                className="px-2 py-0.5 rounded-md bg-white hover:bg-emerald-50 border border-[#D8C7B0] text-[10px] font-bold text-[#2F4F30] whitespace-nowrap cursor-pointer"
+              >
+                {q.label}
+              </button>
+            ))}
           </div>
 
           {savedNotice && (
