@@ -1149,24 +1149,23 @@ export function FoodPlateScannerPanel({
             </div>
           </div>
 
-          {/* Cơ sở Đo Lường Thị Giác (Biological Reference Anchor) & Gợi Ý Tối Ưu Hóa Đĩa Ăn */}
-          <div className="p-4 rounded-2xl bg-[#F4F8F4] border border-[var(--color-brand-border)] space-y-2.5">
-            <div className="flex flex-wrap items-center justify-between gap-2">
+          {/* Thẻ Điểm Đĩa Ăn + Nút Hành Động 1-Chạm (Gọn, nổi bật bằng màu sắc) */}
+          <div className="p-3.5 rounded-2xl bg-[#F4F8F4] border border-[var(--color-brand-border)] space-y-2.5">
+            <div className="flex items-center justify-between gap-2">
               <span className="text-xs font-extrabold text-[#2F4F30] flex items-center gap-1.5">
-                <ShieldCheck className="w-4 h-4 text-emerald-700" />
+                <ShieldCheck className="w-4 h-4 text-emerald-700 shrink-0" />
                 <span>{plateActionAdvice.badge}</span>
               </span>
-              <span className="px-2.5 py-0.5 rounded-full bg-amber-500 text-stone-950 text-[11px] font-black">
-                ⭐ {totals.scoreOutOf10}/10 điểm
+              <span className="px-2.5 py-0.5 rounded-full bg-amber-500 text-stone-950 text-xs font-black shrink-0">
+                ⭐ {totals.scoreOutOf10}/10
               </span>
             </div>
 
-            {/* Hộp Gợi ý Sửa Đĩa Ăn 1-chạm (Actionable Plate Fix chuẩn Foodvisor / Cal AI) */}
-            <div className="p-3 rounded-xl bg-white border border-emerald-300 space-y-2">
-              <p className="text-xs font-semibold text-[#2F4F30] leading-relaxed">
-                💡 <strong>AI Gợi ý tối ưu đĩa ăn:</strong> {plateActionAdvice.message}
-              </p>
-              {plateActionAdvice.quickSlug && plateActionAdvice.quickLabel && (
+            {plateActionAdvice.quickSlug && plateActionAdvice.quickLabel ? (
+              <div className="p-2.5 rounded-xl bg-white border border-emerald-300 flex items-center justify-between gap-2">
+                <span className="text-xs font-bold text-[#2F4F30]">
+                  💡 {plateActionAdvice.badge} để đạt chuẩn:
+                </span>
                 <button
                   type="button"
                   onClick={() =>
@@ -1175,187 +1174,194 @@ export function FoodPlateScannerPanel({
                       plateActionAdvice.quickGrams
                     )
                   }
-                  className="px-3 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-extrabold inline-flex items-center gap-1.5 cursor-pointer"
+                  className="shrink-0 px-3 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-extrabold inline-flex items-center gap-1 cursor-pointer"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   <span>{plateActionAdvice.quickLabel}</span>
                 </button>
-              )}
-            </div>
+              </div>
+            ) : (
+              <div className="px-3 py-2 rounded-xl bg-white border border-emerald-200 text-xs font-bold text-emerald-800">
+                ✅ Tỷ lệ Đạm ({totals.protein}g) &amp; Rau xanh ({totals.veggiePct}%) đã cân đối chuẩn vàng!
+              </div>
+            )}
 
-            <div className="p-2.5 rounded-xl bg-white/90 border border-emerald-200 text-[11px] text-[#2F4F30]">
-              <strong>📏 Thước đo tỷ lệ AI (Biological Anchor):</strong>{' '}
-              {scanResult.visualAnchorNote ||
-                `Đã đếm ${items.length} thành phần tách biệt & đối chiếu tỷ lệ lòng đĩa chuẩn 22cm + tra cứu Bảng Viện Dinh Dưỡng VN.`}
-            </div>
-
-            <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
-              {scanResult.coachSummary}
-            </p>
+            {/* Thu gọn phần chữ giải thích kỹ thuật vào mục bấm mở để không gây mỏi mắt */}
+            <details className="group rounded-xl bg-white/80 border border-emerald-200/80 px-3 py-2 text-xs">
+              <summary className="cursor-pointer font-bold text-[#2F4F30] flex items-center justify-between select-none">
+                <span>🔍 Xem cơ sở đo lường AI ({scanResult.overallConfidence || 94}% chuẩn) &amp; lời khuyên</span>
+                <span className="text-[10px] text-emerald-700 group-open:rotate-180 transition-transform">▼</span>
+              </summary>
+              <div className="mt-2 pt-2 border-t border-emerald-100 space-y-1.5 text-[11px] text-[var(--color-text-secondary)]">
+                <p>
+                  <strong>📏 Thước đo tỷ lệ AI:</strong>{' '}
+                  {scanResult.visualAnchorNote ||
+                    `Đếm ${items.length} thành phần & đối chiếu lòng đĩa chuẩn 22cm + Bảng Viện Dinh Dưỡng VN.`}
+                </p>
+                <p>{scanResult.coachSummary}</p>
+              </div>
+            </details>
           </div>
         </div>
 
-        {/* CỘT PHẢI (7/12): BẢNG BÓC TÁCH THÀNH PHẦN RAU CỦ / THỊT CÁ & TỔNG KCAL */}
+        {/* CỘT PHẢI (7/12): BIỂU ĐỒ TRỰC QUAN & DANH SÁCH MÓN MÃ HÓA MÀU SẮC */}
         <div className="lg:col-span-7 space-y-4">
-          {/* Thanh Tổng Kcal & Đối Chiếu Ngân Sách Bữa Ăn Của Riêng Bạn */}
+          {/* BẢNG BIỂU ĐỒ TRUNG TÂM: VÒNG TRÒN KCAL + THANH MÀU ĐĨA HARVARD + 4 THANH MACRO */}
           <div className="p-4 rounded-2xl bg-gradient-to-br from-[#FAF7F0] to-[#F3EFE6] border border-[#DFD2C0] space-y-3.5">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <div>
-                <h3 className="text-sm sm:text-base font-extrabold text-[var(--color-text-primary)]">
-                  {scanResult.dishTitle}
-                </h3>
-                <p className="text-[11px] text-[var(--color-text-muted)]">
-                  Tổng khối lượng ước tính trên đĩa: <strong>~{totals.totalGrams}g</strong> ({items.length} thành phần)
-                </p>
-              </div>
+            {/* Hàng tiêu đề + Chọn bữa Sáng/Trưa/Tối */}
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h3 className="text-sm sm:text-base font-extrabold text-[var(--color-text-primary)] truncate">
+                {scanResult.dishTitle}
+              </h3>
 
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-[#D8C7B0] shrink-0">
-                <Flame className="w-4 h-4 text-[var(--color-accent-primary)]" />
-                <span className="text-lg font-black text-[var(--color-accent-primary)]">
-                  {totals.kcal} kcal
-                </span>
-                <span className="text-[11px] text-[var(--color-text-muted)]">
-                  / định mức bữa {targetSlotKcal} kcal
-                </span>
-              </div>
+              {scanResult.mealFormat !== 'DAILY_3_MEALS' && (
+                <div className="inline-flex items-center gap-1 bg-white p-1 rounded-xl border border-[#D8C7B0] no-print">
+                  {(
+                    [
+                      { key: 'BREAKFAST', label: '☀️ Bữa Sáng' },
+                      { key: 'LUNCH', label: '🌤️ Bữa Trưa' },
+                      { key: 'DINNER', label: '🌙 Bữa Tối' },
+                    ] as const
+                  ).map((slot) => (
+                    <button
+                      key={slot.key}
+                      type="button"
+                      onClick={() => setSelectedMealSlot(slot.key)}
+                      className={`px-2.5 py-1 rounded-lg text-[11px] font-extrabold cursor-pointer transition-colors ${
+                        selectedMealSlot === slot.key
+                          ? 'bg-[var(--color-brand-primary)] text-white'
+                          : 'text-stone-600 hover:bg-stone-100'
+                      }`}
+                    >
+                      {slot.label}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
-            {/* THANH ĐỐI CHIẾU NGÂN SÁCH BỮA ĂN CÁ NHÂN (Chuẩn Lose It! & MacroFactor) */}
-            <div className="p-3 rounded-xl bg-white border border-[#E5DAC8] space-y-2">
-              <div className="flex flex-wrap items-center justify-between gap-2 text-[11px]">
-                <div className="flex items-center gap-1.5">
-                  <span className="font-extrabold text-[#2F4F30]">
-                    🎯 So với định mức cá nhân của bạn:
-                  </span>
-                  {scanResult.mealFormat !== 'DAILY_3_MEALS' && (
-                    <div className="inline-flex items-center gap-1 bg-[#FAF7F0] p-0.5 rounded-lg border border-[#D8C7B0]">
-                      {(
-                        [
-                          { key: 'BREAKFAST', label: '☀️ Sáng' },
-                          { key: 'LUNCH', label: '🌤️ Trưa' },
-                          { key: 'DINNER', label: '🌙 Tối' },
-                        ] as const
-                      ).map((slot) => (
-                        <button
-                          key={slot.key}
-                          type="button"
-                          onClick={() => setSelectedMealSlot(slot.key)}
-                          className={`px-2 py-0.5 rounded-md text-[10px] font-bold cursor-pointer ${
-                            selectedMealSlot === slot.key
-                              ? 'bg-[var(--color-brand-primary)] text-white'
-                              : 'text-stone-600 hover:bg-stone-100'
-                          }`}
-                        >
-                          {slot.label}
-                        </button>
-                      ))}
-                    </div>
-                  )}
+            {/* Khối Infographic chính: Trái (Biểu đồ Vòng tròn Kcal) + Phải (Thanh Đĩa Harvard 4 màu) */}
+            <div className="p-3.5 rounded-2xl bg-white border border-[#E5DAC8] grid grid-cols-1 sm:grid-cols-12 gap-4 items-center">
+              {/* Vòng Tròn SVG Kcal so với Ngân sách Bữa */}
+              <div className="sm:col-span-4 flex flex-col items-center justify-center text-center sm:border-r sm:border-stone-200 sm:pr-3">
+                <div className="relative w-24 h-24 flex items-center justify-center">
+                  <svg className="w-24 h-24 -rotate-90" viewBox="0 0 36 36">
+                    <circle
+                      cx="18"
+                      cy="18"
+                      r="15.5"
+                      fill="none"
+                      stroke="#F3EFE6"
+                      strokeWidth="3.6"
+                    />
+                    <circle
+                      cx="18"
+                      cy="18"
+                      r="15.5"
+                      fill="none"
+                      stroke={kcalPercentOfTarget <= 105 ? '#16A34A' : '#D97706'}
+                      strokeWidth="3.6"
+                      strokeDasharray={`${Math.min(100, kcalPercentOfTarget)} 100`}
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center leading-tight">
+                    <span className="text-lg font-black text-[var(--color-accent-primary)]">
+                      {totals.kcal}
+                    </span>
+                    <span className="text-[10px] font-bold text-stone-500">
+                      / {targetSlotKcal} kcal
+                    </span>
+                  </div>
                 </div>
 
                 <span
-                  className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
+                  className={`mt-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold ${
                     kcalDeltaFromTarget >= 0
                       ? 'bg-emerald-100 text-emerald-900'
                       : 'bg-amber-100 text-amber-900'
                   }`}
                 >
                   {kcalDeltaFromTarget >= 0
-                    ? `Chiếm ${kcalPercentOfTarget}% ngân sách bữa (Còn dư ${kcalDeltaFromTarget} kcal)`
-                    : `Chiếm ${kcalPercentOfTarget}% ngân sách bữa (Vượt nhẹ ${Math.abs(kcalDeltaFromTarget)} kcal)`}
+                    ? `Đạt ${kcalPercentOfTarget}% • Dư ${kcalDeltaFromTarget} kcal`
+                    : `Đạt ${kcalPercentOfTarget}% • Vượt ${Math.abs(kcalDeltaFromTarget)} kcal`}
                 </span>
               </div>
 
-              <div className="w-full h-2.5 rounded-full overflow-hidden bg-stone-100 border border-stone-200">
-                <div
-                  style={{ width: `${Math.min(100, kcalPercentOfTarget)}%` }}
-                  className={`h-full transition-all duration-300 ${
-                    kcalPercentOfTarget <= 105 ? 'bg-emerald-600' : 'bg-amber-500'
-                  }`}
-                />
-              </div>
-            </div>
-
-            {/* BIỂU ĐỒ TỶ LỆ CẤU TRÚC ĐĨA ĂN (% RAU CỦ - % ĐẠM - % TINH BỘT) CHUẨN HARVARD PLATE */}
-            <div className="p-3 rounded-xl bg-white border border-[#E5DAC8] space-y-2">
-              <div className="flex flex-wrap items-center justify-between gap-1 text-[11px]">
-                <span className="font-extrabold text-[#3F6240]">
-                  📊 Tỷ lệ cấu trúc đĩa ăn (So với chuẩn Harvard: 50% Rau • 25% Đạm • 25% Tinh bột):
-                </span>
-                <span className="text-[10px] font-bold text-emerald-800">
-                  Tổng {totals.totalGrams}g thức ăn
-                </span>
-              </div>
-
-              {/* Thanh Progress Bar Đa Sắc Màu */}
-              <div className="w-full h-3 rounded-full overflow-hidden flex bg-stone-100 border border-stone-200">
-                {totals.veggiePct > 0 && (
-                  <div
-                    style={{ width: `${totals.veggiePct}%` }}
-                    className="bg-emerald-600 h-full transition-all duration-300"
-                    title={`Rau củ & Trái cây: ${totals.veggiePct}%`}
-                  />
-                )}
-                {totals.proteinPct > 0 && (
-                  <div
-                    style={{ width: `${totals.proteinPct}%` }}
-                    className="bg-rose-600 h-full transition-all duration-300"
-                    title={`Đạm (Thịt/Cá/Tôm/Trứng): ${totals.proteinPct}%`}
-                  />
-                )}
-                {totals.carbPct > 0 && (
-                  <div
-                    style={{ width: `${totals.carbPct}%` }}
-                    className="bg-amber-500 h-full transition-all duration-300"
-                    title={`Tinh bột (Cơm/Mỳ/Khoai/Bắp): ${totals.carbPct}%`}
-                  />
-                )}
-                {totals.fatPct > 0 && (
-                  <div
-                    style={{ width: `${totals.fatPct}%` }}
-                    className="bg-teal-600 h-full transition-all duration-300"
-                    title={`Béo tốt / Sốt: ${totals.fatPct}%`}
-                  />
-                )}
-              </div>
-
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-[11px]">
-                <div className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-600 shrink-0" />
-                  <span>
-                    Rau củ: <strong>{totals.veggiePct}%</strong> ({totals.veggieGrams}g)
+              {/* Phải: Biểu đồ Tỷ lệ Đĩa Ăn 4 Màu + 4 Ô Màu Trực Quan */}
+              <div className="sm:col-span-8 space-y-2.5">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-extrabold text-[#2F4F30]">
+                    📊 Tỷ lệ Đĩa Ăn ({totals.totalGrams}g)
+                  </span>
+                  <span className="text-[10px] font-semibold text-stone-500">
+                    Chuẩn Harvard: 50% Rau • 25% Đạm • 25% Tinh bột
                   </span>
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-rose-600 shrink-0" />
-                  <span>
-                    Đạm: <strong>{totals.proteinPct}%</strong> ({totals.proteinFoodGrams}g)
-                  </span>
+
+                {/* Thanh 4 màu dày, nổi bật */}
+                <div className="w-full h-3.5 rounded-full overflow-hidden flex bg-stone-100 p-0.5 gap-0.5 border border-stone-200">
+                  {totals.veggiePct > 0 && (
+                    <div
+                      style={{ width: `${totals.veggiePct}%` }}
+                      className="bg-emerald-500 h-full rounded-l-full transition-all duration-300"
+                    />
+                  )}
+                  {totals.proteinPct > 0 && (
+                    <div
+                      style={{ width: `${totals.proteinPct}%` }}
+                      className="bg-rose-500 h-full transition-all duration-300"
+                    />
+                  )}
+                  {totals.carbPct > 0 && (
+                    <div
+                      style={{ width: `${totals.carbPct}%` }}
+                      className="bg-amber-500 h-full transition-all duration-300"
+                    />
+                  )}
+                  {totals.fatPct > 0 && (
+                    <div
+                      style={{ width: `${totals.fatPct}%` }}
+                      className="bg-teal-500 h-full rounded-r-full transition-all duration-300"
+                    />
+                  )}
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0" />
-                  <span>
-                    Tinh bột: <strong>{totals.carbPct}%</strong> ({totals.carbFoodGrams}g)
-                  </span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-teal-600 shrink-0" />
-                  <span>
-                    Béo tốt/Sốt: <strong>{totals.fatPct}%</strong> ({totals.healthyFatGrams}g)
-                  </span>
+
+                {/* 4 Thẻ Màu Nổi Bật (Nhìn màu biết ngay nhóm chất) */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                  <div className="p-2 rounded-xl bg-emerald-50 border border-emerald-200 text-center">
+                    <span className="text-[10px] font-bold text-emerald-900 block">🥦 Rau củ</span>
+                    <span className="text-sm font-black text-emerald-700">{totals.veggiePct}%</span>
+                    <span className="text-[10px] text-emerald-800 block">{totals.veggieGrams}g</span>
+                  </div>
+                  <div className="p-2 rounded-xl bg-rose-50 border border-rose-200 text-center">
+                    <span className="text-[10px] font-bold text-rose-900 block">🥩 Đạm (Thịt/Cá)</span>
+                    <span className="text-sm font-black text-rose-700">{totals.proteinPct}%</span>
+                    <span className="text-[10px] text-rose-800 block">{totals.protein}g Pro</span>
+                  </div>
+                  <div className="p-2 rounded-xl bg-amber-50 border border-amber-200 text-center">
+                    <span className="text-[10px] font-bold text-amber-900 block">🍚 Tinh bột</span>
+                    <span className="text-sm font-black text-amber-700">{totals.carbPct}%</span>
+                    <span className="text-[10px] text-amber-800 block">{totals.carbs}g Carb</span>
+                  </div>
+                  <div className="p-2 rounded-xl bg-teal-50 border border-teal-200 text-center">
+                    <span className="text-[10px] font-bold text-teal-900 block">🥑 Béo &amp; Xơ</span>
+                    <span className="text-sm font-black text-teal-700">{totals.fat}g Béo</span>
+                    <span className="text-[10px] text-teal-800 block">{totals.fiber}g Xơ</span>
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* BỘ CHỌN BÙ ĐẮP CALO ẨN TỪ DẦU MỠ / NƯỚC SỐT CHẾ BIẾN */}
-            <div className="p-2.5 rounded-xl bg-white border border-[#E5DAC8] flex flex-col sm:flex-row sm:items-center justify-between gap-2 no-print">
-              <span className="text-[11px] font-extrabold text-[#3F6240]">
-                🍳 Cách chế biến / Dầu sốt bám bề mặt:
+            {/* Thanh chọn Chế biến / Dầu sốt 1 hàng gọn */}
+            <div className="px-3 py-2 rounded-xl bg-white border border-[#E5DAC8] flex flex-wrap items-center justify-between gap-2 no-print">
+              <span className="text-xs font-extrabold text-[#3F6240]">
+                🍳 Dầu mỡ / Sốt chế biến:
               </span>
               <div className="flex flex-wrap items-center gap-1.5">
                 {(
                   [
-                    { key: 'NONE', label: '💧 Luộc / Hấp (0 dầu)' },
+                    { key: 'NONE', label: '💧 Hấp / Luộc (0 kcal)' },
                     { key: 'LIGHT_OIL', label: '🍳 Áp chảo ít dầu (+36 kcal)' },
                     { key: 'SAUCE_RICH', label: '🥣 Xào / Đẫm sốt (+80 kcal)' },
                   ] as const
@@ -1367,7 +1373,7 @@ export function FoodPlateScannerPanel({
                     className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border transition-colors cursor-pointer ${
                       cookingOilMode === mode.key
                         ? 'bg-[var(--color-brand-primary)] text-white border-[var(--color-brand-primary)]'
-                        : 'bg-[#FAF7F0] text-[var(--color-text-secondary)] border-[#D8C7B0] hover:border-[var(--color-brand-primary)]'
+                        : 'bg-[#FAF7F0] text-[var(--color-text-secondary)] border-[#D8C7B0]'
                     }`}
                   >
                     {mode.label}
@@ -1375,156 +1381,150 @@ export function FoodPlateScannerPanel({
                 ))}
               </div>
             </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-              <div className="p-2.5 rounded-xl bg-white border border-rose-200">
-                <span className="text-[11px] font-bold text-rose-900 block">🥩 Tổng Đạm (Protein)</span>
-                <span className="text-base font-extrabold text-rose-700">{totals.protein}g</span>
-                <span className="text-[10px] text-stone-500 block">Mục tiêu: ~{targetSlotPro}g</span>
-              </div>
-              <div className="p-2.5 rounded-xl bg-white border border-amber-200">
-                <span className="text-[11px] font-bold text-amber-900 block">🍚 Tinh Bột (Carbs)</span>
-                <span className="text-base font-extrabold text-amber-700">{totals.carbs}g</span>
-                <span className="text-[10px] text-stone-500 block">Năng lượng chính</span>
-              </div>
-              <div className="p-2.5 rounded-xl bg-white border border-teal-200">
-                <span className="text-[11px] font-bold text-teal-900 block">🥑 Chất Béo (Fat)</span>
-                <span className="text-base font-extrabold text-teal-700">{totals.fat}g</span>
-                <span className="text-[10px] text-stone-500 block">Ưu tiên béo thực vật</span>
-              </div>
-              <div className="p-2.5 rounded-xl bg-white border border-emerald-200">
-                <span className="text-[11px] font-bold text-emerald-900 block">🥦 Chất Xơ (Fiber)</span>
-                <span className="text-base font-extrabold text-emerald-700">{totals.fiber}g</span>
-                <span className="text-[10px] text-stone-500 block">Từ rau củ &amp; hạt</span>
-              </div>
-            </div>
           </div>
 
-          {/* Danh sách từng thành phần Rau củ / Thịt cá trên đĩa (Cho phép bấm +/- gram) */}
+          {/* DANH SÁCH THÀNH PHẦN TRÊN ĐĨA (Dùng vạch màu + thanh % trực quan, bỏ chữ rườm rà) */}
           <div className="space-y-2.5">
             <div className="flex items-center justify-between">
               <h4 className="text-xs sm:text-sm font-extrabold text-[var(--color-text-primary)]">
-                Chi tiết từng thành phần nhận diện trên đĩa (Bấm +/- để chỉnh số gram):
+                🍽️ Thành phần trên đĩa ({items.length} món) — Bấm [-] / [+] để chỉnh gram:
               </h4>
-              <span className="text-[11px] font-semibold text-emerald-800">
-                Tự động tính lại Kcal tức thì
-              </span>
+              <div className="hidden sm:flex items-center gap-2 text-[10px] font-bold">
+                <span className="inline-flex items-center gap-1 text-emerald-700">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500" /> Rau củ
+                </span>
+                <span className="inline-flex items-center gap-1 text-rose-700">
+                  <span className="w-2 h-2 rounded-full bg-rose-500" /> Đạm
+                </span>
+                <span className="inline-flex items-center gap-1 text-amber-700">
+                  <span className="w-2 h-2 rounded-full bg-amber-500" /> Tinh bột
+                </span>
+                <span className="inline-flex items-center gap-1 text-teal-700">
+                  <span className="w-2 h-2 rounded-full bg-teal-500" /> Béo tốt
+                </span>
+              </div>
             </div>
 
-            <div className="space-y-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {items.map((item, idx) => {
                 const ratio = item.estimatedGrams / 100;
                 const itemKcal = Math.round(item.calories100g * ratio);
                 const itemPro = Math.round(item.protein100g * ratio * 10) / 10;
-                const itemCarb = Math.round(item.carbs100g * ratio * 10) / 10;
-                const itemFat = Math.round(item.fat100g * ratio * 10) / 10;
-                const itemFiber = Math.round((item.fiber100g || 0) * ratio * 10) / 10;
-                const catMeta = CATEGORY_BADGES[item.category] || CATEGORY_BADGES.VEGGIE_FRUIT;
+                const itemSharePct = Math.min(
+                  100,
+                  Math.round((item.estimatedGrams / Math.max(1, totals.totalGrams)) * 100)
+                );
                 const isFocused = focusedItemId === item.id;
+
+                const colorTheme =
+                  item.category === 'PROTEIN'
+                    ? { border: 'border-l-rose-500', bar: 'bg-rose-500', pill: 'bg-rose-50 text-rose-800' }
+                    : item.category === 'VEGGIE_FRUIT'
+                    ? { border: 'border-l-emerald-500', bar: 'bg-emerald-500', pill: 'bg-emerald-50 text-emerald-800' }
+                    : item.category === 'CARB'
+                    ? { border: 'border-l-amber-500', bar: 'bg-amber-500', pill: 'bg-amber-50 text-amber-800' }
+                    : { border: 'border-l-teal-500', bar: 'bg-teal-500', pill: 'bg-teal-50 text-teal-800' };
 
                 return (
                   <div
                     key={item.id}
-                    className={`p-3 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors ${
-                      isFocused
-                        ? 'bg-emerald-50/70 border-emerald-600 ring-1 ring-emerald-500'
-                        : 'bg-[var(--color-bg-primary)]/70 border-[var(--color-border-base)]'
+                    className={`p-3 rounded-2xl bg-white border border-[#E5DAC8] border-l-4 ${colorTheme.border} flex flex-col justify-between gap-2 transition-all ${
+                      isFocused ? 'ring-2 ring-emerald-500 bg-emerald-50/30' : ''
                     }`}
                   >
-                    <div className="space-y-1 min-w-0">
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        <span className="w-5 h-5 rounded-full bg-[var(--color-brand-primary)] text-white text-[11px] font-bold inline-flex items-center justify-center shrink-0">
-                          {idx + 1}
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <span className="text-xs sm:text-sm font-extrabold text-[var(--color-text-primary)] block truncate">
+                          {idx + 1}. {item.name}
                         </span>
-                        <span className="text-xs sm:text-sm font-extrabold text-[var(--color-text-primary)]">
-                          {item.name}
-                        </span>
-                        <span
-                          className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${catMeta.badgeClass}`}
-                        >
-                          {catMeta.label}
-                        </span>
-                        {item.source === 'VIETNAM_FCT_2007' && (
-                          <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] font-semibold">
-                            ✓ Chuẩn Viện Dinh Dưỡng
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <span className="text-xs font-black text-[var(--color-accent-primary)]">
+                            {itemKcal} kcal
                           </span>
-                        )}
+                          <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${colorTheme.pill}`}>
+                            {itemPro}g Đạm
+                          </span>
+                          <span className="text-[10px] text-stone-400 font-semibold">
+                            • {itemSharePct}% đĩa
+                          </span>
+                        </div>
                       </div>
-
-                      <p className="text-[11px] text-[var(--color-text-secondary)]">
-                        <span className="text-[var(--color-text-muted)]">{item.portionNote}</span> •{' '}
-                        <strong className="text-[var(--color-accent-primary)]">{itemKcal} kcal</strong> • Đạm:{' '}
-                        <strong>{itemPro}g</strong> • Carb: {itemCarb}g • Béo: {itemFat}g • Xơ: {itemFiber}g
-                      </p>
-                    </div>
-
-                    {/* Cụm nút chỉnh số gram [- 15g] [85g] [+ 15g] */}
-                    <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-center no-print">
-                      <button
-                        type="button"
-                        onClick={() => updateItemGrams(item.id, -15)}
-                        className="w-7 h-7 rounded-lg bg-white hover:bg-stone-100 border border-[var(--color-border-base)] inline-flex items-center justify-center text-[var(--color-text-primary)] cursor-pointer"
-                        title="Giảm 15g"
-                      >
-                        <Minus className="w-3.5 h-3.5" />
-                      </button>
-
-                      <span className="min-w-[54px] text-center text-xs font-extrabold text-[var(--color-text-primary)] bg-white px-2 py-1 rounded-lg border border-[var(--color-border-base)]">
-                        {item.estimatedGrams}g
-                      </span>
-
-                      <button
-                        type="button"
-                        onClick={() => updateItemGrams(item.id, 15)}
-                        className="w-7 h-7 rounded-lg bg-white hover:bg-stone-100 border border-[var(--color-border-base)] inline-flex items-center justify-center text-[var(--color-text-primary)] cursor-pointer"
-                        title="Tăng 15g"
-                      >
-                        <Plus className="w-3.5 h-3.5" />
-                      </button>
 
                       <button
                         type="button"
                         onClick={() => removeItem(item.id)}
-                        className="w-7 h-7 rounded-lg bg-white hover:bg-red-50 border border-[var(--color-border-base)] hover:border-red-200 inline-flex items-center justify-center text-stone-400 hover:text-red-600 cursor-pointer ml-1"
-                        title="Xóa thành phần này"
+                        className="w-6 h-6 rounded-lg hover:bg-red-50 text-stone-400 hover:text-red-600 inline-flex items-center justify-center cursor-pointer shrink-0 no-print"
+                        title="Xóa món này"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
+                    </div>
+
+                    {/* Thanh % khối lượng trên đĩa + Cụm nút [-] 85g [+] */}
+                    <div className="flex items-center justify-between gap-2 pt-1">
+                      <div className="flex-1 h-1.5 rounded-full bg-stone-100 overflow-hidden">
+                        <div
+                          style={{ width: `${itemSharePct}%` }}
+                          className={`h-full rounded-full ${colorTheme.bar}`}
+                        />
+                      </div>
+
+                      <div className="flex items-center gap-1 shrink-0 no-print">
+                        <button
+                          type="button"
+                          onClick={() => updateItemGrams(item.id, -15)}
+                          className="w-6 h-6 rounded-lg bg-stone-100 hover:bg-stone-200 inline-flex items-center justify-center text-stone-700 cursor-pointer"
+                          title="Giảm 15g"
+                        >
+                          <Minus className="w-3 h-3" />
+                        </button>
+                        <span className="min-w-[44px] text-center text-xs font-extrabold text-[var(--color-text-primary)]">
+                          {item.estimatedGrams}g
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => updateItemGrams(item.id, 15)}
+                          className="w-6 h-6 rounded-lg bg-stone-100 hover:bg-stone-200 inline-flex items-center justify-center text-stone-700 cursor-pointer"
+                          title="Tăng 15g"
+                        >
+                          <Plus className="w-3 h-3" />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 );
               })}
             </div>
 
-            {/* Thanh cộng thêm nhanh nguyên liệu 1-chạm + Chọn từ 195+ nguyên liệu Viện Dinh Dưỡng */}
-            <div className="p-3 rounded-2xl bg-[#FAF7F0] border border-[#E5DAC8] space-y-2.5 no-print">
-              <div className="flex flex-wrap items-center gap-1.5">
-                <span className="text-xs font-extrabold text-[#3F6240] mr-1">
-                  ⚡ Thêm nhanh món bị khuất 1-chạm:
-                </span>
-                {[
-                  { label: '+1 Trứng luộc (55g)', slug: 'trung-ga', grams: 55 },
-                  { label: '+60g Ức gà', slug: 'uc-ga-phi-le', grams: 60 },
-                  { label: '+80g Bông cải xanh', slug: 'bong-cai-xanh', grams: 80 },
-                  { label: '+50g Bơ sáp', slug: 'bo-sap', grams: 50 },
-                  { label: '+100g Cơm gạo lứt', slug: 'com-gao-lut-chin', grams: 100 },
-                ].map((quick) => (
-                  <button
-                    key={quick.label}
-                    type="button"
-                    onClick={() => addIngredientBySlugAndGrams(quick.slug, quick.grams)}
-                    className="px-2.5 py-1 rounded-lg bg-white hover:bg-emerald-50 border border-[#D8C7B0] text-[11px] font-bold text-[#2F4F30] transition-colors cursor-pointer"
-                  >
-                    {quick.label}
-                  </button>
-                ))}
+            {/* Thanh + Thêm nhanh món khuất 1-chạm + Mở rộng tra cứu 195 nguyên liệu */}
+            <div className="p-3 rounded-2xl bg-[#FAF7F0] border border-[#E5DAC8] space-y-2 no-print">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="text-xs font-extrabold text-[#3F6240]">⚡ Thêm nhanh:</span>
+                  {[
+                    { label: '+1 Trứng (55g)', slug: 'trung-ga', grams: 55 },
+                    { label: '+60g Ức gà', slug: 'uc-ga-phi-le', grams: 60 },
+                    { label: '+80g Bông cải', slug: 'bong-cai-xanh', grams: 80 },
+                    { label: '+50g Bơ sáp', slug: 'bo-sap', grams: 50 },
+                    { label: '+100g Cơm lứt', slug: 'com-gao-lut-chin', grams: 100 },
+                  ].map((quick) => (
+                    <button
+                      key={quick.label}
+                      type="button"
+                      onClick={() => addIngredientBySlugAndGrams(quick.slug, quick.grams)}
+                      className="px-2.5 py-1 rounded-lg bg-white hover:bg-emerald-50 border border-[#D8C7B0] text-[11px] font-bold text-[#2F4F30] transition-colors cursor-pointer"
+                    >
+                      {quick.label}
+                    </button>
+                  ))}
+                </div>
               </div>
 
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 pt-1 border-t border-[#E5DAC8]">
-                <span className="text-xs font-bold text-[#3F6240] shrink-0">
-                  + Tra cứu 195+ nguyên liệu VDD:
-                </span>
-                <div className="flex flex-wrap items-center gap-2 flex-1">
+              <details className="group pt-1">
+                <summary className="cursor-pointer text-[11px] font-bold text-emerald-800 hover:underline select-none">
+                  + Tìm thêm trong 195+ nguyên liệu Viện Dinh Dưỡng...
+                </summary>
+                <div className="mt-2 flex flex-wrap items-center gap-2">
                   <select
                     value={selectedQuickSlug}
                     onChange={(e) => setSelectedQuickSlug(e.target.value)}
@@ -1553,25 +1553,25 @@ export function FoodPlateScannerPanel({
                   <button
                     type="button"
                     onClick={handleAddQuickIngredient}
-                    className="px-3 py-1.5 rounded-xl bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-hover)] text-white text-xs font-bold transition-colors cursor-pointer"
+                    className="px-3 py-1.5 rounded-xl bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-hover)] text-white text-xs font-bold cursor-pointer"
                   >
-                    + Thêm vào đĩa
+                    + Thêm
                   </button>
                 </div>
-              </div>
+              </details>
             </div>
 
-            {/* Gợi ý 3 Công thức Món Ăn Eat Clean / Gym / Yoga tương đồng trên Website */}
+            {/* Gợi ý 3 Công thức Món Ăn tương đồng + Nút Lưu Nhật Ký */}
             <div className="p-3.5 rounded-2xl bg-white border border-[var(--color-border-base)] space-y-2.5 no-print">
               <div className="flex items-center justify-between gap-2">
                 <span className="text-xs font-extrabold text-[var(--color-text-primary)]">
-                  🍲 Công thức chế biến tương tự trên Ăn Gì Mom (Bấm để xem cách nấu):
+                  🍲 Công thức tương tự trên web:
                 </span>
                 <Link
                   href="/mon-an?tax=giam-can-it-calo"
                   className="text-[11px] font-bold text-[var(--color-brand-primary)] hover:underline"
                 >
-                  Xem tất cả 49 món →
+                  Xem 49 món →
                 </Link>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -1582,7 +1582,7 @@ export function FoodPlateScannerPanel({
                     className="p-2.5 rounded-xl bg-[#FAF7F0] hover:bg-emerald-50/60 border border-[#E5DAC8] hover:border-emerald-300 transition-colors flex flex-col justify-between gap-1"
                   >
                     <span className="text-[10px] font-extrabold text-emerald-800">{rec.tag}</span>
-                    <span className="text-xs font-bold text-[var(--color-text-primary)] line-clamp-2">
+                    <span className="text-xs font-bold text-[var(--color-text-primary)] line-clamp-1">
                       {rec.title}
                     </span>
                     <span className="text-[10px] font-extrabold text-[var(--color-accent-primary)]">
@@ -1594,34 +1594,12 @@ export function FoodPlateScannerPanel({
             </div>
           </div>
 
-          {/* Khu vực Lưu Đĩa Ăn Đã Quét Vào Nhật Ký Hàng Ngày (/nhat-ky) */}
-          <div className="p-4 rounded-2xl bg-[#F4F8F4] border border-[var(--color-brand-border)] space-y-3 no-print">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-extrabold text-[#2F4F30]">Chọn bữa để lưu vào Nhật ký:</span>
-                <div className="flex items-center gap-1 bg-white p-1 rounded-xl border border-[#D5E2D5]">
-                  {(
-                    [
-                      { key: 'BREAKFAST', label: '☀️ Sáng' },
-                      { key: 'LUNCH', label: '🌤️ Trưa' },
-                      { key: 'DINNER', label: '🌙 Tối' },
-                    ] as const
-                  ).map((slot) => (
-                    <button
-                      key={slot.key}
-                      type="button"
-                      onClick={() => setSelectedMealSlot(slot.key)}
-                      className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
-                        selectedMealSlot === slot.key
-                          ? 'bg-[var(--color-brand-primary)] text-white'
-                          : 'text-[var(--color-text-secondary)] hover:bg-stone-100'
-                      }`}
-                    >
-                      {slot.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
+          {/* Nút Lưu Đĩa Ăn Đã Quét Vào Nhật Ký Hàng Ngày (/nhat-ky) */}
+          <div className="p-3.5 rounded-2xl bg-[#F4F8F4] border border-[var(--color-brand-border)] space-y-2.5 no-print">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+              <span className="text-xs font-extrabold text-[#2F4F30]">
+                📝 Lưu đĩa ăn này vào Nhật ký hôm nay ({selectedMealSlot === 'BREAKFAST' ? 'Bữa Sáng' : selectedMealSlot === 'DINNER' ? 'Bữa Tối' : 'Bữa Trưa'}):
+              </span>
 
               <button
                 type="button"
@@ -1633,7 +1611,7 @@ export function FoodPlateScannerPanel({
                 <span>
                   {savingDiary
                     ? 'Đang lưu...'
-                    : `📝 Ghi đĩa ăn này (${totals.kcal} kcal) vào Nhật Ký hôm nay`}
+                    : `Lưu vào Nhật Ký (${totals.kcal} kcal)`}
                 </span>
               </button>
             </div>

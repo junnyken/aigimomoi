@@ -816,9 +816,9 @@ export function HeroFoodScannerCard() {
           </div>
         </div>
 
-        {/* Thanh Chọn Nhanh 4 Mẫu Đĩa Thực Tế + Chỉnh Gram Từng Thành Phần */}
+        {/* Bảng Điều Khiển Thị Giác Gọn Gàng (Visual Donut + Thanh Màu Sắc + Danh Sách Món) */}
         <div className="p-3 sm:p-3.5 bg-[#FAF7F0] border-t border-[#E5DAC8] space-y-2.5">
-          {/* 4 Nút đổi mẫu đĩa + Chế biến dầu sốt */}
+          {/* Hàng 1: 4 Mẫu đĩa thực tế */}
           <div className="flex items-center justify-between gap-1.5 overflow-x-auto pb-0.5">
             {HERO_PRESETS.map((preset) => (
               <button
@@ -836,56 +836,84 @@ export function HeroFoodScannerCard() {
             ))}
           </div>
 
-          {/* Thanh Tỷ Lệ % Cấu Trúc Đĩa Ăn (Chuẩn Harvard Plate) + So Sánh Ngân Sách Bữa + Gợi Ý Sửa Đĩa Ăn */}
-          <div className="p-2.5 rounded-xl bg-white border border-[#E5DAC8] space-y-2">
-            <div className="flex items-center justify-between gap-2 text-[10px]">
-              <span className="font-extrabold text-[#2F4F30]">
-                📊 Đĩa {totals.totalGrams}g: 🥦 {totals.veggiePct}% Rau • 🥩 {totals.proteinPct}% Đạm • 🍚 {totals.carbPct}% Tinh bột
-              </span>
-              <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-900 font-bold shrink-0">
-                Chiếm {totals.budgetPercent}% bữa chuẩn ({totals.standardMealBudget} kcal)
-              </span>
+          {/* Hàng 2: BIỂU ĐỒ VÒNG TRÒN KCAL + 3 THANH MÀU ĐĨA ĂN HARVARD (Ít chữ, nhìn biểu đồ hiểu ngay) */}
+          <div className="p-2.5 rounded-2xl bg-white border border-[#E5DAC8] space-y-2">
+            <div className="flex items-center gap-3">
+              {/* Vòng tròn SVG Gauge Kcal */}
+              <div className="relative w-14 h-14 shrink-0 flex items-center justify-center">
+                <svg className="w-14 h-14 -rotate-90" viewBox="0 0 36 36">
+                  <circle
+                    cx="18"
+                    cy="18"
+                    r="15.5"
+                    fill="none"
+                    stroke="#F3EFE6"
+                    strokeWidth="3.8"
+                  />
+                  <circle
+                    cx="18"
+                    cy="18"
+                    r="15.5"
+                    fill="none"
+                    stroke={totals.budgetPercent <= 105 ? '#16A34A' : '#D97706'}
+                    strokeWidth="3.8"
+                    strokeDasharray={`${Math.min(100, totals.budgetPercent)} 100`}
+                    strokeLinecap="round"
+                  />
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center text-center leading-none">
+                  <span className="text-[11px] font-black text-[var(--color-accent-primary)]">
+                    {totals.kcal}
+                  </span>
+                  <span className="text-[8px] font-bold text-stone-500">kcal</span>
+                </div>
+              </div>
+
+              {/* 4 Nhóm Màu Đĩa Ăn + Thanh Tỷ Lệ Trực Quan */}
+              <div className="flex-1 min-w-0 space-y-1.5">
+                <div className="flex items-center justify-between gap-1 text-[10px]">
+                  <span className="font-extrabold text-stone-700">
+                    Đĩa {totals.totalGrams}g ({totals.budgetPercent}% bữa)
+                  </span>
+                  <span className="px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-900 font-black">
+                    ⭐ {totals.scoreOutOf10}/10
+                  </span>
+                </div>
+
+                {/* Thanh 4 màu Harvard */}
+                <div className="w-full h-2.5 rounded-full overflow-hidden flex bg-stone-100">
+                  {totals.veggiePct > 0 && (
+                    <div style={{ width: `${totals.veggiePct}%` }} className="bg-emerald-500 h-full" />
+                  )}
+                  {totals.proteinPct > 0 && (
+                    <div style={{ width: `${totals.proteinPct}%` }} className="bg-rose-500 h-full" />
+                  )}
+                  {totals.carbPct > 0 && (
+                    <div style={{ width: `${totals.carbPct}%` }} className="bg-amber-500 h-full" />
+                  )}
+                  {totals.fatPct > 0 && (
+                    <div style={{ width: `${totals.fatPct}%` }} className="bg-teal-500 h-full" />
+                  )}
+                </div>
+
+                {/* Chú thích màu siêu gọn */}
+                <div className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-[10px] font-extrabold">
+                  <span className="text-emerald-700">🥦 Rau {totals.veggiePct}%</span>
+                  <span className="text-rose-700">🥩 Đạm {totals.protein}g</span>
+                  <span className="text-amber-700">🍚 Carb {totals.carbs}g</span>
+                  <span className="text-teal-700">🥑 Béo {totals.fat}g</span>
+                </div>
+              </div>
             </div>
 
-            <div className="w-full h-2 rounded-full overflow-hidden flex bg-stone-100">
-              {totals.veggiePct > 0 && (
-                <div style={{ width: `${totals.veggiePct}%` }} className="bg-emerald-600 h-full" />
-              )}
-              {totals.proteinPct > 0 && (
-                <div style={{ width: `${totals.proteinPct}%` }} className="bg-rose-600 h-full" />
-              )}
-              {totals.carbPct > 0 && (
-                <div style={{ width: `${totals.carbPct}%` }} className="bg-amber-500 h-full" />
-              )}
-              {totals.fatPct > 0 && (
-                <div style={{ width: `${totals.fatPct}%` }} className="bg-teal-600 h-full" />
-              )}
-            </div>
-
-            {/* Gợi ý tối ưu hóa đĩa ăn 1-chạm (Actionable Coach Fix chuẩn Foodvisor) */}
-            <div className="px-2 py-1.5 rounded-lg bg-[#F4F8F4] border border-emerald-200 flex items-center justify-between gap-2 text-[10px]">
-              <span className="text-[#2F4F30] font-semibold leading-snug">
-                💡 <strong>AI gợi ý:</strong> {totals.actionTip}
-              </span>
-              {totals.suggestedQuickAddIndex !== null && (
-                <button
-                  type="button"
-                  onClick={() => addQuickHiddenIngredient(totals.suggestedQuickAddIndex!)}
-                  className="shrink-0 px-2 py-0.5 rounded-md bg-emerald-700 hover:bg-emerald-800 text-white font-extrabold cursor-pointer"
-                >
-                  {QUICK_HIDDEN_ITEMS[totals.suggestedQuickAddIndex].label}
-                </button>
-              )}
-            </div>
-
-            <div className="flex items-center justify-between gap-1 pt-0.5">
-              <span className="text-[10px] font-bold text-stone-600">Chế biến:</span>
+            {/* Thanh chọn Dầu/Sốt + Nút tối ưu 1-chạm trên cùng 1 hàng gọn */}
+            <div className="flex flex-wrap items-center justify-between gap-1.5 pt-1.5 border-t border-stone-100">
               <div className="flex items-center gap-1">
                 {(
                   [
-                    { key: 'NONE', label: '💧 Hấp/Luộc (0 dầu)' },
-                    { key: 'LIGHT_OIL', label: '🍳 Áp chảo (+36 kcal)' },
-                    { key: 'SAUCE_RICH', label: '🥣 Xào/Sốt (+80 kcal)' },
+                    { key: 'NONE', label: '💧 Hấp/Luộc' },
+                    { key: 'LIGHT_OIL', label: '🍳 Ít dầu (+36)' },
+                    { key: 'SAUCE_RICH', label: '🥣 Đẫm sốt (+80)' },
                   ] as const
                 ).map((m) => (
                   <button
@@ -902,29 +930,50 @@ export function HeroFoodScannerCard() {
                   </button>
                 ))}
               </div>
+
+              {totals.suggestedQuickAddIndex !== null ? (
+                <button
+                  type="button"
+                  onClick={() => addQuickHiddenIngredient(totals.suggestedQuickAddIndex!)}
+                  className="px-2 py-0.5 rounded-md bg-emerald-700 hover:bg-emerald-800 text-white text-[10px] font-extrabold cursor-pointer"
+                >
+                  💡 Thiếu đạm/rau → {QUICK_HIDDEN_ITEMS[totals.suggestedQuickAddIndex].label}
+                </button>
+              ) : (
+                <span className="text-[10px] font-extrabold text-emerald-700">
+                  ✓ Tỷ lệ đĩa chuẩn Harvard
+                </span>
+              )}
             </div>
           </div>
 
-          {/* Danh sách gọn các thành phần trên đĩa (cho phép bấm +/- gram hoặc Xóa món nhầm) */}
+          {/* Hàng 3: Các thẻ món ăn mã hóa màu sắc bên lề trái (Dễ nhìn, không rối chữ) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 max-h-36 overflow-y-auto pr-0.5">
-            {items.map((item, idx) => {
+            {items.map((item) => {
               const itemKcal = Math.round((item.calories100g * item.estimatedGrams) / 100);
               const isFocused = focusedItemId === item.id;
+              const borderColor =
+                item.category === 'PROTEIN'
+                  ? 'border-l-rose-500'
+                  : item.category === 'VEGGIE_FRUIT'
+                  ? 'border-l-emerald-500'
+                  : item.category === 'CARB'
+                  ? 'border-l-amber-500'
+                  : 'border-l-teal-500';
+
               return (
                 <div
                   key={item.id}
-                  className={`px-2.5 py-1.5 rounded-xl bg-white border flex items-center justify-between gap-1.5 text-[11px] transition-colors ${
-                    isFocused
-                      ? 'border-emerald-600 ring-1 ring-emerald-500 bg-emerald-50/40'
-                      : 'border-[#E5DAC8]'
+                  className={`px-2.5 py-1.5 rounded-xl bg-white border border-[#E5DAC8] border-l-4 ${borderColor} flex items-center justify-between gap-1.5 text-[11px] transition-colors ${
+                    isFocused ? 'ring-1 ring-emerald-500 bg-emerald-50/40' : ''
                   }`}
                 >
                   <div className="min-w-0 truncate">
-                    <span className="font-bold text-[var(--color-text-primary)]">
-                      {idx + 1}. {item.name}
+                    <span className="font-bold text-[var(--color-text-primary)] block truncate">
+                      {item.name}
                     </span>
-                    <span className="block text-[10px] text-[var(--color-accent-primary)] font-extrabold">
-                      {itemKcal} kcal • {Math.round(item.protein100g * (item.estimatedGrams / 100) * 10) / 10}g Đạm
+                    <span className="text-[10px] text-[var(--color-accent-primary)] font-extrabold">
+                      {itemKcal} kcal
                     </span>
                   </div>
 
@@ -952,7 +1001,7 @@ export function HeroFoodScannerCard() {
                       type="button"
                       onClick={() => removeHeroItem(item.id)}
                       className="w-5 h-5 rounded-md bg-stone-100 hover:bg-red-50 text-stone-400 hover:text-red-600 inline-flex items-center justify-center cursor-pointer"
-                      title="Xóa thành phần này"
+                      title="Xóa"
                     >
                       <Trash2 className="w-3 h-3" />
                     </button>
@@ -962,9 +1011,9 @@ export function HeroFoodScannerCard() {
             })}
           </div>
 
-          {/* Thanh + Thêm nhanh thành phần bị khuất 1-chạm (Chuẩn Cal AI) */}
+          {/* Hàng 4: Nút + Thêm nhanh món khuất */}
           <div className="flex items-center gap-1 overflow-x-auto pb-0.5">
-            <span className="text-[10px] font-bold text-stone-600 shrink-0">+ Món khuất:</span>
+            <span className="text-[10px] font-bold text-stone-500 shrink-0">+ Thêm:</span>
             {QUICK_HIDDEN_ITEMS.map((q, qIdx) => (
               <button
                 key={q.label}
