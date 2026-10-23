@@ -118,15 +118,15 @@ async function runBootstrap(): Promise<void> {
     }
   }
 
-  // 4. Tự động seed bộ công thức món Việt chuẩn (bao gồm bộ Giảm cân · Ít Calo & Tập Gym · Tăng cơ) nếu chưa có
-  const existingGymOrDiet = await db
+  // 4. Tự động seed bộ công thức món Việt chuẩn (bao gồm bộ Giảm cân · Ít Calo, Tập Gym · Tăng cơ & Yoga · Eat Clean) nếu chưa có
+  const existingYogaGymBatch = await db
     .select({ id: recipes.id })
     .from(recipes)
-    .where(eq(recipes.slug, 'uc-ga-ap-chao-mat-ong-toi-it-calo'))
+    .where(eq(recipes.slug, 'poke-bowl-ca-hoi-bo-gao-lut-yoga-gym'))
     .limit(1);
 
-  if (existingGymOrDiet.length === 0) {
-    logger.info('Seeding updated production catalog (including Weight-Loss & Gym/Macro recipes)...');
+  if (existingYogaGymBatch.length === 0) {
+    logger.info('Seeding updated production catalog (including Yoga, Eat Clean & Gym/Macro recipes)...');
     await seedProductionCatalog();
     logger.info('Auto-seed production catalog completed!');
   }
@@ -144,15 +144,15 @@ async function runBootstrap(): Promise<void> {
     logger.info('Expanded Vietnamese ingredients dictionary seeded!');
   }
 
-  // 4c. Tự động seed Hệ thống Phân loại Đa trục chuẩn Việt Nam (44 nhãn phổ biến) nếu chưa có
+  // 4c. Tự động seed Hệ thống Phân loại Đa trục chuẩn Việt Nam (bao gồm Yoga · Thanh lọc & Dễ tiêu) nếu chưa có
   const existingStandardTax = await db
     .select({ id: taxonomies.id })
     .from(taxonomies)
-    .where(eq(taxonomies.slug, 'eat-clean-viet'))
+    .where(eq(taxonomies.slug, 'yoga-thanh-loc'))
     .limit(1);
 
   if (existingStandardTax.length === 0) {
-    logger.info('Seeding standard Vietnamese culinary & nutrition taxonomies (44 tags)...');
+    logger.info('Seeding standard Vietnamese culinary & nutrition taxonomies (including Yoga & Gym)...');
     await seedStandardTaxonomies();
     logger.info('Standard taxonomies seeded!');
   }

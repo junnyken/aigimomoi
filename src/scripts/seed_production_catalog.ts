@@ -1023,6 +1023,334 @@ const PRODUCTION_RECIPES: RecipeSeedData[] = [
       { stepNumber: 3, phaseName: 'Hoàn thành', instruction: 'Đổ trứng vào dàn đều ở lửa nhỏ, cuộn tròn lại khi mặt trứng vừa se chín mềm trong 2 phút, cắt khoanh vừa ăn.', timerSeconds: 120 },
     ],
   },
+
+  // ===================== BỘ MÓN HIỆN ĐẠI DỄ LÀM CHO NGƯỜI TẬP YOGA & GYM (EAT CLEAN 10-15 PHÚT) =====================
+  {
+    dishName: 'Poke Bowl cá hồi áp chảo, bơ sáp & gạo lứt',
+    dishSlug: 'poke-bowl-ca-hoi-bo-gao-lut-yoga-gym',
+    recipeName: 'Poke Bowl cá hồi áp chảo, bơ sáp & gạo lứt (Chuẩn Yoga & Gym)',
+    recipeSlug: 'poke-bowl-ca-hoi-bo-gao-lut-yoga-gym',
+    role: 'MAIN',
+    shortDescription: 'Tô cơm dinh dưỡng hiện đại rất được người tập Yoga & Gym ưa chuộng: cá hồi giàu Omega-3 kết hợp quả bơ sáp béo tốt, dưa leo, rong biển và tinh bột hấp thu chậm từ gạo lứt.',
+    difficulty: 'Dễ',
+    prepTimeMinutes: 10,
+    cookTimeMinutes: 8,
+    baseServings: 4,
+    heroImage: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80',
+    taxonomySlugs: ['yoga-thanh-loc', 'tap-gym-tang-co', 'eat-clean-viet', 'giam-can-it-calo'],
+    ingredients: [
+      { name: 'Cá hồi phi lê tươi', slug: 'ca-hoi-phi-le', category: 'Thủy hải sản', standardUnit: 'g', amount: 400, unit: 'g', scalePolicy: 'LINEAR', preparation: 'thái quân cờ 2cm' },
+      { name: 'Quả bơ sáp chín', slug: 'bo-sap', category: 'Rau củ quả', standardUnit: 'quả', amount: 1, unit: 'quả', scalePolicy: 'LINEAR', preparation: 'thái lát mỏng' },
+      { name: 'Dưa leo (Dưa chuột)', slug: 'dua-leo', category: 'Rau củ quả', standardUnit: 'quả', amount: 2, unit: 'quả', scalePolicy: 'LINEAR', preparation: 'thái hạt lựu' },
+      { name: 'Cà rốt', slug: 'ca-rot', category: 'Rau củ quả', standardUnit: 'g', amount: 100, unit: 'g', scalePolicy: 'LINEAR', preparation: 'bào sợi' },
+      { name: 'Rong biển khô nấu canh', slug: 'rong-bien-kho', category: 'Đồ khô', standardUnit: 'g', amount: 15, unit: 'g', scalePolicy: 'LINEAR', preparation: 'cắt sợi nhỏ' },
+      { name: 'Nước tương (Xì dầu)', slug: 'nuoc-tuong-dau-nanh', category: 'Gia vị nêm nếm', standardUnit: 'thìa canh', amount: 2, unit: 'muỗng canh', scalePolicy: 'LINEAR' },
+      { name: 'Dầu mè thơm (Dầu vừng)', slug: 'dau-me', category: 'Gia vị nêm nếm', standardUnit: 'thìa cà phê', amount: 1, unit: 'muỗng cà phê', scalePolicy: 'FIXED' },
+      { name: 'Hạt mè trắng / Mè đen (Vừng)', slug: 'me-trang', category: 'Đồ khô', standardUnit: 'g', amount: 10, unit: 'g', scalePolicy: 'FIXED' },
+    ],
+    steps: [
+      { stepNumber: 1, phaseName: 'Áp chảo cá hồi', instruction: 'Cá hồi thái quân cờ ướp với 1 muỗng nước tương, áp chảo chống dính lửa vừa 4 phút cho vàng thơm các mặt.', timerSeconds: 240, tipText: 'Không cần thêm dầu ăn vì cá hồi tự tiết mỡ Omega-3 tự nhiên.' },
+      { stepNumber: 2, phaseName: 'Sơ chế rau củ tươi', instruction: 'Bơ sáp thái lát, dưa leo thái hạt lựu, cà rốt bào sợi. Pha nước sốt trộn gồm 1 muỗng nước tương và 1 muỗng cà phê dầu mè.', timerSeconds: 180 },
+      { stepNumber: 3, phaseName: 'Xếp tô Poke Bowl', instruction: 'Xếp cá hồi, bơ sáp, dưa leo, cà rốt và rong biển quanh tô (ăn kèm 1/2 chén cơm gạo lứt ấm), rưới sốt và rắc hạt mè rang lên trên.', timerSeconds: 60 },
+    ],
+  },
+  {
+    dishName: 'Ức gà cuộn rong biển áp chảo sốt mè rang',
+    dishSlug: 'uc-ga-cuon-rong-bien-ap-chao-eat-clean',
+    recipeName: 'Ức gà cuộn rong biển áp chảo (Meal Prep Gym & Yoga 15 phút)',
+    recipeSlug: 'uc-ga-cuon-rong-bien-ap-chao-eat-clean',
+    role: 'MAIN',
+    shortDescription: 'Cách chế biến giúp ức gà mềm ngọt tuyệt đối, không còn cảm giác khô xơ: ức gà cuộn lá rong biển và cà rốt áp chảo dầu ô liu thơm lừng, cực hợp mang đi làm hoặc ăn sau tập.',
+    difficulty: 'Dễ',
+    prepTimeMinutes: 10,
+    cookTimeMinutes: 10,
+    baseServings: 4,
+    heroImage: 'https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?auto=format&fit=crop&w=800&q=80',
+    taxonomySlugs: ['tap-gym-tang-co', 'yoga-thanh-loc', 'eat-clean-viet', 'giam-can-it-calo'],
+    ingredients: [
+      { name: 'Ức gà phi lê (Không da)', slug: 'uc-ga-phi-le', category: 'Thực phẩm tươi sống', standardUnit: 'g', amount: 480, unit: 'g', scalePolicy: 'LINEAR', preparation: 'lạng mỏng bản rộng' },
+      { name: 'Rong biển khô nấu canh', slug: 'rong-bien-kho', category: 'Đồ khô', standardUnit: 'g', amount: 15, unit: 'g', scalePolicy: 'LINEAR', preparation: 'dùng lá rong biển cuộn' },
+      { name: 'Cà rốt', slug: 'ca-rot', category: 'Rau củ quả', standardUnit: 'g', amount: 100, unit: 'g', scalePolicy: 'LINEAR', preparation: 'thái thanh dài nhỏ' },
+      { name: 'Nước tương (Xì dầu)', slug: 'nuoc-tuong-dau-nanh', category: 'Gia vị nêm nếm', standardUnit: 'thìa canh', amount: 1.5, unit: 'muỗng canh', scalePolicy: 'LINEAR' },
+      { name: 'Mật ong nguyên chất', slug: 'mat-ong', category: 'Gia vị nêm nếm', standardUnit: 'thìa cà phê', amount: 1, unit: 'muỗng cà phê', scalePolicy: 'LINEAR' },
+      { name: 'Dầu ô liu nguyên chất (Extra Virgin)', slug: 'dau-o-liu', category: 'Gia vị nêm nếm', standardUnit: 'thìa cà phê', amount: 1, unit: 'muỗng cà phê', scalePolicy: 'FIXED' },
+      { name: 'Hạt mè trắng / Mè đen (Vừng)', slug: 'me-trang', category: 'Đồ khô', standardUnit: 'g', amount: 10, unit: 'g', scalePolicy: 'FIXED' },
+    ],
+    steps: [
+      { stepNumber: 1, phaseName: 'Cuộn ức gà', instruction: 'Trải lát ức gà mỏng, đặt lá rong biển và thanh cà rốt vào giữa rồi cuộn chặt tay, cố định bằng tăm tre.', timerSeconds: 300 },
+      { stepNumber: 2, phaseName: 'Áp chảo chín mọng', instruction: 'Làm nóng chảo với 1 muỗng cà phê dầu ô liu, cho cuộn ức gà vào áp chảo lửa vừa 6 phút cho vàng đều xung quanh.', timerSeconds: 360, tipText: 'Lá rong biển bên trong giúp giữ trọn nước ngọt của ức gà.' },
+      { stepNumber: 3, phaseName: 'Áo sốt & Cắt khoanh', instruction: 'Rưới hỗn hợp nước tương và mật ong vào chảo đun sôi 2 phút cho thấm vị, rắc mè trắng rồi thái khoanh tròn đẹp mắt.', timerSeconds: 120 },
+    ],
+  },
+  {
+    dishName: 'Tôm nõn áp chảo dầu ô liu tỏi & bông cải xanh',
+    dishSlug: 'tom-ap-chao-bo-toi-bong-cai-xanh-gym',
+    recipeName: 'Tôm nõn áp chảo tỏi dầu ô liu & bông cải xanh (High-Protein 10 phút)',
+    recipeSlug: 'tom-ap-chao-bo-toi-bong-cai-xanh-gym',
+    role: 'MAIN',
+    shortDescription: 'Món ăn tối siêu tốc chỉ 10 phút cho người bận rộn tập Gym/Yoga: tôm bóc nõn săn giòn giàu đạm nạc, áp chảo cùng tỏi thơm, dầu ô liu và bông cải xanh giòn ngọt.',
+    difficulty: 'Dễ',
+    prepTimeMinutes: 5,
+    cookTimeMinutes: 7,
+    baseServings: 4,
+    heroImage: 'https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?auto=format&fit=crop&w=800&q=80',
+    taxonomySlugs: ['tap-gym-tang-co', 'yoga-thanh-loc', 'giam-can-it-calo', 'eat-clean-viet'],
+    ingredients: [
+      { name: 'Tôm bóc nõn tươi (100% thịt)', slug: 'tom-non', category: 'Thủy hải sản', standardUnit: 'g', amount: 420, unit: 'g', scalePolicy: 'LINEAR', preparation: 'rửa sạch, thấm khô' },
+      { name: 'Bông cải xanh (Súp lơ xanh)', slug: 'bong-cai-xanh', category: 'Rau củ quả', standardUnit: 'g', amount: 350, unit: 'g', scalePolicy: 'LINEAR', preparation: 'tách nhánh nhỏ vừa ăn' },
+      { name: 'Ớt chuông (Đỏ / Xanh / Vàng)', slug: 'ot-chuong-do', category: 'Gia vị nêm nếm', standardUnit: 'quả', amount: 1, unit: 'quả', scalePolicy: 'LINEAR', preparation: 'thái miếng vuông' },
+      { name: 'Tỏi ta', slug: 'toi', category: 'Gia vị nêm nếm', standardUnit: 'g', amount: 15, unit: 'g', scalePolicy: 'LINEAR', preparation: 'băm nhỏ' },
+      { name: 'Dầu ô liu nguyên chất (Extra Virgin)', slug: 'dau-o-liu', category: 'Gia vị nêm nếm', standardUnit: 'thìa cà phê', amount: 2, unit: 'muỗng cà phê', scalePolicy: 'FIXED' },
+      { name: 'Muối tinh / Muối hạt', slug: 'muoi-an', category: 'Gia vị nêm nếm', standardUnit: 'thìa cà phê', amount: 0.5, unit: 'muỗng cà phê', scalePolicy: 'MANUAL_ADJUST' },
+      { name: 'Hạt tiêu đen xay / Tiêu xanh', slug: 'tieu-den', category: 'Gia vị nêm nếm', standardUnit: 'thìa cà phê', amount: 0.5, unit: 'muỗng cà phê', scalePolicy: 'MANUAL_ADJUST' },
+    ],
+    steps: [
+      { stepNumber: 1, phaseName: 'Chần sơ bông cải', instruction: 'Chần bông cải xanh trong nước sôi 1 phút rồi vớt ra để ráo cho giữ màu xanh mướt.', timerSeconds: 90 },
+      { stepNumber: 2, phaseName: 'Áp chảo tôm với tỏi', instruction: 'Làm nóng dầu ô liu, phi thơm tỏi băm rồi cho tôm nõn vào áp chảo lửa lớn 3 phút đến khi tôm chuyển màu hồng đỏ săn chắc.', timerSeconds: 180 },
+      { stepNumber: 3, phaseName: 'Đảo rau củ & Hoàn thiện', instruction: 'Cho bông cải xanh và ớt chuông vào đảo cùng tôm 2 phút, nêm chút muối tiêu đen rồi tắt bếp.', timerSeconds: 120 },
+    ],
+  },
+  {
+    dishName: 'Miến dong trộn ức gà xé, nấm hương & cải bó xôi',
+    dishSlug: 'mien-tron-uc-ga-nam-rau-cu-han-quoc',
+    recipeName: 'Miến dong trộn ức gà xé, nấm hương & cải bó xôi (Eat Clean nhẹ bụng)',
+    recipeSlug: 'mien-tron-uc-ga-nam-rau-cu-han-quoc',
+    role: 'MAIN',
+    shortDescription: 'Món miến trộn thanh mát giúp đổi vị khi ngán cơm: sợi miến dong dai giòn trộn cùng ức gà xé, rau chân vịt (cải bó xôi), nấm đông cô và dầu mè thơm dịu.',
+    difficulty: 'Dễ',
+    prepTimeMinutes: 10,
+    cookTimeMinutes: 10,
+    baseServings: 4,
+    heroImage: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80',
+    taxonomySlugs: ['yoga-thanh-loc', 'giam-can-it-calo', 'eat-clean-viet', 'tap-gym-tang-co'],
+    ingredients: [
+      { name: 'Ức gà phi lê (Không da)', slug: 'uc-ga-phi-le', category: 'Thực phẩm tươi sống', standardUnit: 'g', amount: 350, unit: 'g', scalePolicy: 'LINEAR', preparation: 'luộc chín, xé sợi' },
+      { name: 'Miến dong khô', slug: 'mien-dong', category: 'Đồ khô', standardUnit: 'g', amount: 120, unit: 'g', scalePolicy: 'LINEAR', preparation: 'ngâm mềm, trụng nước sôi' },
+      { name: 'Cải bó xôi (Rau chân vịt / Spinach)', slug: 'cai-bo-xoi', category: 'Rau củ quả', standardUnit: 'g', amount: 200, unit: 'g', scalePolicy: 'LINEAR', preparation: 'cắt khúc chần sơ' },
+      { name: 'Nấm đông cô tươi / Nấm đùi gà', slug: 'nam-dong-co', category: 'Rau củ quả', standardUnit: 'g', amount: 120, unit: 'g', scalePolicy: 'LINEAR', preparation: 'thái lát mỏng' },
+      { name: 'Cà rốt', slug: 'ca-rot', category: 'Rau củ quả', standardUnit: 'g', amount: 80, unit: 'g', scalePolicy: 'LINEAR', preparation: 'thái sợi' },
+      { name: 'Nước tương (Xì dầu)', slug: 'nuoc-tuong-dau-nanh', category: 'Gia vị nêm nếm', standardUnit: 'thìa canh', amount: 2, unit: 'muỗng canh', scalePolicy: 'LINEAR' },
+      { name: 'Dầu mè thơm (Dầu vừng)', slug: 'dau-me', category: 'Gia vị nêm nếm', standardUnit: 'thìa cà phê', amount: 1.5, unit: 'muỗng cà phê', scalePolicy: 'FIXED' },
+    ],
+    steps: [
+      { stepNumber: 1, phaseName: 'Luộc gà & Trụng miến', instruction: 'Ức gà luộc chín xé sợi. Miến dong trụng nước sôi 1 phút rồi xả qua nước mát, trộn 1/2 muỗng dầu mè để sợi miến tơi bóng.', timerSeconds: 300 },
+      { stepNumber: 2, phaseName: 'Xào chín nấm & rau', instruction: 'Áp chảo nấm đông cô và cà rốt 3 phút, chần sơ cải bó xôi 30 giây rồi vắt ráo nước.', timerSeconds: 180 },
+      { stepNumber: 3, phaseName: 'Trộn đều thưởng thức', instruction: 'Cho miến, ức gà xé, nấm, cải bó xôi vào âu lớn, rưới 2 muỗng nước tương và dầu mè trộn đều.', timerSeconds: 120 },
+    ],
+  },
+  {
+    dishName: 'Đậu hũ non áp chảo sốt nấm đông cô & cải thìa (Yoga)',
+    dishSlug: 'dau-hu-ap-chao-sot-nam-dong-co-yoga',
+    recipeName: 'Đậu hũ áp chảo sốt nấm đông cô & cải thìa (Đạm thực vật Yoga)',
+    recipeSlug: 'dau-hu-ap-chao-sot-nam-dong-co-yoga',
+    role: 'MAIN',
+    shortDescription: 'Món mặn đạm thực vật nhẹ bụng chuẩn thực dưỡng cho người tập Yoga: đậu phụ trắng áp chảo xém vàng không ngập dầu, quyện cùng sốt nấm đông cô và cải thìa xanh mướt.',
+    difficulty: 'Dễ',
+    prepTimeMinutes: 8,
+    cookTimeMinutes: 10,
+    baseServings: 4,
+    heroImage: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80',
+    taxonomySlugs: ['yoga-thanh-loc', 'giam-can-it-calo', 'thanh-dam', 'eat-clean-viet'],
+    ingredients: [
+      { name: 'Đậu phụ trắng (Đậu hũ)', slug: 'dau-phu', category: 'Thực phẩm tươi sống', standardUnit: 'g', amount: 400, unit: 'g', scalePolicy: 'LINEAR', preparation: 'cắt lát vuông dày 1.5cm, thấm khô' },
+      { name: 'Nấm đông cô tươi / Nấm đùi gà', slug: 'nam-dong-co', category: 'Rau củ quả', standardUnit: 'g', amount: 200, unit: 'g', scalePolicy: 'LINEAR', preparation: 'thái lát' },
+      { name: 'Cải thìa (Cải chíp)', slug: 'cai-thia', category: 'Rau củ quả', standardUnit: 'g', amount: 250, unit: 'g', scalePolicy: 'LINEAR', preparation: 'chẻ đôi cây' },
+      { name: 'Dầu hào', slug: 'dau-hao', category: 'Gia vị nêm nếm', standardUnit: 'thìa canh', amount: 1.5, unit: 'muỗng canh', scalePolicy: 'LINEAR' },
+      { name: 'Nước tương (Xì dầu)', slug: 'nuoc-tuong-dau-nanh', category: 'Gia vị nêm nếm', standardUnit: 'thìa canh', amount: 1, unit: 'muỗng canh', scalePolicy: 'LINEAR' },
+      { name: 'Gừng tươi', slug: 'gung-tuoi', category: 'Gia vị nêm nếm', standardUnit: 'g', amount: 10, unit: 'g', scalePolicy: 'FIXED', preparation: 'băm nhỏ' },
+      { name: 'Dầu ô liu nguyên chất (Extra Virgin)', slug: 'dau-o-liu', category: 'Gia vị nêm nếm', standardUnit: 'thìa cà phê', amount: 1, unit: 'muỗng cà phê', scalePolicy: 'FIXED' },
+    ],
+    steps: [
+      { stepNumber: 1, phaseName: 'Áp chảo đậu phụ', instruction: 'Đậu phụ thấm khô, áp chảo chống dính với 1 muỗng cà phê dầu ô liu trong 4 phút cho vàng nhẹ 2 mặt.', timerSeconds: 240 },
+      { stepNumber: 2, phaseName: 'Nấu sốt nấm gừng', instruction: 'Phi thơm gừng băm, cho nấm đông cô vào xào cùng nước tương, dầu hào và 80ml nước lọc trong 4 phút.', timerSeconds: 240 },
+      { stepNumber: 3, phaseName: 'Om đậu & Chần cải thìa', instruction: 'Xếp cải thìa chần xanh quanh đĩa, cho đậu phụ vào om cùng sốt nấm 2 phút rồi trút ra giữa đĩa.', timerSeconds: 120 },
+    ],
+  },
+  {
+    dishName: 'Thăn bò lúc lắc ớt chuông & khoai lang mật áp chảo',
+    dishSlug: 'bo-luc-lac-ot-chuong-khoai-lang-gym',
+    recipeName: 'Thăn bò lúc lắc ớt chuông & khoai lang mật áp chảo (Tăng cơ Gym)',
+    recipeSlug: 'bo-luc-lac-ot-chuong-khoai-lang-gym',
+    role: 'MAIN',
+    shortDescription: 'Bữa ăn phục hồi cơ bắp toàn diện sau buổi tập nặng: thăn bò phi lê giàu đạm & sắt kết hợp ớt chuông giàu Vitamin C và tinh bột tốt từ khoai lang mật.',
+    difficulty: 'Dễ',
+    prepTimeMinutes: 10,
+    cookTimeMinutes: 12,
+    baseServings: 4,
+    heroImage: 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=80',
+    taxonomySlugs: ['tap-gym-tang-co', 'eat-clean-viet', 'bua-com-hang-ngay'],
+    ingredients: [
+      { name: 'Thịt bò phi lê (Thăn nội)', slug: 'thit-bo-phi-le', category: 'Thực phẩm tươi sống', standardUnit: 'g', amount: 450, unit: 'g', scalePolicy: 'LINEAR', preparation: 'thái quân cờ 2cm' },
+      { name: 'Khoai lang mật / Nhật', slug: 'khoai-lang', category: 'Rau củ quả', standardUnit: 'củ', amount: 2, unit: 'củ', scalePolicy: 'LINEAR', preparation: 'gọt vỏ, cắt quân cờ luộc chín tới' },
+      { name: 'Ớt chuông (Đỏ / Xanh / Vàng)', slug: 'ot-chuong-do', category: 'Gia vị nêm nếm', standardUnit: 'quả', amount: 1.5, unit: 'quả', scalePolicy: 'LINEAR', preparation: 'cắt vuông' },
+      { name: 'Hành tây', slug: 'hanh-tay', category: 'Gia vị nêm nếm', standardUnit: 'củ', amount: 1, unit: 'củ', scalePolicy: 'LINEAR', preparation: 'cắt múi cau' },
+      { name: 'Tỏi ta', slug: 'toi', category: 'Gia vị nêm nếm', standardUnit: 'g', amount: 15, unit: 'g', scalePolicy: 'LINEAR', preparation: 'đập dập' },
+      { name: 'Dầu hào', slug: 'dau-hao', category: 'Gia vị nêm nếm', standardUnit: 'thìa canh', amount: 1.5, unit: 'muỗng canh', scalePolicy: 'LINEAR' },
+      { name: 'Dầu ô liu nguyên chất (Extra Virgin)', slug: 'dau-o-liu', category: 'Gia vị nêm nếm', standardUnit: 'thìa cà phê', amount: 1.5, unit: 'muỗng cà phê', scalePolicy: 'FIXED' },
+    ],
+    steps: [
+      { stepNumber: 1, phaseName: 'Ướp bò & Sơ chế khoai', instruction: 'Thịt bò thái vuông ướp với dầu hào, tỏi và tiêu đen 10 phút. Khoai lang cắt quân cờ hấp/luộc chín tới 5 phút.', timerSeconds: 600 },
+      { stepNumber: 2, phaseName: 'Áp chảo khoai & rau', instruction: 'Áp chảo khoai lang cho xém cạnh vàng thơm, sau đó đảo nhanh ớt chuông và hành tây 90 giây rồi trút ra.', timerSeconds: 180 },
+      { stepNumber: 3, phaseName: 'Lúc lắc bò lửa lớn', instruction: 'Bật lửa lớn, cho bò vào đảo nhanh 2 phút vừa chín mềm mọng, trút khoai và ớt chuông vào xóc đều 30 giây rồi tắt bếp.', timerSeconds: 150 },
+    ],
+  },
+  {
+    dishName: 'Canh rong biển đậu hũ non nấu tôm tươi',
+    dishSlug: 'canh-rong-bien-dau-hu-non-tom-tuoi',
+    recipeName: 'Canh rong biển đậu hũ non nấu tôm nõn (Thanh lọc & Bù khoáng)',
+    recipeSlug: 'canh-rong-bien-dau-hu-non-tom-tuoi',
+    role: 'SOUP',
+    shortDescription: 'Món canh thanh lọc cơ thể cực nhanh (8 phút) cho người tập Yoga và giảm cân: rong biển giàu khoáng chất và chất xơ hòa tan kết hợp đậu hũ non mềm mượt cùng tôm tươi.',
+    difficulty: 'Dễ',
+    prepTimeMinutes: 5,
+    cookTimeMinutes: 6,
+    baseServings: 4,
+    heroImage: 'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=800&q=80',
+    taxonomySlugs: ['yoga-thanh-loc', 'giam-can-it-calo', 'eat-clean-viet', 'mon-canh'],
+    ingredients: [
+      { name: 'Rong biển khô nấu canh', slug: 'rong-bien-kho', category: 'Đồ khô', standardUnit: 'g', amount: 20, unit: 'g', scalePolicy: 'LINEAR', preparation: 'ngâm nước lạnh 5 phút cho nở' },
+      { name: 'Đậu hũ non (Tàu hũ non)', slug: 'dau-hu-non', category: 'Thực phẩm tươi sống', standardUnit: 'g', amount: 250, unit: 'g', scalePolicy: 'LINEAR', preparation: 'cắt khối vuông nhỏ' },
+      { name: 'Tôm bóc nõn tươi (100% thịt)', slug: 'tom-non', category: 'Thủy hải sản', standardUnit: 'g', amount: 150, unit: 'g', scalePolicy: 'LINEAR', preparation: 'thái hạt lựu hoặc để nguyên con' },
+      { name: 'Dầu mè thơm (Dầu vừng)', slug: 'dau-me', category: 'Gia vị nêm nếm', standardUnit: 'thìa cà phê', amount: 1, unit: 'muỗng cà phê', scalePolicy: 'FIXED' },
+      { name: 'Muối tinh / Muối hạt', slug: 'muoi-an', category: 'Gia vị nêm nếm', standardUnit: 'thìa cà phê', amount: 0.5, unit: 'muỗng cà phê', scalePolicy: 'MANUAL_ADJUST' },
+    ],
+    steps: [
+      { stepNumber: 1, phaseName: 'Ngâm nở rong biển', instruction: 'Ngâm rong biển khô trong nước mát 5 phút cho nở mềm rồi rửa sạch, để ráo.', timerSeconds: 300 },
+      { stepNumber: 2, phaseName: 'Nấu nước dùng tôm', instruction: 'Đun sôi 800ml nước, cho tôm nõn vào nấu 2 phút cho ngọt nước rồi thả đậu hũ non vào.', timerSeconds: 180 },
+      { stepNumber: 3, phaseName: 'Thả rong biển & Dầu mè', instruction: 'Cho rong biển vào đun sôi thêm 1 phút, nêm chút muối và nhỏ 1 muỗng cà phê dầu mè thơm rồi tắt bếp.', timerSeconds: 60 },
+    ],
+  },
+  {
+    dishName: 'Canh cải bó xôi (Rau chân vịt) nấu bò băm gừng tươi',
+    dishSlug: 'canh-cai-bo-xoi-nau-thit-bo-bam-gung',
+    recipeName: 'Canh cải bó xôi nấu thịt bò băm gừng tươi (Giàu sắt & Protein)',
+    recipeSlug: 'canh-cai-bo-xoi-nau-thit-bo-bam-gung',
+    role: 'SOUP',
+    shortDescription: 'Sự kết hợp vàng giữa siêu thực phẩm cải bó xôi (Spinach) và thịt bò nạc băm, bổ sung sắt, folate và đạm phục hồi cơ bắp cho người tập Gym & Yoga.',
+    difficulty: 'Dễ',
+    prepTimeMinutes: 5,
+    cookTimeMinutes: 6,
+    baseServings: 4,
+    heroImage: 'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=800&q=80',
+    taxonomySlugs: ['tap-gym-tang-co', 'yoga-thanh-loc', 'giam-can-it-calo', 'mon-canh'],
+    ingredients: [
+      { name: 'Cải bó xôi (Rau chân vịt / Spinach)', slug: 'cai-bo-xoi', category: 'Rau củ quả', standardUnit: 'g', amount: 350, unit: 'g', scalePolicy: 'LINEAR', preparation: 'rửa sạch, cắt khúc 5cm' },
+      { name: 'Thịt bò băm (Bò xay nạc)', slug: 'thit-bo-xay', category: 'Thực phẩm tươi sống', standardUnit: 'g', amount: 150, unit: 'g', scalePolicy: 'LINEAR' },
+      { name: 'Gừng tươi', slug: 'gung-tuoi', category: 'Gia vị nêm nếm', standardUnit: 'g', amount: 10, unit: 'g', scalePolicy: 'FIXED', preparation: 'thái sợi' },
+      { name: 'Muối tinh / Muối hạt', slug: 'muoi-an', category: 'Gia vị nêm nếm', standardUnit: 'thìa cà phê', amount: 0.5, unit: 'muỗng cà phê', scalePolicy: 'MANUAL_ADJUST' },
+    ],
+    steps: [
+      { stepNumber: 1, phaseName: 'Ướp bò băm', instruction: 'Ướp thịt bò băm với gừng thái sợi và chút hạt tiêu trong 3 phút.', timerSeconds: 180 },
+      { stepNumber: 2, phaseName: 'Nấu nước canh', instruction: 'Đun sôi 800ml nước, thả thịt bò băm vào khuấy tơi và hớt bọt.', timerSeconds: 120 },
+      { stepNumber: 3, phaseName: 'Thả cải bó xôi', instruction: 'Cho cải bó xôi vào đun sôi bùng đúng 45 giây để giữ trọn Vitamin và màu xanh mướt, nêm muối vừa ăn rồi tắt bếp.', timerSeconds: 60 },
+    ],
+  },
+  {
+    dishName: 'Súp bí đỏ kem sữa chua Hy Lạp & hạt Chia',
+    dishSlug: 'sup-bi-do-sua-chua-hy-lap-hat-chia',
+    recipeName: 'Súp bí đỏ sữa chua Hy Lạp & hạt Chia (Eat Clean ấm bụng)',
+    recipeSlug: 'sup-bi-do-sua-chua-hy-lap-hat-chia',
+    role: 'SOUP',
+    shortDescription: 'Thay thế hoàn toàn kem béo whipping cream bằng sữa chua Hy Lạp giàu đạm và hạt Chia: bát súp bí đỏ sánh mịn, ngọt tự nhiên, cực kỳ nhẹ bụng trước hoặc sau buổi tập Yoga.',
+    difficulty: 'Dễ',
+    prepTimeMinutes: 8,
+    cookTimeMinutes: 12,
+    baseServings: 4,
+    heroImage: 'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=800&q=80',
+    taxonomySlugs: ['yoga-thanh-loc', 'giam-can-it-calo', 'eat-clean-viet', 'mon-canh'],
+    ingredients: [
+      { name: 'Bí đỏ (Bí ngô)', slug: 'bi-do', category: 'Rau củ quả', standardUnit: 'g', amount: 450, unit: 'g', scalePolicy: 'LINEAR', preparation: 'gọt vỏ, cắt miếng mỏng' },
+      { name: 'Sữa chua Hy Lạp không đường', slug: 'sua-chua-hy-lap', category: 'Thực phẩm tươi sống', standardUnit: 'g', amount: 120, unit: 'g', scalePolicy: 'LINEAR' },
+      { name: 'Hạt Chia / Hạt lanh', slug: 'hat-chia', category: 'Đồ khô', standardUnit: 'g', amount: 15, unit: 'g', scalePolicy: 'LINEAR' },
+      { name: 'Muối tinh / Muối hạt', slug: 'muoi-an', category: 'Gia vị nêm nếm', standardUnit: 'thìa cà phê', amount: 0.5, unit: 'muỗng cà phê', scalePolicy: 'MANUAL_ADJUST' },
+    ],
+    steps: [
+      { stepNumber: 1, phaseName: 'Luộc mềm bí đỏ', instruction: 'Cho bí đỏ vào nồi cùng 500ml nước đun sôi 10 phút đến khi bí chín mềm nhừ.', timerSeconds: 600 },
+      { stepNumber: 2, phaseName: 'Xay hoặc nghiền mịn', instruction: 'Nghiền nhuyễn bí đỏ ngay trong nồi (hoặc dùng máy xay cầm tay) tạo hỗn hợp súp sánh vàng.', timerSeconds: 120 },
+      { stepNumber: 3, phaseName: 'Khuấy sữa chua Hy Lạp & hạt Chia', instruction: 'Tắt bếp, cho sữa chua Hy Lạp vào khuấy mịn cùng chút muối, múc ra bát và rắc hạt Chia lên trên.', timerSeconds: 60 },
+    ],
+  },
+  {
+    dishName: 'Salad bơ sáp, trứng gà luộc & bắp cải tím sốt sữa chua Hy Lạp',
+    dishSlug: 'salad-bo-trung-ga-luoc-sot-sua-chua-hy-lap',
+    recipeName: 'Salad bơ sáp, trứng gà luộc & bắp cải tím sốt sữa chua Hy Lạp',
+    recipeSlug: 'salad-bo-trung-ga-luoc-sot-sua-chua-hy-lap',
+    role: 'SIDE',
+    shortDescription: 'Đĩa salad chuẩn Eat Clean không dùng sốt Mayonnaise công nghiệp: tận dụng độ béo sánh của sữa chua Hy Lạp và quả bơ sáp, kết hợp trứng gà luộc và rau củ tươi giòn.',
+    difficulty: 'Dễ',
+    prepTimeMinutes: 10,
+    cookTimeMinutes: 7,
+    baseServings: 4,
+    heroImage: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=800&q=80',
+    taxonomySlugs: ['yoga-thanh-loc', 'giam-can-it-calo', 'eat-clean-viet', 'tap-gym-tang-co'],
+    ingredients: [
+      { name: 'Quả bơ sáp chín', slug: 'bo-sap', category: 'Rau củ quả', standardUnit: 'quả', amount: 1, unit: 'quả', scalePolicy: 'LINEAR', preparation: 'cắt khối vuông' },
+      { name: 'Trứng gà ta', slug: 'trung-ga', category: 'Thực phẩm tươi sống', standardUnit: 'quả', amount: 3, unit: 'quả', scalePolicy: 'LINEAR', preparation: 'luộc chín 7 phút, bổ múi cau' },
+      { name: 'Xà lách tươi (Rau diếp / Romaine)', slug: 'xa-lach', category: 'Rau củ quả', standardUnit: 'g', amount: 200, unit: 'g', scalePolicy: 'LINEAR', preparation: 'cắt khúc vừa ăn' },
+      { name: 'Bắp cải tím', slug: 'bap-cai-tim', category: 'Rau củ quả', standardUnit: 'g', amount: 120, unit: 'g', scalePolicy: 'LINEAR', preparation: 'bào sợi mỏng' },
+      { name: 'Sữa chua Hy Lạp không đường', slug: 'sua-chua-hy-lap', category: 'Thực phẩm tươi sống', standardUnit: 'g', amount: 100, unit: 'g', scalePolicy: 'LINEAR' },
+      { name: 'Chanh tươi / Tắc (Quất)', slug: 'chanh-tuoi', category: 'Gia vị nêm nếm', standardUnit: 'quả', amount: 0.5, unit: 'quả', scalePolicy: 'LINEAR' },
+      { name: 'Mật ong nguyên chất', slug: 'mat-ong', category: 'Gia vị nêm nếm', standardUnit: 'thìa cà phê', amount: 1, unit: 'muỗng cà phê', scalePolicy: 'LINEAR' },
+    ],
+    steps: [
+      { stepNumber: 1, phaseName: 'Luộc trứng lòng đào', instruction: 'Luộc trứng gà 7 phút rồi ngâm nước mát, bóc vỏ bổ làm tư. Rửa sạch xà lách, bắp cải tím và cắt bơ sáp.', timerSeconds: 420 },
+      { stepNumber: 2, phaseName: 'Pha sốt sữa chua Hy Lạp', instruction: 'Khuấy đều 100g sữa chua Hy Lạp với nước cốt nửa quả chanh, 1 muỗng cà phê mật ong và chút tiêu đen.', timerSeconds: 90, tipText: 'Sốt sữa chua Hy Lạp giảm 80% chất béo xấu so với sốt Mayonnaise mà vẫn béo ngậy.' },
+      { stepNumber: 3, phaseName: 'Trộn salad', instruction: 'Xếp xà lách, bắp cải tím, bơ sáp và trứng gà ra đĩa, rưới sốt sữa chua Hy Lạp lên trên và thưởng thức.', timerSeconds: 60 },
+    ],
+  },
+  {
+    dishName: 'Gỏi cuốn tôm tươi & ức gà xà lách chấm sốt tương đậu phộng',
+    dishSlug: 'goi-cuon-tom-thit-uc-ga-rau-xanh-eat-clean',
+    recipeName: 'Gỏi cuốn tôm tươi & ức gà rau xanh (Eat Clean không dầu mỡ)',
+    recipeSlug: 'goi-cuon-tom-thit-uc-ga-rau-xanh-eat-clean',
+    role: 'SIDE',
+    shortDescription: 'Biến tấu gỏi cuốn Việt Nam chuẩn Fitness: thay thịt ba chỉ mỡ bằng ức gà phi lê mềm ngọt và tôm tươi, cuốn đầy xà lách, dưa leo và rau thơm thanh mát.',
+    difficulty: 'Dễ',
+    prepTimeMinutes: 12,
+    cookTimeMinutes: 8,
+    baseServings: 4,
+    heroImage: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=800&q=80',
+    taxonomySlugs: ['yoga-thanh-loc', 'tap-gym-tang-co', 'giam-can-it-calo', 'eat-clean-viet'],
+    ingredients: [
+      { name: 'Tôm sú / Tôm thẻ tươi', slug: 'tom-tuoi', category: 'Thủy hải sản', standardUnit: 'g', amount: 200, unit: 'g', scalePolicy: 'LINEAR', preparation: 'hấp chín, bóc vỏ chẻ đôi' },
+      { name: 'Ức gà phi lê (Không da)', slug: 'uc-ga-phi-le', category: 'Thực phẩm tươi sống', standardUnit: 'g', amount: 200, unit: 'g', scalePolicy: 'LINEAR', preparation: 'luộc chín, thái lát mỏng' },
+      { name: 'Bánh tráng cuốn (Bánh đa nem)', slug: 'banh-trang', category: 'Đồ khô', standardUnit: 'g', amount: 60, unit: 'g', scalePolicy: 'LINEAR', preparation: '8 lá bánh tráng mỏng' },
+      { name: 'Xà lách tươi (Rau diếp / Romaine)', slug: 'xa-lach', category: 'Rau củ quả', standardUnit: 'g', amount: 150, unit: 'g', scalePolicy: 'LINEAR' },
+      { name: 'Dưa leo (Dưa chuột)', slug: 'dua-leo', category: 'Rau củ quả', standardUnit: 'quả', amount: 1, unit: 'quả', scalePolicy: 'LINEAR', preparation: 'thái thanh dài' },
+      { name: 'Nước tương (Xì dầu)', slug: 'nuoc-tuong-dau-nanh', category: 'Gia vị nêm nếm', standardUnit: 'thìa canh', amount: 2, unit: 'muỗng canh', scalePolicy: 'LINEAR' },
+      { name: 'Đậu phộng nhân (Lạc rang)', slug: 'dau-phong', category: 'Đồ khô', standardUnit: 'g', amount: 15, unit: 'g', scalePolicy: 'FIXED', preparation: 'giã dập rắc nước chấm' },
+    ],
+    steps: [
+      { stepNumber: 1, phaseName: 'Luộc gà & Hấp tôm', instruction: 'Hấp chín tôm và luộc ức gà trong 8 phút, để nguội rồi thái lát mỏng.', timerSeconds: 480 },
+      { stepNumber: 2, phaseName: 'Cuốn gỏi rau xanh', instruction: 'Làm mềm bánh tráng, xếp xà lách, dưa leo, ức gà và tôm lên trên rồi cuộn chặt tay.', timerSeconds: 300 },
+      { stepNumber: 3, phaseName: 'Pha sốt chấm', instruction: 'Pha nước tương với chút nước ấm, ớt tươi và rắc đậu phộng rang giã dập lên trên.', timerSeconds: 60 },
+    ],
+  },
+  {
+    dishName: 'Bowl Yến mạch, Sữa chua Hy Lạp & Hạt Chia (Pre-Workout 5 phút)',
+    dishSlug: 'yen-mach-sua-chua-hy-lap-hat-chia-khoai-lang',
+    recipeName: 'Bowl Yến mạch, Sữa chua Hy Lạp & Hạt Chia (Bữa sáng / Trước tập 5 phút)',
+    recipeSlug: 'yen-mach-sua-chua-hy-lap-hat-chia-khoai-lang',
+    role: 'SIDE',
+    shortDescription: 'Món ăn nhanh 5 phút không cần nấu dành cho người tập Yoga buổi sáng hoặc nạp năng lượng sạch trước khi tập Gym: giàu chất xơ hòa tan Beta-glucan, đạm dễ tiêu và Omega-3 thực vật.',
+    difficulty: 'Dễ',
+    prepTimeMinutes: 5,
+    cookTimeMinutes: 0,
+    baseServings: 4,
+    heroImage: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80',
+    taxonomySlugs: ['yoga-thanh-loc', 'tap-gym-tang-co', 'giam-can-it-calo', 'eat-clean-viet'],
+    ingredients: [
+      { name: 'Yến mạch cán dẹt (Rolled Oats)', slug: 'yen-mach', category: 'Đồ khô', standardUnit: 'g', amount: 140, unit: 'g', scalePolicy: 'LINEAR' },
+      { name: 'Sữa chua Hy Lạp không đường', slug: 'sua-chua-hy-lap', category: 'Thực phẩm tươi sống', standardUnit: 'g', amount: 300, unit: 'g', scalePolicy: 'LINEAR' },
+      { name: 'Hạt Chia / Hạt lanh', slug: 'hat-chia', category: 'Đồ khô', standardUnit: 'g', amount: 25, unit: 'g', scalePolicy: 'LINEAR' },
+      { name: 'Hạt điều rang', slug: 'hat-dieu', category: 'Đồ khô', standardUnit: 'g', amount: 30, unit: 'g', scalePolicy: 'LINEAR', preparation: 'đập dập' },
+      { name: 'Mật ong nguyên chất', slug: 'mat-ong', category: 'Gia vị nêm nếm', standardUnit: 'thìa cà phê', amount: 2, unit: 'muỗng cà phê', scalePolicy: 'LINEAR' },
+    ],
+    steps: [
+      { stepNumber: 1, phaseName: 'Trộn yến mạch & sữa chua', instruction: 'Cho yến mạch cán dẹt, hạt Chia và sữa chua Hy Lạp vào tô, trộn đều (có thể để ngăn mát 10 phút cho yến mạch mềm mịn).', timerSeconds: 180 },
+      { stepNumber: 2, phaseName: 'Rắc hạt & Thưởng thức', instruction: 'Rắc hạt điều rang đập dập và rưới nhẹ mật ong nguyên chất lên mặt là dùng được ngay.', timerSeconds: 60 },
+    ],
+  },
 ];
 
 export async function seedProductionCatalog() {
@@ -1031,7 +1359,7 @@ export async function seedProductionCatalog() {
   // Đảm bảo enum meal_role có sẵn DIPPING_SAUCE trước khi seed
   await db.execute(sql`ALTER TYPE "public"."meal_role" ADD VALUE IF NOT EXISTS 'DIPPING_SAUCE'`);
 
-  // Đảm bảo các Taxonomy Chế độ ăn (Giảm cân · Ít Calo & Tập Gym · Tăng cơ) luôn tồn tại
+  // Đảm bảo các Taxonomy Chế độ ăn (Giảm cân · Ít Calo, Tập Gym · Tăng cơ & Yoga · Thanh lọc) luôn tồn tại
   const coreTaxonomies: Array<{
     name: string;
     slug: string;
@@ -1039,6 +1367,8 @@ export async function seedProductionCatalog() {
   }> = [
     { name: 'Giảm cân · Ít Calo', slug: 'giam-can-it-calo', type: 'DIET_PREFERENCE' },
     { name: 'Tập Gym · Tăng cơ – Giảm mỡ', slug: 'tap-gym-tang-co', type: 'DIET_PREFERENCE' },
+    { name: 'Yoga · Thanh lọc & Dễ tiêu', slug: 'yoga-thanh-loc', type: 'DIET_PREFERENCE' },
+    { name: 'Eat Clean kiểu Việt', slug: 'eat-clean-viet', type: 'DIET_PREFERENCE' },
     { name: 'Thanh đạm', slug: 'thanh-dam', type: 'DIET_PREFERENCE' },
     { name: 'Bữa cơm hàng ngày', slug: 'bua-com-hang-ngay', type: 'OCCASION' },
     { name: 'Món kho', slug: 'mon-kho', type: 'COOKING_METHOD' },
@@ -1096,10 +1426,27 @@ export async function seedProductionCatalog() {
       dish = createdDish;
     }
 
-    // 2. Xóa công thức cũ nếu đã có (Idempotent seed)
+    // 2. Nếu công thức đã có trong DB thì giữ nguyên ID (không xóa để bảo toàn meal_plans & diary của user), chỉ đồng bộ thêm tag mới
     const [existingRecipe] = await db.select().from(recipes).where(eq(recipes.slug, item.recipeSlug)).limit(1);
     if (existingRecipe) {
-      await db.delete(recipes).where(eq(recipes.id, existingRecipe.id));
+      if (item.taxonomySlugs.length > 0) {
+        const matchedTaxonomies = await db
+          .select()
+          .from(taxonomies)
+          .where(inArray(taxonomies.slug, item.taxonomySlugs));
+
+        for (const tax of matchedTaxonomies) {
+          await db
+            .insert(recipeTags)
+            .values({
+              recipeId: existingRecipe.id,
+              taxonomyId: tax.id,
+            })
+            .onConflictDoNothing();
+        }
+      }
+      totalRecipes++;
+      continue;
     }
 
     // 3. Insert Recipe với đầy đủ Invariants §5.1 & §5.5

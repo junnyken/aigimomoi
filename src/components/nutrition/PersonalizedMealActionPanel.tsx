@@ -54,6 +54,9 @@ interface EnrichedRecipe extends ApiRecipe {
   totalMinutes: number;
   fitScore: number;
   fitBadge: string;
+  isYogaEatClean: boolean;
+  isGymProtein: boolean;
+  isLowCal: boolean;
 }
 
 export interface PersonalizedMealActionProps {
@@ -130,6 +133,7 @@ export function PersonalizedMealActionPanel({
   const [recipes, setRecipes] = useState<ApiRecipe[]>([]);
   const [loadingRecipes, setLoadingRecipes] = useState(true);
   const [comboIndex, setComboIndex] = useState(0);
+  const [activeDietFilter, setActiveDietFilter] = useState<'ALL' | 'YOGA_EATCLEAN' | 'GYM_PROTEIN' | 'LOW_CAL'>('ALL');
   const [activeRoleTab, setActiveRoleTab] = useState<'ALL' | 'MAIN' | 'SOUP' | 'SIDE'>('ALL');
   const [showAllDishes, setShowAllDishes] = useState(false);
 
@@ -216,18 +220,62 @@ export function PersonalizedMealActionPanel({
         const fiber = Math.round((snap?.fiber ?? (r.role === 'SIDE' ? 4.5 : 2)) * 10) / 10;
         const totalMinutes = (r.prepTimeMinutes || 15) + (r.cookTimeMinutes || 20);
 
+        const textLower = `${r.name} ${r.slug} ${r.shortDescription}`.toLowerCase();
+        const isYogaEatClean =
+          textLower.includes('yoga') ||
+          textLower.includes('eat clean') ||
+          textLower.includes('poke bowl') ||
+          textLower.includes('rong biển') ||
+          textLower.includes('sữa chua hy lạp') ||
+          textLower.includes('hạt chia') ||
+          textLower.includes('yến mạch') ||
+          textLower.includes('bơ sáp') ||
+          textLower.includes('salad') ||
+          textLower.includes('gỏi cuốn') ||
+          textLower.includes('miến dong') ||
+          textLower.includes('hấp') ||
+          textLower.includes('luộc') ||
+          textLower.includes('thanh nhiệt') ||
+          textLower.includes('nhẹ bụng');
+
+        const isGymProtein =
+          textLower.includes('gym') ||
+          textLower.includes('tăng cơ') ||
+          textLower.includes('high-protein') ||
+          textLower.includes('protein') ||
+          textLower.includes('meal prep') ||
+          textLower.includes('ức gà') ||
+          textLower.includes('cá hồi') ||
+          textLower.includes('thăn bò') ||
+          (r.role === 'MAIN' && protein >= 20) ||
+          (r.role !== 'MAIN' && protein >= 10);
+
+        const isLowCal =
+          textLower.includes('ít calo') ||
+          textLower.includes('giảm cân') ||
+          (r.role === 'MAIN' && kcal <= 260) ||
+          (r.role === 'SOUP' && kcal <= 120) ||
+          (r.role === 'SIDE' && kcal <= 130);
+
         let fitScore = 50;
-        let fitBadge = 'Cân bằng';
+        let fitBadge = isYogaEatClean && isGymProtein
+          ? '🧘💪 Yoga & Gym'
+          : isYogaEatClean
+          ? '🧘 Yoga • Eat Clean'
+          : isGymProtein
+          ? `💪 Gym • ${protein}g Đạm`
+          : 'Cân bằng';
         const proteinRatio = kcal > 0 ? (protein * 4) / kcal : 0;
 
         if (goal === 'lose_standard' || goal === 'lose_mild') {
+          if (isYogaEatClean) fitScore += 20;
           if (r.role === 'MAIN') {
             if (kcal <= 300 && protein >= 16) {
               fitScore += 45;
-              fitBadge = `Giảm cân • Giàu Đạm (${protein}g)`;
+              fitBadge = isYogaEatClean ? `🧘 Eat Clean • ${protein}g Đạm` : `Giảm cân • ${protein}g Đạm`;
             } else if (kcal <= 360) {
               fitScore += 30;
-              fitBadge = `Ít Calo (${kcal} kcal)`;
+              fitBadge = isYogaEatClean ? `🧘 Nhẹ bụng (${kcal} kcal)` : `Ít Calo (${kcal} kcal)`;
             } else {
               fitScore -= 15;
               fitBadge = `Đạm cao (${protein}g)`;
@@ -235,22 +283,23 @@ export function PersonalizedMealActionPanel({
             fitScore += Math.round(proteinRatio * 40);
           } else if (r.role === 'SOUP') {
             fitScore += kcal <= 150 ? 40 : 20;
-            fitBadge = kcal <= 150 ? 'Canh thanh • Ít Calo' : 'Canh bổ dưỡng';
+            fitBadge = isYogaEatClean ? '🧘 Canh Thanh Lọc' : kcal <= 150 ? 'Canh thanh • Ít Calo' : 'Canh bổ dưỡng';
           } else if (r.role === 'SIDE') {
             fitScore += kcal <= 120 ? 40 : 25;
-            fitBadge = `Giàu chất xơ (${kcal} kcal)`;
+            fitBadge = isYogaEatClean ? `🧘 Eat Clean (${kcal} kcal)` : `Giàu chất xơ (${kcal} kcal)`;
           }
         } else if (goal === 'gain_muscle') {
+          if (isGymProtein) fitScore += 25;
           if (r.role === 'MAIN') {
             fitScore += Math.round(protein * 2.5);
-            fitBadge = protein >= 20 ? `Tăng cơ • ${protein}g Đạm` : `${protein}g Đạm`;
+            fitBadge = protein >= 20 ? `💪 Tăng cơ • ${protein}g Đạm` : `${protein}g Đạm`;
           } else {
             fitScore += Math.round(protein * 1.5) + 20;
-            fitBadge = 'Hỗ trợ phục hồi cơ';
+            fitBadge = isGymProtein ? `💪 Phục hồi • ${protein}g Đạm` : 'Hỗ trợ phục hồi cơ';
           }
         } else {
+          if (isYogaEatClean) fitScore += 15;
           fitScore += 30 + Math.round(proteinRatio * 20);
-          fitBadge = 'Cơm nhà cân bằng';
         }
 
         return {
@@ -263,14 +312,34 @@ export function PersonalizedMealActionPanel({
           totalMinutes,
           fitScore,
           fitBadge,
+          isYogaEatClean,
+          isGymProtein,
+          isLowCal,
         };
       })
       .sort((a, b) => b.fitScore - a.fitScore);
   }, [recipes, goal]);
 
-  const topMains = useMemo(() => enrichedRecipes.filter((r) => r.role === 'MAIN'), [enrichedRecipes]);
-  const topSoups = useMemo(() => enrichedRecipes.filter((r) => r.role === 'SOUP'), [enrichedRecipes]);
-  const topSides = useMemo(() => enrichedRecipes.filter((r) => r.role === 'SIDE'), [enrichedRecipes]);
+  const dietFilteredRecipes = useMemo(() => {
+    if (activeDietFilter === 'YOGA_EATCLEAN') {
+      return enrichedRecipes.filter((r) => r.isYogaEatClean);
+    }
+    if (activeDietFilter === 'GYM_PROTEIN') {
+      return enrichedRecipes.filter((r) => r.isGymProtein);
+    }
+    if (activeDietFilter === 'LOW_CAL') {
+      return enrichedRecipes.filter((r) => r.isLowCal);
+    }
+    return enrichedRecipes;
+  }, [enrichedRecipes, activeDietFilter]);
+
+  const yogaCount = useMemo(() => enrichedRecipes.filter((r) => r.isYogaEatClean).length, [enrichedRecipes]);
+  const gymCount = useMemo(() => enrichedRecipes.filter((r) => r.isGymProtein).length, [enrichedRecipes]);
+  const lowCalCount = useMemo(() => enrichedRecipes.filter((r) => r.isLowCal).length, [enrichedRecipes]);
+
+  const topMains = useMemo(() => dietFilteredRecipes.filter((r) => r.role === 'MAIN'), [dietFilteredRecipes]);
+  const topSoups = useMemo(() => dietFilteredRecipes.filter((r) => r.role === 'SOUP'), [dietFilteredRecipes]);
+  const topSides = useMemo(() => dietFilteredRecipes.filter((r) => r.role === 'SIDE'), [dietFilteredRecipes]);
 
   const suggestedTray = useMemo(() => {
     if (topMains.length === 0) return null;
@@ -325,8 +394,8 @@ export function PersonalizedMealActionPanel({
     if (activeRoleTab === 'ALL') {
       return [...topMains.slice(0, 6), ...topSoups.slice(0, 3), ...topSides.slice(0, 3)];
     }
-    return enrichedRecipes.filter((r) => r.role === activeRoleTab);
-  }, [activeRoleTab, topMains, topSoups, topSides, enrichedRecipes]);
+    return dietFilteredRecipes.filter((r) => r.role === activeRoleTab);
+  }, [activeRoleTab, topMains, topSoups, topSides, dietFilteredRecipes]);
 
   const visibleDishes = showAllDishes ? filteredList : filteredList.slice(0, 6);
 
@@ -719,6 +788,40 @@ export function PersonalizedMealActionPanel({
               </button>
             ))}
           </div>
+        </div>
+      </div>
+
+      {/* Bộ lọc Nhanh Theo Chế Độ Tập Luyện: Tất Cả / Yoga & Eat Clean / Gym Tăng Cơ / Giảm Cân Ít Calo */}
+      <div className="p-3.5 rounded-2xl bg-[#F4F8F4] border border-[var(--color-brand-border)] flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 no-print">
+        <span className="text-xs font-extrabold text-[#2F4F30] shrink-0">
+          🎯 Chọn chế độ ăn / tập luyện:
+        </span>
+        <div className="flex flex-wrap items-center gap-1.5">
+          {(
+            [
+              { key: 'ALL', label: `✨ Tất cả (${enrichedRecipes.length} món)` },
+              { key: 'YOGA_EATCLEAN', label: `🧘 Yoga & Eat Clean (${yogaCount})` },
+              { key: 'GYM_PROTEIN', label: `💪 Tập Gym Tăng Cơ (${gymCount})` },
+              { key: 'LOW_CAL', label: `📉 Giảm Cân Ít Calo (${lowCalCount})` },
+            ] as const
+          ).map((f) => (
+            <button
+              key={f.key}
+              type="button"
+              onClick={() => {
+                setActiveDietFilter(f.key);
+                setComboIndex(0);
+                setShowAllDishes(false);
+              }}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                activeDietFilter === f.key
+                  ? 'bg-[var(--color-brand-primary)] text-white border-[var(--color-brand-primary)] shadow-2xs'
+                  : 'bg-white text-[var(--color-text-secondary)] border-[#D5E2D5] hover:border-[var(--color-brand-primary)]'
+              }`}
+            >
+              {f.label}
+            </button>
+          ))}
         </div>
       </div>
 

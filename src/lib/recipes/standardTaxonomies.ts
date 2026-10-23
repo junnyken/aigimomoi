@@ -38,6 +38,7 @@ export const VIETNAMESE_STANDARD_TAXONOMIES: StandardTaxonomyDef[] = [
   // 3. Đặc tính & Dinh dưỡng (DIET_PREFERENCE)
   { type: 'DIET_PREFERENCE', slug: 'giam-can-it-calo', name: 'Giảm cân · Ít Calo' },
   { type: 'DIET_PREFERENCE', slug: 'tap-gym-tang-co', name: 'Tập Gym · Tăng cơ – Giảm mỡ' },
+  { type: 'DIET_PREFERENCE', slug: 'yoga-thanh-loc', name: 'Yoga · Thanh lọc & Dễ tiêu' },
   { type: 'DIET_PREFERENCE', slug: 'thanh-dam', name: 'Thanh đạm' },
   { type: 'DIET_PREFERENCE', slug: 'eat-clean-viet', name: 'Eat Clean kiểu Việt' },
   { type: 'DIET_PREFERENCE', slug: 'giau-protein', name: 'Giàu Protein (Đạm cao)' },
@@ -114,6 +115,21 @@ export async function seedStandardTaxonomies(): Promise<number> {
     if (lower.includes('protein') || lower.includes('tăng cơ') || lower.includes('ức gà') || lower.includes('thăn bò') || lower.includes('cá hồi')) {
       matchedSlugs.add('giau-protein');
       matchedSlugs.add('mang-com-di-lam');
+    }
+    if (
+      lower.includes('yoga') ||
+      lower.includes('eat clean') ||
+      lower.includes('thanh lọc') ||
+      lower.includes('bơ sáp') ||
+      lower.includes('yến mạch') ||
+      lower.includes('hạt chia') ||
+      lower.includes('rong biển') ||
+      lower.includes('sữa chua hy lạp') ||
+      lower.includes('salad') ||
+      lower.includes('gỏi cuốn')
+    ) {
+      matchedSlugs.add('yoga-thanh-loc');
+      matchedSlugs.add('eat-clean-viet');
     }
     if (lower.includes('đậu hũ') || lower.includes('chay') || lower.includes('nấm')) {
       matchedSlugs.add('ngay-ram-mung-mot');
