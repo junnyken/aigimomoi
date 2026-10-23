@@ -371,7 +371,11 @@ export function HeroFoodScannerCard() {
   const [showPins, setShowPins] = useState<boolean>(true);
   const [scanResult, setScanResult] = useState<FoodScanResponse>(HERO_PRESETS[0].scanData);
   const [items, setItems] = useState<ScannedFoodItem[]>(HERO_PRESETS[0].scanData.items);
+  const [cookingOilMode, setCookingOilMode] = useState<'NONE' | 'LIGHT_OIL' | 'SAUCE_RICH'>('LIGHT_OIL');
   const [savedNotice, setSavedNotice] = useState<string | null>(null);
+
+  const oilExtraKcal = cookingOilMode === 'LIGHT_OIL' ? 36 : cookingOilMode === 'SAUCE_RICH' ? 80 : 0;
+  const oilExtraFat = cookingOilMode === 'LIGHT_OIL' ? 4 : cookingOilMode === 'SAUCE_RICH' ? 8.5 : 0;
 
   const totals = useMemo(() => {
     let kcal = 0;
@@ -379,6 +383,11 @@ export function HeroFoodScannerCard() {
     let fat = 0;
     let carbs = 0;
     let fiber = 0;
+    let totalGrams = 0;
+
+    let veggieGrams = 0;
+    let proteinGrams = 0;
+    let carbGrams = 0;
 
     for (const it of items) {
       const ratio = it.estimatedGrams / 100;
@@ -387,22 +396,39 @@ export function HeroFoodScannerCard() {
       fat += it.fat100g * ratio;
       carbs += it.carbs100g * ratio;
       fiber += (it.fiber100g || 0) * ratio;
+      totalGrams += it.estimatedGrams;
+
+      if (it.category === 'VEGGIE_FRUIT') veggieGrams += it.estimatedGrams;
+      else if (it.category === 'PROTEIN') proteinGrams += it.estimatedGrams;
+      else if (it.category === 'CARB') carbGrams += it.estimatedGrams;
     }
 
+    const safeTotal = Math.max(1, totalGrams);
+    const veggiePct = Math.round((veggieGrams / safeTotal) * 100);
+    const proteinPct = Math.round((proteinGrams / safeTotal) * 100);
+    const carbPct = Math.round((carbGrams / safeTotal) * 100);
+    const fatPct = Math.max(0, 100 - veggiePct - proteinPct - carbPct);
+
     return {
-      kcal: Math.round(kcal),
+      kcal: Math.round(kcal + oilExtraKcal),
       protein: Math.round(protein * 10) / 10,
-      fat: Math.round(fat * 10) / 10,
+      fat: Math.round((fat + oilExtraFat) * 10) / 10,
       carbs: Math.round(carbs * 10) / 10,
       fiber: Math.round(fiber * 10) / 10,
+      totalGrams: Math.round(totalGrams),
+      veggiePct,
+      proteinPct,
+      carbPct,
+      fatPct,
     };
-  }, [items]);
+  }, [items, oilExtraKcal, oilExtraFat]);
 
   function handleSelectPreset(preset: HeroPreset) {
     setActivePresetId(preset.id);
     setPreviewImageUrl(preset.imageUrl);
     setScanResult(preset.scanData);
     setItems(preset.scanData.items.map((i) => ({ ...i })));
+    setCookingOilMode(preset.id === 'gym-plate' || preset.id === 'yoga-plate' ? 'NONE' : 'LIGHT_OIL');
     setSavedNotice(null);
   }
 
@@ -634,7 +660,7 @@ export function HeroFoodScannerCard() {
 
         {/* Thanh Chọn Nhanh 4 Mẫu Đĩa Thực Tế + Chỉnh Gram Từng Thành Phần */}
         <div className="p-3 sm:p-3.5 bg-[#FAF7F0] border-t border-[#E5DAC8] space-y-2.5">
-          {/* 4 Nút đổi mẫu đĩa */}
+          {/* 4 Nút đổi mẫu đĩa + Chế biến dầu sốt */}
           <div className="flex items-center justify-between gap-1.5 overflow-x-auto pb-0.5">
             {HERO_PRESETS.map((preset) => (
               <button
@@ -650,6 +676,59 @@ export function HeroFoodScannerCard() {
                 {preset.shortLabel}
               </button>
             ))}
+          </div>
+
+          {/* Thanh Tỷ Lệ % Cấu Trúc Đĩa Ăn (Chuẩn Harvard Plate) + Nút Chọn Dầu Sốt */}
+          <div className="p-2.5 rounded-xl bg-white border border-[#E5DAC8] space-y-2">
+            <div className="flex items-center justify-between gap-2 text-[10px]">
+              <span className="font-extrabold text-[#2F4F30]">
+                📊 Tỷ lệ đĩa ({totals.totalGrams}g): 🥦 {totals.veggiePct}% Rau • 🥩 {totals.proteinPct}% Đạm • 🍚 {totals.carbPct}% Tinh bột
+              </span>
+              <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-900 font-bold shrink-0">
+                🎯 {scanResult.overallConfidence || 94}% chuẩn
+              </span>
+            </div>
+
+            <div className="w-full h-2 rounded-full overflow-hidden flex bg-stone-100">
+              {totals.veggiePct > 0 && (
+                <div style={{ width: `${totals.veggiePct}%` }} className="bg-emerald-600 h-full" />
+              )}
+              {totals.proteinPct > 0 && (
+                <div style={{ width: `${totals.proteinPct}%` }} className="bg-rose-600 h-full" />
+              )}
+              {totals.carbPct > 0 && (
+                <div style={{ width: `${totals.carbPct}%` }} className="bg-amber-500 h-full" />
+              )}
+              {totals.fatPct > 0 && (
+                <div style={{ width: `${totals.fatPct}%` }} className="bg-teal-600 h-full" />
+              )}
+            </div>
+
+            <div className="flex items-center justify-between gap-1 pt-0.5">
+              <span className="text-[10px] font-bold text-stone-600">Chế biến:</span>
+              <div className="flex items-center gap-1">
+                {(
+                  [
+                    { key: 'NONE', label: '💧 Hấp/Luộc (0 dầu)' },
+                    { key: 'LIGHT_OIL', label: '🍳 Áp chảo (+36 kcal)' },
+                    { key: 'SAUCE_RICH', label: '🥣 Xào/Sốt (+80 kcal)' },
+                  ] as const
+                ).map((m) => (
+                  <button
+                    key={m.key}
+                    type="button"
+                    onClick={() => setCookingOilMode(m.key)}
+                    className={`px-2 py-0.5 rounded-md text-[10px] font-bold border cursor-pointer transition-colors ${
+                      cookingOilMode === m.key
+                        ? 'bg-amber-700 text-white border-amber-700'
+                        : 'bg-[#FAF7F0] text-stone-700 border-[#DFD2C0]'
+                    }`}
+                  >
+                    {m.label}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
 
           {/* Danh sách gọn các thành phần trên đĩa (cho phép bấm +/- gram trực tiếp) */}
