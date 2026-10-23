@@ -26,6 +26,7 @@ import {
   loadPersonalNutritionTarget,
 } from '@/lib/nutrition/personalTarget';
 import { PersonalizedMealActionPanel } from '@/components/nutrition/PersonalizedMealActionPanel';
+import { FoodPlateScannerPanel } from '@/components/nutrition/FoodPlateScannerPanel';
 
 type Gender = 'female' | 'male';
 type ActivityLevelKey = 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active';
@@ -142,9 +143,9 @@ export default function CalorieCalculatorPage() {
   const [goal, setGoal] = useState<GoalKey>('lose_standard');
   const [savedToast, setSavedToast] = useState<boolean>(false);
   const [savedTargetKcal, setSavedTargetKcal] = useState<number | null>(null);
-  const [activeStepTab, setActiveStepTab] = useState<'overview' | 'meals'>('overview');
+  const [activeStepTab, setActiveStepTab] = useState<'overview' | 'meals' | 'scan'>('overview');
 
-  // Tự động khôi phục thông số đã lưu từ lần tính trước
+  // Tự động khôi phục thông số đã lưu từ lần tính trước + kiểm tra ?tab=scan
   useEffect(() => {
     const saved = loadPersonalNutritionTarget();
     if (saved) {
@@ -157,6 +158,9 @@ export default function CalorieCalculatorPage() {
       setActivity(saved.activity);
       setGoal(saved.goal);
       setSavedTargetKcal(saved.targetCalories);
+    }
+    if (typeof window !== 'undefined' && window.location.search.includes('tab=scan')) {
+      setActiveStepTab('scan');
     }
   }, []);
 
@@ -868,30 +872,42 @@ export default function CalorieCalculatorPage() {
             </div>
           </div>
 
-          {/* Hàng 3: Thanh Chuyển Đổi 2 Bước Tổng Hợp & Chuẩn Chỉnh */}
-          <div className="p-1.5 rounded-2xl bg-[var(--color-surface-white)] border border-[var(--color-border-base)] shadow-2xs grid grid-cols-1 sm:grid-cols-2 gap-2 no-print">
+          {/* Hàng 3: Thanh Chuyển Đổi 3 Tab Chuẩn Chỉnh (Lộ Trình Macro • Chọn Thực Đơn • AI Quét Ảnh Đĩa Ăn) */}
+          <div className="p-1.5 rounded-2xl bg-[var(--color-surface-white)] border border-[var(--color-border-base)] shadow-2xs grid grid-cols-1 md:grid-cols-3 gap-2 no-print">
             <button
               type="button"
               onClick={() => setActiveStepTab('overview')}
-              className={`py-3.5 px-4 rounded-xl text-xs sm:text-sm font-extrabold transition-all cursor-pointer flex items-center justify-center gap-2 ${
+              className={`py-3 px-3.5 rounded-xl text-xs sm:text-sm font-extrabold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
                 activeStepTab === 'overview'
                   ? 'bg-[var(--color-brand-primary)] text-white shadow-xs'
                   : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]'
               }`}
             >
-              <span>🧭 1. Chia 3 Bữa, Cách Giảm Cân &amp; Chi Tiết Macro / Y Khoa</span>
+              <span>🧭 1. Chia 3 Bữa &amp; Chi Tiết Macro</span>
             </button>
 
             <button
               type="button"
               onClick={() => setActiveStepTab('meals')}
-              className={`py-3.5 px-4 rounded-xl text-xs sm:text-sm font-extrabold transition-all cursor-pointer flex items-center justify-center gap-2 ${
+              className={`py-3 px-3.5 rounded-xl text-xs sm:text-sm font-extrabold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
                 activeStepTab === 'meals'
                   ? 'bg-[var(--color-brand-primary)] text-white shadow-xs'
                   : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]'
               }`}
             >
-              <span>🍱 2. Chọn Thực Đơn &amp; Gắn Món Ăn Hàng Ngày</span>
+              <span>🍱 2. Chọn Thực Đơn &amp; Gắn Món Ăn</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveStepTab('scan')}
+              className={`py-3 px-3.5 rounded-xl text-xs sm:text-sm font-extrabold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                activeStepTab === 'scan'
+                  ? 'bg-[var(--color-accent-primary)] text-white shadow-xs'
+                  : 'bg-amber-50/70 text-amber-950 border border-amber-200/80 hover:bg-amber-100/70'
+              }`}
+            >
+              <span>📸 3. AI Quét Ảnh Đĩa Ăn (Tính Kcal)</span>
             </button>
           </div>
 
@@ -1105,14 +1121,21 @@ export default function CalorieCalculatorPage() {
                   </div>
                 </div>
 
-                {/* Nút chuyển tiếp sang Tab 2: Chọn Thực Đơn & Gắn Món Ăn */}
-                <div className="pt-2 flex justify-end no-print">
+                {/* Nút chuyển tiếp sang Tab 2 (Chọn Thực Đơn) hoặc Tab 3 (AI Quét Ảnh Đĩa Ăn) */}
+                <div className="pt-2 flex flex-wrap justify-end gap-2.5 no-print">
+                  <button
+                    type="button"
+                    onClick={() => setActiveStepTab('scan')}
+                    className="inline-flex items-center gap-2 px-4 py-3 rounded-2xl bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] text-white text-xs sm:text-sm font-extrabold shadow-xs transition-all cursor-pointer"
+                  >
+                    <span>📸 Quét Ảnh Đĩa Ăn Tính Kcal</span>
+                  </button>
                   <button
                     type="button"
                     onClick={() => setActiveStepTab('meals')}
                     className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-hover)] text-white text-xs sm:text-sm font-extrabold shadow-xs transition-all cursor-pointer"
                   >
-                    <span>🍱 Tiếp theo: Chọn Thực Đơn &amp; Gắn Món Ăn Hàng Ngày</span>
+                    <span>🍱 Tiếp theo: Chọn Thực Đơn &amp; Gắn Món Ăn</span>
                     <ArrowRight className="w-4 h-4" />
                   </button>
                 </div>
@@ -1152,6 +1175,20 @@ export default function CalorieCalculatorPage() {
               weightDiffKg={metrics.weightDiffKg}
               goal={goal}
               activity={activity}
+            />
+          )}
+
+          {/* NỘI DUNG TAB 3: AI QUÉT ẢNH ĐĨA ĂN — BÓC TÁCH RAU CỦ / THỊT CÁ & TÍNH KCAL */}
+          {activeStepTab === 'scan' && (
+            <FoodPlateScannerPanel
+              targetCalories={metrics.targetCalories}
+              proteinGrams={metrics.proteinGrams}
+              breakfastKcal={metrics.breakfastKcal}
+              lunchKcal={metrics.lunchKcal}
+              dinnerKcal={metrics.dinnerKcal}
+              breakfastPro={metrics.breakfastPro}
+              lunchPro={metrics.lunchPro}
+              dinnerPro={metrics.dinnerPro}
             />
           )}
         </section>

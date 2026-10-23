@@ -241,7 +241,13 @@ function MealDiaryContent() {
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <Link
+              href="/tinh-calo?tab=scan"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] text-white text-xs font-extrabold shadow-2xs transition-colors"
+            >
+              <span>📸 AI Quét Ảnh Đĩa Ăn Tính Kcal</span>
+            </Link>
             <a
               href="/api/diary/export"
               download

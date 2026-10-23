@@ -132,6 +132,12 @@ export async function POST(request: NextRequest) {
       mealType = 'LUNCH',
       memberName = 'Cả nhà',
       consumedPortion = 1.0,
+      customCalories,
+      customProtein,
+      customFat,
+      customCarbs,
+      customFiber,
+      customSodium,
     } = body;
 
     const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
@@ -145,12 +151,12 @@ export async function POST(request: NextRequest) {
     }
 
     let finalName = (recipeName && String(recipeName).trim()) || 'Món ăn tự do';
-    let baseCalories = 250;
-    let baseProtein = 15;
-    let baseFat = 10;
-    let baseCarbs = 20;
-    let baseSodium: number | null = null;
-    let baseFiber: number | null = null;
+    let baseCalories = typeof customCalories === 'number' && customCalories >= 0 ? customCalories : 250;
+    let baseProtein = typeof customProtein === 'number' && customProtein >= 0 ? customProtein : 15;
+    let baseFat = typeof customFat === 'number' && customFat >= 0 ? customFat : 10;
+    let baseCarbs = typeof customCarbs === 'number' && customCarbs >= 0 ? customCarbs : 20;
+    let baseSodium: number | null = typeof customSodium === 'number' && customSodium >= 0 ? customSodium : null;
+    let baseFiber: number | null = typeof customFiber === 'number' && customFiber >= 0 ? customFiber : null;
 
     if (recipeId) {
       const numRecipeId = Number(recipeId);

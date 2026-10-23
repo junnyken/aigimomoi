@@ -289,4 +289,19 @@ export const VIETNAMESE_STANDARD_FCT: StandardNutritionItem[] = [
   item('dau-den', 'Đậu đen xanh lòng', 'Đồ khô', 'g', true, 1.0, 325, 24.2, 1.7, 53.3, 4.0, 10, 'VIETNAM_FCT_2007', 'Nấu nước đậu đen, chè, hầm gà'),
   item('dau-do', 'Đậu đỏ', 'Đồ khô', 'g', true, 1.0, 324, 22.0, 1.6, 55.4, 5.2, 8, 'VIETNAM_FCT_2007', 'Hầm canh dưỡng huyết, nấu chè'),
   item('hat-chia', 'Hạt Chia / Hạt lanh', 'Đồ khô', 'g', true, 1.0, 486, 16.5, 30.7, 42.1, 34.4, 16, 'USDA_FDC', 'Siêu giàu chất xơ và Omega-3 thực vật'),
+
+  // ==========================================================================
+  // 6. THỰC PHẨM ĐÃ CHÍN TRÊN ĐĨA & TRÁI CÂY EAT CLEAN (Dùng cho AI Quét Đĩa Ăn)
+  // ==========================================================================
+  item('com-trang-chin', 'Cơm trắng (Đã nấu chín)', 'Đồ khô', 'g', true, 1.0, 130, 2.7, 0.3, 28.2, 0.4, 5, 'VIETNAM_FCT_2007', '1 chén cơm vừa ~100-120g (~130-150 kcal)'),
+  item('com-gao-lut-chin', 'Cơm gạo lứt / Ngũ cốc (Đã nấu chín)', 'Đồ khô', 'g', true, 1.0, 112, 2.6, 0.9, 23.5, 1.8, 5, 'VIETNAM_FCT_2007', 'Tinh bột hấp thu chậm cho đĩa Eat Clean / Gym'),
+  item('mi-y-luoc', 'Mỳ Ý (Spaghetti / Pasta đã luộc chín)', 'Đồ khô', 'g', false, 1.0, 158, 5.8, 0.9, 30.9, 1.8, 6, 'USDA_FDC', 'Mỳ Ý luộc ăn kèm sốt Pesto / bò bằm'),
+  item('sot-pesto', 'Sốt Pesto lá húng quế & hạt thông', 'Gia vị nêm nếm', 'g', false, 1.0, 380, 4.5, 36.0, 6.0, 1.5, 580, 'USDA_FDC', 'Sốt xanh kiểu Ý trộn mỳ hoặc salad'),
+  item('thanh-long-do', 'Thanh long ruột đỏ / trắng', 'Rau củ quả', 'g', false, 1.0, 50, 1.1, 0.4, 11.0, 3.0, 4, 'VIETNAM_FCT_2007', 'Giàu chất xơ và chất chống oxy hóa Betalain'),
+  item('cam-tuoi', 'Cam tươi (Cam vàng / Cam sành)', 'Rau củ quả', 'g', false, 1.0, 47, 0.9, 0.1, 11.8, 2.4, 0, 'VIETNAM_FCT_2007', 'Giàu Vitamin C tăng sức đề kháng'),
+  item('chuoi-chin', 'Chuối tiêu / Chuối Laba chín', 'Rau củ quả', 'g', false, 1.0, 89, 1.1, 0.3, 22.8, 2.6, 1, 'VIETNAM_FCT_2007', 'Bổ sung Kali và năng lượng nhanh trước/sau tập'),
+  item('tao-tay', 'Táo tươi cắt múi', 'Rau củ quả', 'g', false, 1.0, 52, 0.3, 0.2, 13.8, 2.4, 1, 'USDA_FDC', 'Trái cây ít calo giàu Pectin'),
+  item('dau-ga-luoc', 'Đậu gà luộc chín (Chickpeas)', 'Rau củ quả', 'g', false, 1.0, 164, 8.9, 2.6, 27.4, 7.6, 24, 'USDA_FDC', 'Đạm và tinh bột thực vật chuẩn Địa Trung Hải / Yoga'),
+  item('dau-nanh-edamame', 'Đậu nành Nhật luộc (Edamame)', 'Rau củ quả', 'g', false, 1.0, 121, 11.9, 5.2, 8.9, 5.2, 6, 'USDA_FDC', 'Đạm thực vật hoàn chỉnh cho đĩa Eat Clean'),
+  item('sua-tuoi-khong-duong', 'Sữa tươi không đường / Sữa hạt', 'Thực phẩm tươi sống', 'ml', false, 1.0, 48, 3.3, 1.8, 4.7, 0.0, 42, 'VIETNAM_FCT_2007', '1 ly 200ml ~96 kcal, 6.6g Đạm'),
 ];
