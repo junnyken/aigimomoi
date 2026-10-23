@@ -28,6 +28,7 @@ import { resolveMealSelection } from "@/lib/meal/mealQueries";
 import { buildMealQuery } from "@/lib/meal/flowUrls";
 import { RecipeCard } from "@/components/recipe/RecipeCard";
 import { QuickRandomMealSpinner } from "@/components/meal/QuickRandomMealSpinner";
+import { HeroFoodScannerCard } from "@/components/nutrition/HeroFoodScannerCard";
 
 const QUICK_MOOD_CHIPS = [
   {
@@ -320,76 +321,8 @@ export default function HomePage() {
             <QuickRandomMealSpinner />
           </div>
 
-          {/* Cột Phải: Khung Hình Ảnh Bữa Cơm Gia Đình Việt Nam Thân Thiện */}
-          <div className="lg:col-span-5 flex flex-col gap-3">
-            <div className="relative rounded-3xl overflow-hidden border-2 border-white shadow-md aspect-[16/11] bg-[#E8DFD1] group">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=900&q=80"
-                alt="Mâm cơm gia đình Việt Nam ấm cúng đủ món mặn, canh, rau"
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-
-              {/* Huy hiệu góc trên */}
-              <div className="absolute top-3 left-3 right-3 flex items-center justify-between gap-2">
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-white/95 text-[#3F6240] shadow-xs">
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>Chuẩn Viện Dinh Dưỡng VN</span>
-                </span>
-                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#B75B35] text-white shadow-xs">
-                  <span>👨‍👩‍👧‍👦 1 – 8 người ăn</span>
-                </span>
-              </div>
-
-              {/* Chú thích ấm cúng góc dưới */}
-              <div className="absolute bottom-3.5 left-4 right-4 text-white">
-                <p className="text-xs font-semibold uppercase tracking-wider text-amber-200">
-                  Mâm cơm chiều sum họp
-                </p>
-                <p className="text-sm sm:text-base font-bold leading-snug mt-0.5">
-                  Đủ đầy 3 món Mặn • Canh • Rau trong 30 phút vào bếp
-                </p>
-              </div>
-            </div>
-
-            {/* 2 Thẻ điểm nhấn nhanh dưới ảnh */}
-            <div className="grid grid-cols-2 gap-3">
-              <Link
-                href="/mon-an?tax=giam-can-it-calo"
-                className="p-3 rounded-2xl bg-[var(--color-surface-white)]/95 hover:bg-[var(--color-surface-white)] border border-emerald-200 shadow-2xs flex items-center gap-2.5 transition-all"
-              >
-                <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0">
-                  <HeartPulse className="w-4 h-4" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-xs font-bold text-[var(--color-text-primary)] truncate">
-                    Eat Clean Giảm Cân
-                  </p>
-                  <p className="text-[11px] text-emerald-700 font-medium truncate">
-                    ≤ 350 – 500 kcal/bữa
-                  </p>
-                </div>
-              </Link>
-
-              <Link
-                href="/mon-an?tax=tap-gym-tang-co"
-                className="p-3 rounded-2xl bg-[var(--color-surface-white)]/95 hover:bg-[var(--color-surface-white)] border border-amber-200 shadow-2xs flex items-center gap-2.5 transition-all"
-              >
-                <div className="w-9 h-9 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center shrink-0">
-                  <Flame className="w-4 h-4" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-xs font-bold text-[var(--color-text-primary)] truncate">
-                    Thực Đơn Tập Gym
-                  </p>
-                  <p className="text-[11px] text-amber-800 font-medium truncate">
-                    Giàu Đạm 25–45g/phần
-                  </p>
-                </div>
-              </Link>
-            </div>
-          </div>
+          {/* Cột Phải: Khung AI Quét Ảnh Đĩa Ăn Trực Quan — Biết Ngay Kcal & Thành Phần */}
+          <HeroFoodScannerCard />
         </div>
       </section>
 
