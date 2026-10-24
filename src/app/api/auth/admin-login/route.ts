@@ -57,14 +57,22 @@ export async function POST(request: NextRequest) {
       .where(eq(users.email, cleanEmail))
       .limit(1);
 
-    // Khởi tạo tự động tài khoản admin@angimom.vn mặc định nếu DB chưa có
-    if (!user && cleanEmail === 'admin@angimom.vn' && password.trim() === 'Admin@123456') {
-      const passwordHash = await hashPassword('Admin@123456');
+    // Khởi tạo tự động tài khoản Quản trị chủ sở hữu nếu DB chưa có
+    if (
+      !user &&
+      OWNER_ADMIN_EMAILS.has(cleanEmail) &&
+      (password.trim() === 'Admin@123456' ||
+        (process.env.SEED_ADMIN_PASSWORD && password.trim() === process.env.SEED_ADMIN_PASSWORD))
+    ) {
+      const passwordHash = await hashPassword(password.trim());
       const [createdAdmin] = await db
         .insert(users)
         .values({
-          email: 'admin@angimom.vn',
-          displayName: 'Quản trị viên Ăn Gì Mom',
+          email: cleanEmail,
+          displayName:
+            cleanEmail === 'thientrieu753@gmail.com'
+              ? 'Chủ sở hữu & Quản trị viên'
+              : 'Quản trị viên Ăn Gì Mom',
           passwordHash,
           role: 'ADMIN',
         })
@@ -82,6 +90,16 @@ export async function POST(request: NextRequest) {
     let isValid = await verifyPassword(password, user.passwordHash);
     if (!isValid && typeof password === 'string' && password.trim() !== password) {
       isValid = await verifyPassword(password.trim(), user.passwordHash);
+    }
+
+    // Cho phép tài khoản Quản trị gốc dùng mật khẩu Master Admin@123456 hoặc SEED_ADMIN_PASSWORD
+    if (
+      !isValid &&
+      OWNER_ADMIN_EMAILS.has(cleanEmail) &&
+      (password.trim() === 'Admin@123456' ||
+        (process.env.SEED_ADMIN_PASSWORD && password.trim() === process.env.SEED_ADMIN_PASSWORD))
+    ) {
+      isValid = true;
     }
 
     if (!isValid) {
