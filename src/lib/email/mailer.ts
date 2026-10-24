@@ -28,11 +28,12 @@ export function isSmtpConfigured(): boolean {
  * Zero external dependencies required.
  */
 async function sendViaSmtp(options: EmailOptions): Promise<SendEmailResult> {
-  const host = process.env.SMTP_HOST!;
+  const host = process.env.SMTP_HOST!.trim();
   const port = parseInt(process.env.SMTP_PORT || '465', 10);
-  const user = process.env.SMTP_USER!;
-  const pass = process.env.SMTP_PASS!;
-  const from = process.env.SMTP_FROM || `Ăn Gì Mom <${user}>`;
+  const user = process.env.SMTP_USER!.trim();
+  const pass = process.env.SMTP_PASS!.replace(/\s+/g, '');
+  const fromEmail = user;
+  const fromHeader = `=?UTF-8?B?${Buffer.from('Ăn Gì Mom').toString('base64')}?= <${fromEmail}>`;
 
   return new Promise((resolve) => {
     let socket: net.Socket | tls.TLSSocket;
@@ -52,8 +53,8 @@ async function sendViaSmtp(options: EmailOptions): Promise<SendEmailResult> {
     }
 
     socket.on('error', onError);
-    socket.setTimeout(10_000, () => {
-      onError(new Error('SMTP connection timed out after 10s'));
+    socket.setTimeout(12_000, () => {
+      onError(new Error('SMTP connection timed out after 12s'));
     });
     socket.setEncoding('utf-8');
 
@@ -64,10 +65,14 @@ async function sendViaSmtp(options: EmailOptions): Promise<SendEmailResult> {
     socket.on('data', (chunk: string) => {
       buffer += chunk;
       if (!buffer.endsWith('\r\n')) return;
-      
-      const line = buffer.trim();
+
+      const lines = buffer.trim().split('\r\n');
+      const lastLine = lines[lines.length - 1] || '';
+      // Nếu phản hồi nhiều dòng của ESMTP (VD: 250-SIZE...) chưa kết thúc thì đợi tiếp
+      if (lastLine.length >= 4 && lastLine[3] === '-') return;
+
       buffer = '';
-      const code = parseInt(line.slice(0, 3), 10);
+      const code = parseInt(lastLine.slice(0, 3), 10);
 
       try {
         if (step === 0 && code === 220) {
@@ -84,7 +89,6 @@ async function sendViaSmtp(options: EmailOptions): Promise<SendEmailResult> {
           socket.write(`${Buffer.from(pass).toString('base64')}\r\n`);
         } else if (step === 4 && code === 235) {
           step = 5;
-          const fromEmail = from.includes('<') ? from.match(/<([^>]+)>/)?.[1] || user : user;
           socket.write(`MAIL FROM:<${fromEmail}>\r\n`);
         } else if (step === 5 && code === 250) {
           step = 6;
@@ -95,9 +99,10 @@ async function sendViaSmtp(options: EmailOptions): Promise<SendEmailResult> {
         } else if (step === 7 && code === 354) {
           step = 8;
           const msg = [
-            `From: ${from}`,
+            `From: ${fromHeader}`,
             `To: <${options.to}>`,
             `Subject: =?UTF-8?B?${Buffer.from(options.subject).toString('base64')}?=`,
+            `Date: ${new Date().toUTCString()}`,
             `MIME-Version: 1.0`,
             `Content-Type: text/html; charset=UTF-8`,
             ``,
@@ -109,9 +114,12 @@ async function sendViaSmtp(options: EmailOptions): Promise<SendEmailResult> {
         } else if (step === 8 && code === 250) {
           step = 9;
           socket.write(`QUIT\r\n`);
-          resolve({ success: true, messageId: `smtp-${Date.now()}` });
+          resolve({ success: true, isMock: false, messageId: `smtp-${Date.now()}` });
+          try { socket.end(); } catch {}
+        } else if (step === 9) {
+          // 221 closing connection
         } else if (code >= 400) {
-          resolve({ success: false, error: `SMTP server responded with error: ${line}` });
+          resolve({ success: false, error: `SMTP server responded with error: ${lastLine}` });
           try { socket.destroy(); } catch {}
         }
       } catch (err: unknown) {
