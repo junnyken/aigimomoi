@@ -18,6 +18,7 @@ import {
   Clock,
   Sparkles,
 } from 'lucide-react';
+import { AdminTopNav } from '@/components/editor/AdminTopNav';
 
 interface FeedbackItem {
   id: number;
@@ -102,8 +103,12 @@ export default function EditorialFeedbacksPage() {
 
   return (
     <div className="min-h-screen bg-[var(--color-surface-subtle)] pb-16">
+      <AdminTopNav
+        title="Đánh Giá & Phản Hồi Nấu Thử (Feedbacks)"
+        subtitle="Kiểm duyệt hình ảnh đĩa cơm thực tế và nhận xét nêm nếm từ cộng đồng"
+      />
       {/* Header */}
-      <div className="bg-[var(--color-surface-white)] border-b border-[var(--color-border-base)] sticky top-0 z-20">
+      <div className="bg-[var(--color-surface-white)] border-b border-[var(--color-border-base)]">
         <div className="w-full mx-auto px-4 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <Link

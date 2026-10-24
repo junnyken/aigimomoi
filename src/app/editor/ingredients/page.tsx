@@ -19,6 +19,7 @@ import {
   Sparkles,
   Loader2,
 } from 'lucide-react';
+import { AdminTopNav } from '@/components/editor/AdminTopNav';
 
 interface Ingredient {
   id: number;
@@ -285,6 +286,10 @@ export default function EditorIngredientsPage() {
 
   return (
     <div className="flex flex-col gap-6">
+      <AdminTopNav
+        title="Từ Điển Nguyên Liệu & Dinh Dưỡng FCT"
+        subtitle="Tra cứu & chuẩn hóa hơn 500 nguyên liệu Việt Nam theo Bảng Thành phần Thực phẩm Viện Dinh Dưỡng"
+      />
       {/* Top Header */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>

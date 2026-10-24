@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Plus, Tag, ArrowLeft, Trash2, AlertCircle, RefreshCw, Check, ShieldCheck } from 'lucide-react';
+import { AdminTopNav } from '@/components/editor/AdminTopNav';
 
 interface Taxonomy {
   id: number;
@@ -135,6 +136,10 @@ export default function EditorTaxonomiesPage() {
 
   return (
     <div className="flex flex-col gap-6">
+      <AdminTopNav
+        title="Hệ Phân Loại Đa Trục (Taxonomies)"
+        subtitle="Quản lý 44+ nhãn Vùng miền, Cách nấu, Dinh dưỡng và Dịp bữa ăn"
+      />
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>

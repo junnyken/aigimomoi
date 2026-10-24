@@ -15,6 +15,7 @@ import {
   ArrowLeft,
   ChefHat,
   Plus,
+  LogOut,
 } from 'lucide-react';
 
 interface AdminNavItem {
@@ -76,9 +77,18 @@ interface AdminTopNavProps {
 export function AdminTopNav({ title, subtitle, rightActions }: AdminTopNavProps) {
   const pathname = usePathname();
 
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } catch {
+      // Ignore network error on logout
+    }
+    window.location.assign('/admin-login');
+  };
+
   return (
-    <header className="bg-white border-b border-[#EADBC8] sticky top-0 z-30 shadow-xs">
-      <div className="w-full mx-auto px-4 sm:px-6 pt-3.5 pb-2.5 space-y-3">
+    <header className="bg-white border-b border-[#EADBC8] shadow-xs rounded-t-2xl">
+      <div className="w-full mx-auto px-4 sm:px-6 pt-3.5 pb-3 space-y-3">
         {/* Hàng 1: Thương hiệu Quản trị + Nút thao tác nhanh bên phải */}
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
@@ -122,6 +132,15 @@ export function AdminTopNav({ title, subtitle, rightActions }: AdminTopNavProps)
                 </Link>
               </>
             )}
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 text-xs font-bold transition-colors cursor-pointer"
+              title="Đăng xuất khỏi Cổng Quản Trị"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Đăng xuất</span>
+            </button>
           </div>
         </div>
 

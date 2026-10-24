@@ -43,10 +43,9 @@ function LoginForm() {
       }
 
       const rawFrom = searchParams.get('from');
-      const role = data.user?.role;
-      const defaultTarget =
-        role === 'ADMIN' || role === 'EDITOR' ? '/editor/recipes' : '/profile';
-      const targetPath = rawFrom ? sanitizeRedirectPath(rawFrom) : defaultTarget;
+      const safeFrom = rawFrom ? sanitizeRedirectPath(rawFrom) : '/profile';
+      const targetPath =
+        safeFrom.startsWith('/editor') || safeFrom.startsWith('/admin') ? '/profile' : safeFrom;
 
       // Dùng điều hướng toàn trang để xóa hoàn toàn Router Cache chưa đăng nhập của Next.js
       window.location.assign(targetPath);
@@ -66,7 +65,7 @@ function LoginForm() {
       <div className="text-center mb-6">
         <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-[var(--color-brand-light)] text-[var(--color-brand-primary)] border border-[var(--color-brand-border)]">
           <ShieldCheck className="w-3.5 h-3.5" />
-          <span>Tài khoản Bếp Gia Đình &amp; Ban Biên Tập</span>
+          <span>Tài khoản Thành Viên Bếp Gia Đình</span>
         </span>
         <h1 className="text-2xl font-bold text-[var(--color-text-primary)] mt-2.5 mb-1.5">
           Đăng nhập Ăn Gì Mom

@@ -100,30 +100,34 @@ export async function proxy(request: NextRequest) {
   const user = token ? await verifyToken(token) : null;
 
   if (!user) {
-    const loginUrl = new URL('/login', request.url);
-    loginUrl.searchParams.set('from', pathname);
-    const res = NextResponse.redirect(loginUrl);
+    const adminLoginUrl = new URL('/admin-login', request.url);
+    adminLoginUrl.searchParams.set('from', pathname);
+    const res = NextResponse.redirect(adminLoginUrl);
     res.headers.set('Cache-Control', 'private, no-store, no-cache, must-revalidate');
     return res;
   }
 
-  // Role check
-  if (isAdminRoute && user.role !== 'ADMIN') {
-    return new NextResponse('403 Forbidden: Yêu cầu quyền Quản trị viên (ADMIN)', {
-      status: 403,
-      headers: { 'Content-Type': 'text/plain; charset=utf-8' },
-    });
+  // Chặn tài khoản thường (COOK) vào khu vực Quản trị & chuyển về Cổng Đăng Nhập Admin chuyên biệt
+  if (user.role !== 'ADMIN' && user.role !== 'EDITOR') {
+    const adminLoginUrl = new URL('/admin-login', request.url);
+    adminLoginUrl.searchParams.set('reason', 'cook_forbidden');
+    adminLoginUrl.searchParams.set('from', pathname);
+    const res = NextResponse.redirect(adminLoginUrl);
+    res.headers.set('Cache-Control', 'private, no-store, no-cache, must-revalidate');
+    return res;
   }
 
-  if (isEditorRoute && user.role !== 'ADMIN' && user.role !== 'EDITOR') {
-    return new NextResponse('403 Forbidden: Yêu cầu quyền Biên tập viên (EDITOR)', {
-      status: 403,
-      headers: { 'Content-Type': 'text/plain; charset=utf-8' },
-    });
+  if (isAdminRoute && user.role !== 'ADMIN') {
+    const adminLoginUrl = new URL('/admin-login', request.url);
+    adminLoginUrl.searchParams.set('reason', 'cook_forbidden');
+    adminLoginUrl.searchParams.set('from', pathname);
+    const res = NextResponse.redirect(adminLoginUrl);
+    res.headers.set('Cache-Control', 'private, no-store, no-cache, must-revalidate');
+    return res;
   }
 
   if (pathname === '/admin' || pathname === '/admin/' || pathname === '/editor' || pathname === '/editor/') {
-    return NextResponse.redirect(new URL('/editor/recipes', request.url));
+    return NextResponse.redirect(new URL('/editor/dashboard', request.url));
   }
 
   return NextResponse.next();

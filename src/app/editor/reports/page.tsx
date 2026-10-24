@@ -15,6 +15,7 @@ import {
   MessageSquare,
   ArrowLeft,
 } from 'lucide-react';
+import { AdminTopNav } from '@/components/editor/AdminTopNav';
 
 interface ReportItem {
   id: number;
@@ -125,8 +126,12 @@ export default function EditorialReportsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] text-[#2A1810] py-8 px-4 sm:px-6 lg:px-8">
-      <div className="w-full mx-auto space-y-6">
+    <div className="min-h-screen bg-[#FDFBF7] text-[#2A1810] pb-12">
+      <AdminTopNav
+        title="Báo Cáo Vi Phạm & An Toàn Thực Phẩm"
+        subtitle="Tiếp nhận và xử lý phản ánh từ người dùng để bảo vệ an toàn bữa cơm gia đình"
+      />
+      <div className="w-full mx-auto space-y-6 pt-6 px-4 sm:px-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#EADBC8] pb-6">
           <div>

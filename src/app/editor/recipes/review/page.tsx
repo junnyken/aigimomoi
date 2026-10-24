@@ -18,6 +18,7 @@ import {
   Lock,
   Loader2,
 } from 'lucide-react';
+import { AdminTopNav } from '@/components/editor/AdminTopNav';
 import {
   evaluateGateChecks,
   validateVerificationFlags,
@@ -207,27 +208,15 @@ export default function ReviewQueuePage() {
 
   return (
     <div className="min-h-screen bg-[#FAF7F0] text-[#2D2A26] pb-16">
-      <header className="bg-white border-b border-[#EADBC8] sticky top-0 z-30 shadow-xs">
-        <div className="w-full mx-auto px-4 py-4 flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <Link
-              href="/editor/recipes"
-              className="inline-flex items-center gap-1.5 text-xs font-medium text-[#7C6A59] hover:text-[#3F6240] p-1.5 rounded-lg hover:bg-[#F3E9DD] transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Kho công thức
-            </Link>
-            <div className="h-4 w-px bg-[#EADBC8]" />
-            <h1 className="text-xl font-bold text-[#3F6240] flex items-center gap-2">
-              <ShieldCheck className="w-6 h-6 text-[#B75B35]" />
-              Cổng Kiểm Duyệt Xuất Bản
-            </h1>
-          </div>
+      <AdminTopNav
+        title="Hàng Chờ Duyệt Xuất Bản (Review Queue)"
+        subtitle="Kiểm định 3 tiêu chuẩn Chất lượng & Dinh dưỡng trước khi xuất bản công thức"
+        rightActions={
           <span className="text-xs font-semibold px-3 py-1.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200">
             {queue.length} công thức chờ duyệt
           </span>
-        </div>
-      </header>
+        }
+      />
 
       <main className="w-full mx-auto px-4 pt-6 space-y-4">
         {role && !isAdmin && (
