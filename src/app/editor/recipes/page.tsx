@@ -19,8 +19,12 @@ import {
   Sparkles,
   Flame,
   Flag,
+  BarChart3,
+  UserPlus,
+  Award,
 } from 'lucide-react';
 import { AiDraftModal } from '@/components/editor/AiDraftModal';
+import { AdminTopNav } from '@/components/editor/AdminTopNav';
 
 interface Recipe {
   id: number;
@@ -34,6 +38,7 @@ interface Recipe {
   cookTimeMinutes: number;
   difficulty: string;
   caloriesPerServing: number | null;
+  isEditorialReviewed?: boolean;
   isCookTested?: boolean;
   isNutritionVerified?: boolean;
   dish?: { id: number; name: string };
@@ -163,6 +168,45 @@ export default function EditorRecipesPage() {
     }
   };
 
+  const [togglingBadgeKey, setTogglingBadgeKey] = useState<string | null>(null);
+
+  const handleToggleBadge = async (
+    id: number,
+    field: 'isEditorialReviewed' | 'isCookTested' | 'isNutritionVerified',
+    currentVal: boolean
+  ) => {
+    const key = `${id}-${field}`;
+    try {
+      setTogglingBadgeKey(key);
+      const res = await fetch(`/api/editor/recipes/${id}/quick-badges`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ [field]: !currentVal }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.recipe) {
+          setRecipes((prev) =>
+            prev.map((r) =>
+              r.id === id
+                ? {
+                    ...r,
+                    isEditorialReviewed: data.recipe.isEditorialReviewed,
+                    isCookTested: data.recipe.isCookTested,
+                    isNutritionVerified: data.recipe.isNutritionVerified,
+                  }
+                : r
+            )
+          );
+        }
+      }
+    } catch {
+      alert('Không thể cập nhật huy hiệu kiểm định.');
+    } finally {
+      setTogglingBadgeKey(null);
+    }
+  };
+
   const draftCount = recipes.filter((r) => r.status === 'DRAFT').length;
   const submittedCount = recipes.filter((r) => r.status === 'SUBMITTED').length;
   const publishedCount = recipes.filter((r) => r.status === 'PUBLISHED').length;
@@ -170,56 +214,15 @@ export default function EditorRecipesPage() {
 
   return (
     <div className="min-h-screen bg-[#FAF7F0] text-[#2D2A26] pb-16">
-      {/* Top Header */}
-      <header className="bg-white border-b border-[#EADBC8] sticky top-0 z-30 shadow-xs">
-        <div className="w-full mx-auto px-4 sm:px-6 py-4 flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <Link
-              href="/"
-              className="inline-flex items-center gap-1.5 text-xs font-medium text-[#7C6A59] hover:text-[#3F6240] transition-colors p-1.5 rounded-lg hover:bg-[#F3E9DD]"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Trang chủ
-            </Link>
-            <div className="h-4 w-px bg-[#EADBC8]" />
-            <h1 className="text-xl font-bold text-[#3F6240] flex items-center gap-2">
-              <ChefHat className="w-6 h-6 text-[#B75B35]" />
-              Kho Công Thức & Trung Tâm Quản Trị
-            </h1>
-          </div>
-
+      <AdminTopNav
+        title="Kho Bài Viết & Công Thức (CMS)"
+        subtitle="Quản lý bài viết, tạo bằng AI, duyệt chất lượng và đồng bộ Calo Viện Dinh Dưỡng"
+        rightActions={
           <div className="flex flex-wrap items-center gap-2">
-            <Link
-              href="/editor/ingredients"
-              className="px-3 py-2 text-xs font-medium text-[#5C4A3A] hover:bg-[#FAF7F0] border border-[#EADBC8] rounded-xl transition-colors"
-            >
-              Từ điển nguyên liệu
-            </Link>
-            <Link
-              href="/editor/taxonomies"
-              className="px-3 py-2 text-xs font-medium text-[#5C4A3A] hover:bg-[#FAF7F0] border border-[#EADBC8] rounded-xl transition-colors"
-            >
-              Hệ phân loại
-            </Link>
-            <Link
-              href="/editor/reports"
-              className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-rose-800 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-xl transition-colors"
-            >
-              <Flag className="w-3.5 h-3.5" />
-              Báo cáo vi phạm
-            </Link>
-            <Link
-              id="review-queue-link"
-              href="/editor/recipes/review"
-              className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-xl transition-colors"
-            >
-              <ShieldCheck className="w-4 h-4" />
-              Hàng chờ duyệt
-            </Link>
             <button
               type="button"
               onClick={() => setIsAiModalOpen(true)}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-amber-500 to-orange-600 text-white text-xs font-semibold rounded-xl hover:from-amber-600 hover:to-orange-700 transition-all shadow-xs"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-amber-500 to-orange-600 text-white text-xs font-semibold rounded-xl hover:from-amber-600 hover:to-orange-700 transition-all shadow-xs cursor-pointer"
               title="Nhập công thức từ Link Web ẩm thực, tạo hàng loạt hoặc soạn bằng AI"
             >
               <Sparkles className="w-4 h-4 text-amber-200" />
@@ -233,10 +236,40 @@ export default function EditorRecipesPage() {
               Soạn công thức mới
             </Link>
           </div>
-        </div>
-      </header>
+        }
+      />
 
       <main className="w-full mx-auto px-4 sm:px-6 pt-6 space-y-6">
+        {/* Quick Admin Modules Spotlight Banner */}
+        <div className="bg-gradient-to-r from-[#2D482E] via-[#3F6240] to-[#4E7550] rounded-2xl p-4 sm:p-5 text-white shadow-sm flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/15 text-emerald-100 text-[11px] font-bold">
+              ✨ TRUNG TÂM QUẢN TRỊ TOÀN DIỆN ĂN GÌ MOM
+            </div>
+            <h2 className="text-base sm:text-lg font-extrabold">
+              Quản lý Tài khoản, Tạo Nick trực tiếp & Bảng Thống Kê Số Liệu Toàn Hệ Thống
+            </h2>
+            <p className="text-xs text-emerald-100/90">
+              Cấp quyền Admin/Editor/Cook không cần đợi OTP, đặt lại mật khẩu, xem biểu đồ Dinh dưỡng FCT và Nhật ký AI Quét món ăn thời gian thực.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+            <Link
+              href="/editor/users"
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-white text-[#2D482E] hover:bg-emerald-50 text-xs font-extrabold rounded-xl shadow-xs transition-all"
+            >
+              <UserPlus className="w-4 h-4 text-[#B75B35]" />
+              Quản lý & Tạo Tài Khoản
+            </Link>
+            <Link
+              href="/editor/dashboard"
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-amber-400 text-stone-950 hover:bg-amber-300 text-xs font-extrabold rounded-xl shadow-xs transition-all"
+            >
+              <BarChart3 className="w-4 h-4" />
+              Bảng Thống Kê & Dữ Liệu
+            </Link>
+          </div>
+        </div>
         {/* Metric Cards */}
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
           <div className="bg-white p-4 rounded-2xl border border-[#EADBC8] shadow-xs">
@@ -438,6 +471,42 @@ export default function EditorRecipesPage() {
                         )}
                       </div>
                     )}
+                    {/* Quick Verification Badge Toggles */}
+                    <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-[#F3E9DD]">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleToggleBadge(recipe.id, 'isEditorialReviewed', Boolean(recipe.isEditorialReviewed))
+                        }
+                        disabled={togglingBadgeKey === `${recipe.id}-isEditorialReviewed`}
+                        className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold border transition-colors cursor-pointer ${
+                          recipe.isEditorialReviewed
+                            ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                            : 'bg-stone-50 text-stone-500 border-stone-200 hover:bg-stone-100'
+                        }`}
+                        title="Bật/tắt Huy hiệu Đã duyệt Biên tập"
+                      >
+                        <CheckCircle2 className="w-3 h-3" />
+                        {recipe.isEditorialReviewed ? '✓ Đã duyệt BTV' : '+ Duyệt BTV'}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleToggleBadge(recipe.id, 'isCookTested', Boolean(recipe.isCookTested))
+                        }
+                        disabled={togglingBadgeKey === `${recipe.id}-isCookTested`}
+                        className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold border transition-colors cursor-pointer ${
+                          recipe.isCookTested
+                            ? 'bg-blue-50 text-blue-800 border-blue-300'
+                            : 'bg-stone-50 text-stone-500 border-stone-200 hover:bg-stone-100'
+                        }`}
+                        title="Bật/tắt Huy hiệu Đã nấu thử thực tế"
+                      >
+                        <Award className="w-3 h-3" />
+                        {recipe.isCookTested ? '✓ Đã nấu thử' : '+ Đã nấu thử'}
+                      </button>
+                    </div>
                   </div>
 
                   {/* Actions */}
