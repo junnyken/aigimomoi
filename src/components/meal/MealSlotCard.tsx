@@ -28,9 +28,9 @@ const ROLE_CONFIGS: Record<
     swapBtnLabel: 'Đổi món mặn',
   },
   SOUP: {
-    label: 'MÓN CANH THANH MÁT',
+    label: 'MÓN CANH NGỌT',
     badgeClass: 'bg-teal-600 text-white',
-    subText: 'Thanh nhiệt, đưa cơm',
+    subText: 'Thanh mát, đưa cơm',
     swapBtnLabel: 'Đổi món canh',
   },
   SIDE: {
@@ -42,7 +42,7 @@ const ROLE_CONFIGS: Record<
   DIPPING_SAUCE: {
     label: 'NƯỚC CHẤM & SỐT',
     badgeClass: 'bg-amber-600 text-white',
-    subText: 'Linh hồn mâm cơm Việt',
+    subText: 'Trọn vị cơm nhà',
     swapBtnLabel: 'Đổi nước chấm',
   },
 };
@@ -71,12 +71,14 @@ export function MealSlotCard({ role, dish, servings, onSwapClick }: MealSlotCard
 
   return (
     <article className="group bg-[var(--color-surface-white)] border border-[var(--color-border-base)] rounded-3xl overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col">
-      {/* Slot Header Banner */}
-      <div className="px-5 py-3 border-b border-[var(--color-border-subtle)] flex items-center justify-between bg-[var(--color-surface-raised)]/50">
-        <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wider ${config.badgeClass}`}>
+      {/* Slot Header Banner — Cố định 1 dòng đồng đều trên mọi kích thước màn hình */}
+      <div className="px-3.5 py-2.5 border-b border-[var(--color-border-subtle)] flex items-center justify-between gap-2 bg-[var(--color-surface-raised)]/50 min-h-[44px]">
+        <span className={`px-2.5 py-1 rounded-full text-[10px] xl:text-[11px] font-bold tracking-wide whitespace-nowrap shrink-0 ${config.badgeClass}`}>
           {config.label}
         </span>
-        <span className="text-[11px] font-medium text-[var(--color-text-muted)]">{config.subText}</span>
+        <span className="text-[11px] font-medium text-[var(--color-text-muted)] whitespace-nowrap truncate text-right">
+          {config.subText}
+        </span>
       </div>
 
       {/* Hero Image */}
@@ -146,20 +148,20 @@ export function MealSlotCard({ role, dish, servings, onSwapClick }: MealSlotCard
         )}
 
         {/* Stats */}
-        <div className="py-2.5 border-y border-[var(--color-border-subtle)] flex flex-wrap items-center justify-between gap-2 text-xs text-[var(--color-text-muted)] mb-4">
-          <span className="inline-flex items-center gap-1 font-medium">
+        <div className="py-2.5 border-y border-[var(--color-border-subtle)] flex items-center justify-between gap-1.5 text-[11px] sm:text-xs text-[var(--color-text-muted)] mb-4 whitespace-nowrap">
+          <span className="inline-flex items-center gap-1 font-medium shrink-0">
             <Clock className="w-3.5 h-3.5" />
             {formatDuration(dish.totalTimeMinutes)}
           </span>
           {typeof dish.caloriesPerServing === 'number' &&
             dish.caloriesPerServing > 0 &&
             dish.nutritionStatus !== 'NO_DATA' && (
-              <span className="inline-flex items-center gap-0.5 font-semibold text-[var(--color-accent-text)]">
+              <span className="inline-flex items-center gap-0.5 font-semibold text-[var(--color-accent-text)] shrink-0">
                 <Flame className="w-3.5 h-3.5 text-[var(--color-accent-primary)]" />
                 ~{dish.caloriesPerServing} kcal/phần
               </span>
             )}
-          <span className="font-medium">Độ khó: {dish.difficulty}</span>
+          <span className="font-medium shrink-0">Độ khó: {dish.difficulty}</span>
         </div>
 
         {/* Action Buttons */}
@@ -167,19 +169,19 @@ export function MealSlotCard({ role, dish, servings, onSwapClick }: MealSlotCard
           <button
             type="button"
             onClick={onSwapClick}
-            className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl border border-[var(--color-border-base)] bg-[var(--color-surface-white)] hover:bg-[var(--color-surface-raised)] text-xs font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-all shadow-xs"
+            className="flex-1 inline-flex items-center justify-center gap-1.5 px-2.5 py-2.5 rounded-xl border border-[var(--color-border-base)] bg-[var(--color-surface-white)] hover:bg-[var(--color-surface-raised)] text-xs font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-all shadow-xs whitespace-nowrap cursor-pointer"
           >
-            <RefreshCw className="w-3.5 h-3.5" />
+            <RefreshCw className="w-3.5 h-3.5 shrink-0" />
             <span>{config.swapBtnLabel}</span>
           </button>
 
           {!dish.isBuiltInPreset && (
             <Link
               href={`${recipePath(dish.slug)}?servings=${servings}`}
-              className="inline-flex items-center justify-center gap-1 px-3.5 py-2.5 rounded-xl bg-[var(--color-brand-light)] hover:bg-[var(--color-brand-primary)] text-[var(--color-brand-primary)] hover:text-white text-xs font-bold transition-all shadow-xs"
+              className="inline-flex items-center justify-center gap-1 px-3 py-2.5 rounded-xl bg-[var(--color-brand-light)] hover:bg-[var(--color-brand-primary)] text-[var(--color-brand-primary)] hover:text-white text-xs font-bold transition-all shadow-xs whitespace-nowrap shrink-0"
             >
               <span>Xem nấu</span>
-              <ArrowRight className="w-3.5 h-3.5" />
+              <ArrowRight className="w-3.5 h-3.5 shrink-0" />
             </Link>
           )}
         </div>

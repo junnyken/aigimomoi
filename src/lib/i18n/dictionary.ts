@@ -1125,6 +1125,9 @@ export const EXACT_VI_TO_EN: Record<string, string> = {
     'Fitness-friendly Vietnamese summer rolls: swaps fatty pork belly for tender chicken breast and fresh shrimp wrapped with lettuce, cucumber, and herbs.',
   'Món ăn nhanh 5 phút không cần nấu dành cho người tập Yoga buổi sáng hoặc nạp năng lượng sạch trước khi tập Gym: giàu chất xơ hòa tan Beta-glucan, đạm dễ tiêu và Omega-3 thực vật.':
     'No-cook 5-minute morning Yoga or pre-workout bowl: rich in Beta-glucan soluble fiber from rolled oats, Greek yogurt protein, and plant Omega-3 from Chia seeds.',
+  'MÓN CANH NGỌT': 'REFRESHING SOUP',
+  'Thanh mát, đưa cơm': 'Cooling & soothing',
+  'Trọn vị cơm nhà': 'Authentic dip',
 };
 
 const PATTERN_REPLACEMENTS: Array<[RegExp, string]> = [
