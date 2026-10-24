@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { VIETNAMESE_STANDARD_FCT, type StandardNutritionItem } from '@/lib/nutrition/seedData';
+import { checkRateLimit, getClientIp } from '@/lib/auth/rateLimit';
+import { isCrossSiteRequest } from '@/lib/http/sameOrigin';
 import { logger } from '@/lib/logger';
 
 export interface ScannedFoodItem {
@@ -446,6 +448,21 @@ function buildHeuristicFallbackFromHint(userHint: string): FoodScanResponse {
 
 export async function POST(req: NextRequest) {
   try {
+    if (isCrossSiteRequest(req)) {
+      return NextResponse.json(
+        { error: 'Yêu cầu bị từ chối do khác nguồn gốc (CSRF).' },
+        { status: 403 }
+      );
+    }
+
+    const rate = checkRateLimit('ai-food-scanner', getClientIp(req), 20, 60_000);
+    if (!rate.allowed) {
+      return NextResponse.json(
+        { error: 'Quá nhiều yêu cầu quét ảnh liên tiếp. Vui lòng thử lại sau ít giây.' },
+        { status: 429, headers: { 'Retry-After': String(rate.retryAfterSeconds) } }
+      );
+    }
+
     const body = await req.json().catch(() => ({}));
     const rawBase64 = String(body.imageBase64 || '').trim();
     const mimeType = String(body.mimeType || 'image/jpeg').trim();
@@ -462,6 +479,13 @@ export async function POST(req: NextRequest) {
     const cleanBase64 = rawBase64.includes('base64,')
       ? rawBase64.split('base64,')[1]
       : rawBase64;
+
+    if (cleanBase64.length > 10_000_000) {
+      return NextResponse.json(
+        { error: 'Dung lượng ảnh quá lớn (tối đa 7MB). Vui lòng chọn ảnh nhẹ hơn.' },
+        { status: 413 }
+      );
+    }
 
     if (cleanBase64) {
       const visionResult = await callGeminiVision(cleanBase64, mimeType, userHint);

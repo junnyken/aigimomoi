@@ -276,9 +276,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 1.6. Nếu máy chủ đã cấu hình TURNSTILE_SECRET_KEY của Cloudflare Turnstile -> xác thực trực tiếp với Cloudflare
+    // 1.6. Nếu máy chủ đã cấu hình đầy đủ cả NEXT_PUBLIC_TURNSTILE_SITE_KEY và TURNSTILE_SECRET_KEY của Cloudflare Turnstile -> xác thực trực tiếp với Cloudflare
+    const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY?.trim();
     const turnstileSecret = process.env.TURNSTILE_SECRET_KEY?.trim();
-    if (turnstileSecret && step === 'send-otp') {
+    if (turnstileSiteKey && turnstileSecret && step === 'send-otp') {
       if (!turnstileToken || typeof turnstileToken !== 'string') {
         return NextResponse.json(
           { error: 'Vui lòng hoàn tất xác thực chống Bot Cloudflare Turnstile.' },
@@ -307,23 +308,24 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Yêu cầu xác nhận người thật khi gọi từ giao diện đăng ký
-    if (step === 'send-otp' || step === 'verify-otp' || humanVerified !== undefined) {
-      if (!humanVerified) {
-        return NextResponse.json(
-          { error: 'Vui lòng tích chọn xác nhận "Tôi là người thật, không phải Bot" trước khi tiếp tục.' },
-          { status: 400 }
-        );
-      }
-      if (
-        challengeExpected !== undefined &&
-        Number(challengeAnswer) !== Number(challengeExpected)
-      ) {
-        return NextResponse.json(
-          { error: 'Câu trả lời kiểm tra chống Bot chưa chính xác. Vui lòng thử lại.' },
-          { status: 400 }
-        );
-      }
+    // Bắt buộc xác nhận người thật cho mọi yêu cầu đăng ký
+    if (!humanVerified) {
+      return NextResponse.json(
+        { error: 'Vui lòng tích chọn xác nhận "Tôi là người thật, không phải Bot" trước khi tiếp tục.' },
+        { status: 400 }
+      );
+    }
+    if (
+      !turnstileSiteKey &&
+      (challengeExpected === undefined ||
+        challengeAnswer === undefined ||
+        String(challengeAnswer).trim() === '' ||
+        Number(challengeAnswer) !== Number(challengeExpected))
+    ) {
+      return NextResponse.json(
+        { error: 'Câu trả lời kiểm tra chống Bot chưa chính xác. Vui lòng thử lại.' },
+        { status: 400 }
+      );
     }
 
     // 2. Validate Họ và tên (Chống XSS / ký tự điều khiển)
@@ -426,23 +428,21 @@ export async function POST(request: NextRequest) {
     }
 
     // =========================================================================
-    // BƯỚC 2: XÁC THỰC MÃ OTP 6 SỐ TRƯỚC KHI KÍCH HOẠT TÀI KHOẢN & ĐĂNG NHẬP
+    // BƯỚC 2: BẮT BUỘC XÁC THỰC MÃ OTP 6 SỐ TRƯỚC KHI KÍCH HOẠT TÀI KHOẢN & ĐĂNG NHẬP
     // =========================================================================
-    if (step === 'verify-otp' || otpToken || otpCode) {
-      if (!otpCode || typeof otpCode !== 'string' || !otpToken || typeof otpToken !== 'string') {
-        return NextResponse.json(
-          { error: 'Vui lòng nhập đầy đủ mã xác nhận 6 số đã gửi qua email của bạn.' },
-          { status: 400 }
-        );
-      }
+    if (!otpCode || typeof otpCode !== 'string' || !otpToken || typeof otpToken !== 'string') {
+      return NextResponse.json(
+        { error: 'Vui lòng nhập đầy đủ mã xác nhận 6 số đã gửi qua email của bạn.' },
+        { status: 400 }
+      );
+    }
 
-      const verifyResult = verifySignedOtpToken(otpToken, cleanEmail, cleanName, otpCode);
-      if (!verifyResult.valid) {
-        return NextResponse.json(
-          { error: verifyResult.reason || 'Mã xác nhận email không chính xác.' },
-          { status: 400 }
-        );
-      }
+    const verifyResult = verifySignedOtpToken(otpToken, cleanEmail, cleanName, otpCode);
+    if (!verifyResult.valid) {
+      return NextResponse.json(
+        { error: verifyResult.reason || 'Mã xác nhận email không chính xác.' },
+        { status: 400 }
+      );
     }
 
     // 6. Băm mật khẩu bằng scrypt

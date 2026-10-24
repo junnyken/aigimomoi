@@ -81,8 +81,8 @@ async function gateCreatorProfile(request: NextRequest, pathname: string) {
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  const isAdminRoute = pathname.startsWith('/admin');
-  const isEditorRoute = pathname.startsWith('/editor');
+  const isAdminRoute = pathname.startsWith('/admin') && !pathname.startsWith('/admin-login');
+  const isEditorRoute = pathname.startsWith('/editor') || pathname.startsWith('/quan-tri');
 
   if (pathname.startsWith(PUBLIC_RECIPE_PREFIX)) {
     return gatePublicRecipe(request, pathname);
@@ -134,5 +134,14 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/admin', '/admin/:path*', '/editor', '/editor/:path*', '/cong-thuc/:path*', '/nguoi-nau/:path*'],
+  matcher: [
+    '/admin',
+    '/admin/:path*',
+    '/editor',
+    '/editor/:path*',
+    '/quan-tri',
+    '/quan-tri/:path*',
+    '/cong-thuc/:path*',
+    '/nguoi-nau/:path*',
+  ],
 };

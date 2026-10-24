@@ -34,8 +34,10 @@ const nextConfig: NextConfig = {
       { source: '/recipes/:slug', destination: '/cong-thuc/:slug' },
       { source: '/calorie-calculator', destination: '/tinh-calo' },
       { source: '/tdee', destination: '/tinh-calo' },
-      { source: '/meal-builder', destination: '/mam-com' },
-      { source: '/shopping-list', destination: '/di-cho' },
+      { source: '/meal-builder', destination: '/meal' },
+      { source: '/mam-com', destination: '/meal' },
+      { source: '/shopping-list', destination: '/shopping' },
+      { source: '/di-cho', destination: '/shopping' },
       { source: '/pantry', destination: '/tu-lanh' },
       { source: '/weekly-planner', destination: '/ke-hoach-tuan' },
       { source: '/diary', destination: '/nhat-ky' },
@@ -43,7 +45,8 @@ const nextConfig: NextConfig = {
       { source: '/faq', destination: '/hoi-dap' },
       { source: '/privacy', destination: '/chinh-sach-bao-mat' },
       { source: '/terms', destination: '/dieu-khoan' },
-      // Vietnamese URL aliases -> Editor routes
+      // Vietnamese URL aliases -> Admin & Editor routes
+      { source: '/quan-tri', destination: '/admin-login' },
       { source: '/quan-tri/nguyen-lieu', destination: '/editor/ingredients' },
       { source: '/quan-tri/phan-loai', destination: '/editor/taxonomies' },
       { source: '/quan-tri/cong-thuc', destination: '/editor/recipes' },
@@ -57,8 +60,10 @@ const nextConfig: NextConfig = {
         headers: [
           { key: 'X-Content-Type-Options', value: 'nosniff' },
           { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+          { key: 'X-DNS-Prefetch-Control', value: 'on' },
+          { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
-          { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
+          { key: 'Permissions-Policy', value: 'camera=(self), microphone=(), geolocation=()' },
         ],
       },
     ];
