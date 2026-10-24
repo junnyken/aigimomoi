@@ -233,3 +233,43 @@ export async function sendWelcomeEmail(email: string, displayName: string): Prom
     text: `Chào mừng ${displayName} đến với Ăn Gì Mom! Tài khoản ${safeEmail} của bạn đã được kích hoạt thành công.`,
   });
 }
+
+export async function sendVerificationOtpEmail(
+  email: string,
+  displayName: string,
+  otpCode: string
+): Promise<SendEmailResult> {
+  const safeEmail = email.replace(/[\r\n<>]/g, '').trim();
+  const escapedName = escapeHtml(displayName.trim());
+  const escapedOtp = escapeHtml(otpCode.trim());
+  const subject = `[${escapedOtp}] Mã xác nhận tạo tài khoản ĂN GÌ MOM`;
+  const html = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 560px; margin: 0 auto; padding: 24px; border: 1px solid #e5e7eb; border-radius: 14px; background-color: #ffffff;">
+      <div style="text-align: center; margin-bottom: 20px;">
+        <span style="display: inline-block; padding: 6px 14px; background: #EAF0EA; color: #3F6240; border-radius: 20px; font-weight: 700; font-size: 14px;">ĂN GÌ MOM • XÁC MINH EMAIL</span>
+        <h1 style="color: #253126; font-size: 20px; margin-top: 12px; margin-bottom: 6px;">Xác nhận Email đăng ký tài khoản</h1>
+        <p style="color: #596454; font-size: 14px; margin: 0;">Xin chào <strong>${escapedName}</strong>, vui lòng nhập mã 6 số dưới đây để hoàn tất kích hoạt tài khoản của bạn:</p>
+      </div>
+
+      <div style="background-color: #F4F8F4; border: 2px dashed #3F6240; border-radius: 12px; padding: 20px; text-align: center; margin-bottom: 20px;">
+        <div style="font-size: 32px; font-weight: 900; letter-spacing: 8px; color: #2F4F30; font-family: monospace;">
+          ${escapedOtp}
+        </div>
+        <p style="color: #596454; font-size: 12px; margin-top: 8px; margin-bottom: 0;">
+          Mã xác nhận có hiệu lực trong vòng <strong>10 phút</strong>. Tuyệt đối không chia sẻ mã này cho người khác.
+        </p>
+      </div>
+
+      <p style="color: #9ca3af; font-size: 12px; text-align: center; margin: 0;">
+        Nếu bạn không yêu cầu tạo tài khoản tại Ăn Gì Mom, vui lòng bỏ qua email này.
+      </p>
+    </div>
+  `;
+
+  return sendEmail({
+    to: safeEmail,
+    subject,
+    html,
+    text: `Mã xác nhận tạo tài khoản Ăn Gì Mom của ${displayName} là: ${otpCode} (hiệu lực 10 phút).`,
+  });
+}

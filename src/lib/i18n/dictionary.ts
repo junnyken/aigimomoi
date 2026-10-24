@@ -589,6 +589,542 @@ export const EXACT_VI_TO_EN: Record<string, string> = {
   'Đổi ảnh từ máy': 'Change Image',
   'Ảnh đại diện món ăn (Hero image — Có thể đổi ảnh trực tiếp bất kỳ lúc nào)':
     'Recipe Hero Image (Can be updated directly anytime)',
+  'Món rau / phụ': 'Side / Veggies',
+
+  // AI Food Plate Scanner (Homepage HeroFoodScannerCard & /tinh-calo FoodPlateScannerPanel)
+  'AI Quét Đĩa Ăn • Chuẩn VDD VN': 'AI Plate Scanner • Vietnam FCT Verified',
+  'AI đang nhận diện từng loại rau củ, đạm & tính Kcal...':
+    'AI Vision is identifying veggies, protein & calculating Kcal...',
+  'AI Vision đang nhận diện từng loại rau củ, đạm & tinh bột trên đĩa...':
+    'AI Vision is identifying veggies, protein & carbs on your plate...',
+  'Đang đối chiếu với Bảng Thành Phần Thực Phẩm Việt Nam (VDD)':
+    'Cross-referencing against the Vietnam Food Composition Table (NIN)',
+  'Ẩn nhãn': 'Hide Tags',
+  'Hiện nhãn': 'Show Tags',
+  'Chụp / Tải ảnh': 'Snap / Upload',
+  '📸 Chụp / Tải ảnh món ăn của bạn': '📸 Snap / Upload Your Meal Photo',
+  'Đang phân tích ảnh...': 'Analyzing photo...',
+  'Đang quét AI...': 'Scanning with AI...',
+  'Quét / Phân tích lại': 'Re-scan / Analyze',
+  '🍝 Mỳ Ý Pesto': '🍝 Pesto Pasta',
+  '🍱 Khay 3 Bữa': '🍱 3-Meal Tray',
+  '🧘 Đĩa Yoga': '🧘 Yoga Plate',
+  '💪 Đĩa Gym': '💪 Gym Plate',
+  '🍝 Mẫu 1: Mỳ Ý Pesto & Tôm': '🍝 Sample 1: Pesto Pasta & Shrimp',
+  '🍱 Mẫu 2: Khay 3 Bữa (Sáng-Trưa-Tối)': '🍱 Sample 2: 3-Meal Tray (B-L-D)',
+  '🧘 Mẫu 3: Đĩa Yoga & Thanh Lọc': '🧘 Sample 3: Yoga & Clean Plate',
+  '💪 Mẫu 4: Đĩa Gym Tăng Cơ': '💪 Sample 4: High-Protein Gym Plate',
+  'Mỳ Ý Sốt Pesto Xanh, Tôm Cháy Tỏi, Bơ Hoa & Bông Cải Hấp':
+    'Green Pesto Spaghetti, Garlic Shrimp, Avocado Rose & Steamed Broccoli',
+  'Mỳ Ý Sốt Pesto Xanh, Tôm Cháy Tỏi, Bơ Sáp Cuộn Hoa & Bông Cải Hấp':
+    'Green Pesto Spaghetti, Garlic Shrimp, Avocado Rose & Steamed Broccoli',
+  'Thực Đơn 3 Bữa: Sáng (Sữa, Trứng, Cam) • Trưa (Bò Bít Tết, Khoai) • Tối (Bắp, Cà Chua)':
+    'Full-Day 3-Meal Tray: Breakfast (Milk, Egg, Orange) • Lunch (Steak, Potato) • Dinner (Corn, Tomato)',
+  'Thực Đơn 3 Bữa Sáng – Trưa – Tối Chuẩn Kiểm Soát Calo':
+    'Calorie-Controlled 3-Meal Daily Tray (Breakfast – Lunch – Dinner)',
+  'Thực Đơn Cả Ngày Thứ Tư: Sáng (Sữa, Trứng, Cam) • Trưa (Bò Bít Tết, Khoai Tây, Cải Thìa) • Tối (Bắp, Cà Chua Bi)':
+    'Full-Day Menu: Breakfast (Milk, Egg, Orange) • Lunch (Beef Steak, Potato, Bok Choy) • Dinner (Sweet Corn, Cherry Tomato)',
+  'Đĩa Eat Clean & Yoga: Trứng Lòng Đào, Bơ Sáp, Bông Cải & Thanh Long Đỏ':
+    'Eat Clean & Yoga Plate: Soft-Boiled Eggs, Avocado, Broccoli & Red Dragon Fruit',
+  'Đĩa Eat Clean & Yoga Giàu Chất Xơ, Bơ Sáp & Trứng Lòng Đào':
+    'High-Fiber Eat Clean & Yoga Plate with Avocado & Soft-Boiled Eggs',
+  'Đĩa Tập Gym Tăng Cơ: Tôm Bóc Nõn, Thịt Thăn Luộc, Bắp Ngọt & Rau Xanh':
+    'Muscle-Gain Gym Plate: Steamed Shrimp, Boiled Pork Loin, Sweet Corn & Greens',
+  'Đĩa Tập Gym Giàu Đạm Nạc (Tôm Nõn, Thịt Thăn, Ức Gà & Bắp Ngọt)':
+    'High-Protein Gym Plate (Peeled Shrimp, Lean Pork Loin, Chicken Breast & Sweet Corn)',
+  'Tôm cháy tỏi': 'Garlic Seared Shrimp',
+  'Tôm bóc nõn cháy tỏi': 'Garlic Seared Peeled Shrimp',
+  'Bông cải xanh hấp': 'Steamed Broccoli',
+  'Bông cải xanh hấp & Xà lách': 'Steamed Broccoli & Lettuce',
+  'Bơ sáp cuộn hoa': 'Avocado Rose',
+  'Quả bơ sáp xếp hoa hồng': 'Avocado Rose Slices',
+  'Cà chua bi': 'Cherry Tomatoes',
+  'Cà chua bi bổ đôi': 'Halved Cherry Tomatoes',
+  'Mỳ Ý sốt Pesto': 'Pesto Spaghetti',
+  'Mỳ Ý luộc trộn sốt Pesto & Mè đen': 'Pesto Spaghetti with Black Sesame',
+  'Sữa tươi + Trứng + Cam': 'Fresh Milk + Egg + Orange',
+  '[Sáng] Sữa tươi không đường': '[Breakfast] Unsweetened Fresh Milk',
+  '[Sáng] Trứng gà ốp la & Cam vàng': '[Breakfast] Sunny-Side Egg & Fresh Orange',
+  'Thăn bò bít tết áp chảo': 'Pan-Seared Beef Tenderloin Steak',
+  '[Trưa] Thăn bò bít tết áp chảo': '[Lunch] Pan-Seared Beef Tenderloin Steak',
+  'Khoai tây & Cải thìa': 'Potato & Bok Choy',
+  '[Trưa] Khoai tây áp chảo ít dầu': '[Lunch] Light Pan-Roasted Potatoes',
+  '[Trưa] Cải thìa luộc xanh': '[Lunch] Boiled Green Bok Choy',
+  'Bắp ngọt & Cà chua bi': 'Sweet Corn & Cherry Tomatoes',
+  '[Tối] Bắp ngọt luộc & 6 quả Cà chua bi': '[Dinner] Boiled Sweet Corn & 6 Cherry Tomatoes',
+  'Trứng gà lòng đào': 'Soft-Boiled Eggs',
+  'Trứng gà luộc lòng đào': 'Soft-Boiled Eggs',
+  'Bông cải xanh & Cải ngọt hấp': 'Steamed Broccoli & Choy Sum',
+  'Bơ sáp thái lát': 'Sliced Ripe Avocado',
+  'Quả bơ sáp thái lát': 'Sliced Ripe Avocado',
+  'Thanh long ruột đỏ': 'Red Dragon Fruit',
+  'Thanh long ruột đỏ cắt miếng': 'Cubed Red Dragon Fruit',
+  'Ức gà áp chảo mè': 'Sesame Pan-Seared Chicken Breast',
+  'Ức gà áp chảo mè rang': 'Roasted Sesame Chicken Breast',
+  'Tôm bóc nõn hấp': 'Steamed Peeled Shrimp',
+  'Thịt thăn heo luộc': 'Boiled Lean Pork Loin',
+  'Thịt thăn heo nạc luộc thái lát': 'Sliced Boiled Lean Pork Loin',
+  'Bắp ngọt luộc': 'Boiled Sweet Corn',
+  'Bắp ngọt luộc cắt khúc': 'Boiled Sweet Corn Cob',
+  'Cải ngọt & Dưa leo': 'Choy Sum & Cucumber',
+  'Cải ngọt & Cải thảo luộc': 'Boiled Choy Sum & Napa Cabbage',
+  'Dưa leo gọt vỏ thái lát': 'Peeled Sliced Cucumber',
+  'Trứng gà luộc': 'Boiled Egg',
+  'Ức gà áp chảo': 'Pan-Seared Chicken Breast',
+  'Quả bơ sáp chín': 'Ripe Hass/Booth Avocado',
+  'Cơm gạo lứt chín': 'Cooked Brown Rice',
+  '💧 Hấp/Luộc': '💧 Steamed/Boiled',
+  '🍳 Ít dầu (+36)': '🍳 Light Oil (+36)',
+  '🥣 Đẫm sốt (+80)': '🥣 Rich Sauce (+80)',
+  '💧 Hấp / Luộc (0 kcal)': '💧 Steamed / Boiled (0 kcal)',
+  '🍳 Áp chảo ít dầu (+36 kcal)': '🍳 Light Pan-Seared (+36 kcal)',
+  '🥣 Xào / Đẫm sốt (+80 kcal)': '🥣 Stir-Fried / Rich Sauce (+80 kcal)',
+  '✓ Tỷ lệ đĩa chuẩn Harvard': '✓ Optimal Harvard Plate Ratio',
+  '+ Thêm:': '+ Quick Add:',
+  '⚡ Thêm nhanh:': '⚡ Quick Add:',
+  '+1 Trứng luộc': '+1 Boiled Egg',
+  '+1 Trứng (55g)': '+1 Egg (55g)',
+  '+60g Ức gà': '+60g Chicken',
+  '+80g Bông cải': '+80g Broccoli',
+  '+50g Bơ sáp': '+50g Avocado',
+  '+100g Cơm lứt': '+100g Brown Rice',
+  'Lưu vào Nhật ký': 'Save to Diary',
+  'Mở Bàn Quét Đầy Đủ': 'Open Full AI Scanner',
+  'Eat Clean & Yoga': 'Eat Clean & Yoga',
+  'Xem Nhật ký →': 'View Diary →',
+  'Mở Nhật ký Bữa ăn →': 'Open Meal Diary →',
+  'Đăng nhập ngay': 'Sign In Now',
+  'Đang lưu...': 'Saving...',
+  'CÔNG NGHỆ AI VISION + TỪ ĐIỂN VIỆN DINH DƯỠNG VN (195+ NGUYÊN LIỆU)':
+    'AI VISION ENGINE + VIETNAM NIN FOOD DICTIONARY (195+ INGREDIENTS)',
+  '📸 AI Quét Ảnh Đĩa Ăn — Bóc Tách Rau Củ, Thịt Cá & Tính Kcal':
+    '📸 AI Food Plate Scanner — Detect Veggies, Protein & Calculate Kcal',
+  'Chụp hoặc tải ảnh đĩa cơm / đĩa Eat Clean của bạn lên (hoặc bấm chọn':
+    'Snap or upload a photo of your meal plate (or try one of the',
+  '4 mẫu đĩa thực tế': '4 real meal presets',
+  'bên dưới) để xác định từng thành phần và khối lượng Kcal:':
+    'below) to break down ingredients, weights & calories:',
+  '✨ Hoặc bấm thử ngay với 4 mẫu đĩa ăn Eat Clean / Gym thực tế:':
+    '✨ Or test immediately with 4 real Eat Clean / Gym plate presets:',
+  '(Bạn có thể chỉnh số gram từng loại rau củ/thịt cá sau khi quét)':
+    '(You can fine-tune the gram weight of any ingredient after scanning)',
+  'Nhập thêm mô tả nếu muốn AI lưu ý (VD: Đĩa của tôi có ức gà, bông cải, 2 quả trứng luộc, sốt mè rang...)':
+    'Optional hint for AI (e.g., My plate has chicken breast, broccoli, 2 boiled eggs, sesame dressing...)',
+  '🥩 Cần bổ sung thêm Đạm': '🥩 Add More Protein',
+  '🥦 Cần tăng tỷ lệ Rau xanh': '🥦 Add More Greens & Veggies',
+  '⚖️ Hơi vượt định mức Calo bữa': '⚖️ Slightly Above Meal Calorie Target',
+  '🌟 Đĩa ăn cân bằng chuẩn Vàng': '🌟 Golden Balanced Plate',
+  '+ Thêm 1 quả trứng luộc (55g)': '+ Add 1 Boiled Egg (55g)',
+  '+ Thêm 80g bông cải xanh hấp': '+ Add 80g Steamed Broccoli',
+  '📏 Thước đo tỷ lệ AI:': '📏 AI Visual Scale Anchor:',
+  '☀️ Bữa Sáng': '☀️ Breakfast',
+  '🌤️ Bữa Trưa': '🌤️ Lunch',
+  '🌙 Bữa Tối': '🌙 Dinner',
+  'Chuẩn Harvard: 50% Rau • 25% Đạm • 25% Tinh bột':
+    'Harvard Guide: 50% Veggies • 25% Protein • 25% Carbs',
+  '🥦 Rau củ': '🥦 Veggies',
+  '🥩 Đạm (Thịt/Cá)': '🥩 Protein',
+  '🍚 Tinh bột': '🍚 Carbs',
+  '🥑 Béo & Xơ': '🥑 Fat & Fiber',
+  '🍳 Dầu mỡ / Sốt chế biến:': '🍳 Cooking Oil / Sauce Level:',
+  'Rau củ': 'Veggies',
+  'Đạm': 'Protein',
+  'Tinh bột': 'Carbs',
+  'Béo tốt': 'Healthy Fat',
+  '+ Tìm thêm trong 195+ nguyên liệu Viện Dinh Dưỡng...':
+    '+ Search 195+ Vietnam NIN verified ingredients...',
+  '+ Thêm': '+ Add',
+  '🍲 Công thức tương tự trên web:': '🍲 Similar Verified Recipes on Website:',
+  'Xem 49 món →': 'View all 49 →',
+  '🧘 Yoga & Eat Clean': '🧘 Yoga & Eat Clean',
+  '💪 Gym Tăng Cơ': '💪 Muscle Gain Gym',
+  '💪 Giàu Sắt & Cơ Bắp': '💪 Iron & Muscle Recovery',
+  '🥗 Poke Bowl Chuẩn': '🥗 Balanced Poke Bowl',
+  '🌿 Thanh Đạm Nhẹ Bụng': '🌿 Light & Digestible',
+  'Salad Tôm Hấp Trứng Luộc Bơ Tươi': 'Steamed Shrimp, Boiled Egg & Fresh Avocado Salad',
+  'Ức Gà Áp Chảo Mè Rang & Bông Cải Xanh Hấp': 'Sesame Seared Chicken Breast & Steamed Broccoli',
+  'Thăn Bò Áp Chảo Lúc Lắc & Đậu Que Luộc': 'Shaking Beef Tenderloin & Boiled Green Beans',
+  'Cơm Gạo Lứt Cá Hồi Áp Chảo & Đậu Nành Edamame': 'Pan-Seared Salmon Brown Rice & Edamame Bowl',
+  'Đậu Hũ Non Sốt Nấm Đông Cô & Cải Thìa Hấp': 'Silken Tofu in Shiitake Sauce & Steamed Bok Choy',
+  'Vui lòng đăng nhập tài khoản để lưu đĩa ăn đã quét vào Nhật ký dinh dưỡng hàng ngày.':
+    'Please sign in to save your scanned meal plate to your daily Nutrition Diary.',
+  'Không thể lưu vào Nhật ký lúc này, vui lòng thử lại.':
+    'Could not save to Diary right now. Please try again.',
+  'Lỗi kết nối máy chủ khi lưu Nhật ký.': 'Server connection error while saving to Diary.',
+
+  // /tinh-calo Right-side 3 Tabs & PersonalizedMealActionPanel
+  '1. Chia 3 Bữa & Chi Tiết Macro': '1. 3-Meal Split & Macro Guide',
+  '2. Chọn Thực Đơn & Gắn Món Ăn': '2. Meal Plans & Dish Matcher',
+  '3. AI Quét Ảnh Đĩa Ăn (Tính Kcal)': '3. AI Food Photo Scanner (Kcal)',
+  'Thịt / Cá / Tôm / Trứng': 'Meat / Fish / Shrimp / Eggs',
+  'Rau củ quả & Canh': 'Fresh Veggies & Soup',
+  '400 – 500g / ngày': '400 – 500g / day',
+  'Gạo trắng (~130 kcal/chén)': 'White Rice (~130 kcal/bowl)',
+  'Gạo lứt (~110 kcal/chén)': 'Brown Rice (~110 kcal/bowl)',
+  'Bấm sang Bước 2 hoặc Bước 3 bên dưới để áp dụng thực đơn hoặc quét ảnh đĩa ăn của bạn:':
+    'Switch to Step 2 or Step 3 below to apply a customized meal plan or scan your food photo:',
+  'Chọn Thực Đơn Eat Clean / Gym / Yoga →': 'Choose Eat Clean / Gym / Yoga Menu →',
+  '📸 Mở AI Quét Ảnh Đĩa Ăn': '📸 Open AI Food Plate Scanner',
+  'Bấm vào từng mục bên dưới nếu bạn muốn xem chi tiết 4 nhóm chất (Đạm, Tinh bột, Béo, Xơ) hoặc bảng đối chiếu 3 phương trình Y khoa:':
+    'Click any section below to expand detailed macronutrient breakdowns or the 3-equation clinical comparison table:',
+  'Đang mở': 'Expanded',
+  'Bấm để xem chi tiết': 'Click to expand',
+  'Phân tích chi tiết 4 nhóm chất: Đạm (Protein) • Đường bột (Carbs) • Chất béo (Fat) • Chất xơ':
+    'Detailed 4-Macronutrient Breakdown: Protein • Carbohydrates • Healthy Fats • Dietary Fiber',
+  '2. Ba Nguyên Tắc Vàng Để Đạt Mục Tiêu Mà Không Cần Cân Tiểu Ly':
+    '2. Three Golden Rules to Hit Your Goal Without a Kitchen Scale',
+  'Quy tắc Đĩa Ăn 2:1:1 (Harvard)': 'The 2:1:1 Plate Rule (Harvard)',
+  'Chia đĩa hoặc khẩu phần ăn của bạn thành 4 phần:': 'Divide your meal plate into 4 quarters:',
+  '2 phần (50%) là Rau củ luộc/xào ít dầu': '2 quarters (50%) Boiled/Light Stir-Fried Veggies',
+  '1 phần (25%) là Thịt/Cá/Đậu hũ/Trứng': '1 quarter (25%) Lean Meat/Fish/Tofu/Eggs',
+  '1 phần (25%) là Cơm/Bún/Khoai lang': '1 quarter (25%) Rice/Noodles/Sweet Potato',
+  'Thứ tự ăn kiểm soát đường huyết': 'Blood-Sugar Friendly Eating Order',
+  'Nên ăn': 'Start with',
+  'Canh & Rau xanh trước': 'Soup & Green Veggies first',
+  'tiếp theo ăn đến': 'then eat',
+  'Thịt / Cá / Đậu hũ': 'Meat / Fish / Tofu',
+  'và ăn': 'and finish with',
+  'Cơm trắng / Tinh bột cuối cùng': 'Rice / Carbs last',
+  'Cách này giúp no nhanh, giảm hấp thu đường mỡ thừa tới 30%.':
+    'This sequence promotes satiety and reduces excess glucose/fat absorption by up to 30%.',
+  'Kiểm soát “Calo Ẩn” từ Nước chấm & Dầu': 'Watch "Hidden Calories" in Sauces & Oil',
+  '1 muỗng canh dầu ăn (10ml) chứa tới': '1 tablespoon of cooking oil (10ml) contains',
+  '90 kcal': '90 kcal',
+  'Nếu đang giảm mỡ, hãy ưu tiên món': 'For fat loss, prioritize',
+  'Hấp, Luộc, Áp chảo chống dính, Nồi chiên không dầu': 'Steamed, Boiled, Non-Stick Pan-Seared & Air-Fried dishes',
+  'và chấm nhẹ tay.': 'and go light on dipping sauces.',
+  'Đã hiểu lộ trình 3 bữa? Bấm chuyển sang Bước 2 để chọn món ăn thực tế!':
+    'Got your 3-meal roadmap? Proceed to Step 2 to pick real dishes!',
+  'Xem Thực Đơn & Gắn Món Ăn Ngay →': 'Explore Menus & Match Dishes Now →',
+  'Gợi Ý Thực Đơn & Gắn Món Ăn Vào Lịch Hàng Ngày':
+    'Personalized Meal Suggestions & Daily Planner Matcher',
+  'Chọn': 'Select',
+  'Ngày': 'Date',
+  'Ngày:': 'Date:',
+  'Bữa ăn': 'Meal',
+  'ở góc phải, sau đó bấm': 'on the top right, then click',
+  'Gắn cả Mâm Cơm': 'Add Full 3-Dish Tray',
+  'hoặc chọn từng món lẻ bạn thích bên dưới:': 'or pick individual dishes below:',
+  '🎯 Chọn chế độ ăn / tập luyện:': '🎯 Filter by Diet / Workout Style:',
+  'Đang tải và đối chiếu các món ăn phù hợp từ kho công thức...':
+    'Loading and matching recipes from our verified catalog...',
+  'Xem cách nấu': 'View Recipe',
+  '✓ Đã gắn': '✓ Added',
+  '+ Gắn món này': '+ Add Dish',
+  '✓ Đã gắn cả Mâm vào Thực đơn!': '✓ Full Tray Added to Planner!',
+  '📅 Gắn cả Mâm Cơm (3 món) vào Thực đơn': '📅 Add Full 3-Dish Tray to Planner',
+  '✓ Đã ghi cả Mâm vào Nhật ký!': '✓ Full Tray Logged to Diary!',
+  '📝 Ghi cả Mâm vào Nhật ký hôm nay': '📝 Log Full Tray to Today’s Diary',
+  'Mở trên Bàn Ghép Mâm & Đi chợ': 'Open in Meal Builder & Grocery List',
+  'Hoặc tự chọn lẻ từng món ăn phù hợp trên Website:':
+    'Or pick individual matching dishes from the catalog:',
+  'Đề xuất hàng đầu': 'Top Matches',
+  'Đã gắn Thực đơn': 'Added to Planner',
+  'Gắn vào Thực đơn': 'Add to Planner',
+  '✓ Đã ghi': '✓ Logged',
+  '+ Nhật ký': '+ Diary',
+  'Thu gọn danh sách món ăn': 'Collapse recipe list',
+  'Tỷ lệ vàng: Sáng 28% • Trưa 40% • Tối 32%':
+    'Golden Ratio: Breakfast 28% • Lunch 40% • Dinner 32%',
+  '1. THỨ TỰ ĂN TRÊN BÀN': '1. EATING SEQUENCE AT THE TABLE',
+  '2. VẬN ĐỘNG & UỐNG NƯỚC': '2. DAILY STEPS & HYDRATION',
+  '3. CỘT MỐC THỜI GIAN': '3. TIMELINE MILESTONES',
+  '🧘💪 Yoga & Gym': '🧘💪 Yoga & Gym',
+  '🧘 Yoga • Eat Clean': '🧘 Yoga • Eat Clean',
+  'Cân bằng': 'Balanced',
+  '🧘 Canh Thanh Lọc': '🧘 Detox Soup',
+  'Canh thanh • Ít Calo': 'Light • Low-Cal Soup',
+  'Canh bổ dưỡng': 'Nourishing Soup',
+  'Hỗ trợ phục hồi cơ': 'Muscle Recovery',
+
+  // Auth / Register / Anti-Bot / Email Verification
+  'Tham gia Gian bếp Ăn Gì Mom': 'Join the Ăn Gì Mom Kitchen',
+  'Tạo tài khoản miễn phí để lưu thực đơn, danh sách đi chợ và đồng bộ trên mọi thiết bị.':
+    'Create a free account to save meal plans, grocery lists, and sync across all your devices.',
+  'Tên hiển thị của bạn': 'Your Display Name',
+  'Địa chỉ Email': 'Email Address',
+  'Mật khẩu': 'Password',
+  'Xác nhận mật khẩu': 'Confirm Password',
+  'Tạo tài khoản ngay': 'Create Account',
+  'Đã có tài khoản?': 'Already have an account?',
+  'Đăng nhập tại đây': 'Sign in here',
+  'Xác minh bảo mật: Tôi là người thật (Chống Bot & Spam)':
+    'Security Verification: I Am Human (Anti-Bot & Anti-Spam)',
+  'Đã xác minh bạn là người thật': 'Human verification complete',
+  'Chỉ chấp nhận email thật (Gmail, Outlook, iCloud, tên miền công ty/trường học). Hệ thống tự động chặn 100% email tạm 10 phút / rác.':
+    'Only real emails accepted (Gmail, Outlook, iCloud, work/school domains). 10-minute / disposable temp emails are strictly blocked.',
+  'Gửi mã xác nhận (OTP) qua Email →': 'Send Verification Code (OTP) to Email →',
+  'Đang gửi mã xác nhận...': 'Sending verification code...',
+  'Xác nhận mã OTP & Kích hoạt tài khoản': 'Verify OTP Code & Activate Account',
+  'Nhập mã 6 số đã gửi tới email của bạn': 'Enter the 6-digit code sent to your email',
+  'Quay lại sửa thông tin': 'Back to edit details',
+  'Bảo mật 3 Lớp • Chống Bot & Mail Rác': '3-Layer Security • Anti-Bot & Temp-Mail Shield',
+  'Đăng ký tài khoản thành viên': 'Create Member Account',
+  'Xác thực Email kích hoạt tài khoản': 'Verify Email to Activate Account',
+  'Lưu mâm cơm yêu thích, quản lý tủ lạnh, lập thực đơn 7 ngày và theo dõi Nhật ký Calo miễn phí.':
+    'Save favorite meal trays, manage your pantry, plan 7-day menus, and track your Calorie Diary for free.',
+  '1. Điền thông tin & Chống Bot': '1. Account Details & Anti-Bot',
+  '2. Nhập mã OTP Email': '2. Verify Email OTP',
+  'Họ và tên / Tên gọi bếp nhà': 'Full Name / Kitchen Nickname',
+  'Ví dụ: Mẹ Bắp, Bố Bo, Linh Chi': 'e.g., Chef Linh, Mom Bap',
+  'Địa chỉ Email thật (Nhận mã OTP 6 số để kích hoạt)': 'Real Email Address (Receives 6-Digit Activation OTP)',
+  '⚠️ Phát hiện tên miền Email tạm / Email 10 phút! Hệ thống chặn 100% mail rác để chống spam.':
+    '⚠️ Temporary / 10-minute email detected! Disposable emails are strictly blocked to prevent spam.',
+  'Chỉ chấp nhận email thật (Gmail, Outlook, iCloud, công ty/trường học). Tự động chặn mail 10 phút.':
+    'Only real emails accepted (Gmail, Outlook, iCloud, work/school). 10-minute temp emails are automatically blocked.',
+  'Mật khẩu bảo mật (tối thiểu 8 ký tự)': 'Secure Password (minimum 8 characters)',
+  'Xác nhận lại mật khẩu': 'Confirm Password',
+  'Độ dài từ 8 ký tự trở lên': 'At least 8 characters long',
+  'Nên kết hợp cả chữ cái và chữ số': 'Combine letters and numbers',
+  'Hai ô mật khẩu trùng khớp': 'Both password fields match',
+  '🤖 Câu hỏi chống Bot:': '🤖 Anti-Bot Check:',
+  '3 + 5 bằng mấy?': 'What is 3 + 5?',
+  'Bằng việc bấm tiếp tục, bạn đồng ý với': 'By continuing, you agree to the',
+  'Điều khoản sử dụng': 'Terms of Use',
+  'Chính sách bảo mật': 'Privacy Policy',
+  'của Ăn Gì Mom.': 'of Ăn Gì Mom.',
+  'Nhập mã xác nhận 6 số từ Email': 'Enter 6-Digit Email Verification Code',
+  'Mã xác nhận 6 chữ số': '6-Digit Verification Code',
+  'Xác nhận mã OTP & Vào tài khoản': 'Verify OTP & Enter Account',
+  'Đang xác thực & kích hoạt...': 'Verifying & Activating...',
+  'Quay lại sửa Email': 'Back to Edit Email',
+  'Gửi lại mã OTP mới': 'Resend New OTP Code',
+  'Điền nhanh': 'Auto-fill',
+
+  // All 49 Published Recipe Titles (dishName & recipeName)
+  'Thịt ba chỉ kho tiêu': 'Braised Pork Belly with Black Pepper',
+  'Thịt ba chỉ kho tiêu đậm đà': 'Savory Braised Pork Belly with Black Pepper',
+  'Gà rang gừng lá chanh': 'Ginger & Lime Leaf Roasted Chicken',
+  'Gà rang gừng lá chanh ấm bụng': 'Warming Ginger & Lime Leaf Roasted Chicken',
+  'Cá basa kho tộ': 'Claypot Caramelized Basa Fish',
+  'Cá basa kho tộ nước dừa': 'Claypot Basa Fish Braised in Coconut Water',
+  'Sườn non rim chua ngọt': 'Sweet & Sour Glazed Pork Ribs',
+  'Sườn non rim chua ngọt chuẩn vị': 'Classic Sweet & Sour Glazed Pork Ribs',
+  'Thịt nạc xào ớt chuông': 'Stir-Fried Lean Pork with Bell Peppers',
+  'Thịt nạc xào ớt chuông giòn ngọt': 'Crisp Stir-Fried Lean Pork with Bell Peppers',
+  'Canh rau ngót nấu thịt băm': 'Katuk Leaf Soup with Minced Pork',
+  'Canh rau ngót thịt băm thanh mát': 'Refreshing Katuk Leaf & Minced Pork Soup',
+  'Canh chua cá lóc miền Tây': 'Mekong Sweet & Sour Snakehead Fish Soup',
+  'Canh chua cá lóc thơm lừng ngò om': 'Fragrant Mekong Sweet & Sour Snakehead Fish Soup',
+  'Canh sườn nấu chua cà chua': 'Pork Rib & Tomato Sour Soup',
+  'Canh sườn nấu chua thanh mát': 'Refreshing Pork Rib & Tomato Tangy Soup',
+  'Canh gà nấu gừng': 'Warming Ginger Chicken Soup',
+  'Canh gà nấu gừng thơm ấm': 'Fragrant Warming Ginger Chicken Soup',
+  'Rau muống xào tỏi': 'Garlic Stir-Fried Morning Glory',
+  'Rau muống xào tỏi giòn xanh': 'Crisp Green Garlic Stir-Fried Morning Glory',
+  'Đậu hũ sốt cà chua': 'Tofu in Fresh Tomato Sauce',
+  'Đậu hũ sốt cà chua mềm béo': 'Golden Tofu Simmered in Fresh Tomato Sauce',
+  'Đậu cove xào tỏi': 'Garlic Stir-Fried Green Beans',
+  'Đậu cove xào tỏi giòn ngọt': 'Crisp & Sweet Garlic Stir-Fried Green Beans',
+  'Ức gà hấp nấm xì dầu': 'Steamed Chicken Breast with Shiitake & Soy Sauce',
+  'Ức gà hấp nấm hương xì dầu (Eat Clean giảm cân)':
+    'Steamed Chicken Breast with Shiitake & Light Soy (Eat Clean)',
+  'Cá diêu hồng hấp gừng hành': 'Steamed Red Tilapia with Ginger & Scallions',
+  'Cá diêu hồng hấp gừng hành hoa thanh đạm': 'Light Steamed Red Tilapia with Ginger & Scallions',
+  'Trứng chiên thịt băm hành hoa': 'Vietnamese Minced Pork & Scallion Omelette',
+  'Trứng chiên thịt băm hành hoa vàng ươm': 'Golden Minced Pork & Scallion Omelette',
+  'Thịt bò xào bông cải xanh': 'Stir-Fried Beef with Broccoli',
+  'Thịt bò xào bông cải xanh giòn ngọt giàu sắt': 'Iron-Rich Stir-Fried Beef with Crisp Broccoli',
+  'Tôm sú rim mặn ngọt': 'Caramelized Savory-Sweet Tiger Prawns',
+  'Tôm sú rim mặn ngọt bóng bẩy đưa cơm': 'Glossy Caramelized Tiger Prawns',
+  'Đậu hũ nhồi thịt sốt cà': 'Pork-Stuffed Tofu in Tomato Sauce',
+  'Đậu hũ nhồi thịt sốt cà chua đậm đà': 'Savory Minced Pork-Stuffed Tofu in Tomato Sauce',
+  'Canh bí đao nấu tôm tươi': 'Winter Melon & Fresh Shrimp Soup',
+  'Canh bí đao nấu tôm tươi thanh nhiệt ít Calo': 'Low-Calorie Cooling Winter Melon & Fresh Shrimp Soup',
+  'Canh mướp hương nấu tôm khô': 'Fragrant Sponge Gourd & Dried Shrimp Soup',
+  'Canh mướp hương nấu tôm khô ngọt lịm': 'Naturally Sweet Sponge Gourd & Dried Shrimp Soup',
+  'Canh cải ngọt nấu thịt băm': 'Choy Sum & Minced Pork Ginger Soup',
+  'Canh cải ngọt nấu thịt băm gừng tươi ấm bụng': 'Warming Choy Sum, Minced Pork & Fresh Ginger Soup',
+  'Bông cải xanh luộc Eat Clean': 'Eat Clean Boiled Broccoli & Carrots',
+  'Bông cải xanh & cà rốt luộc giòn ngọt (Chuẩn Eat Clean)':
+    'Crisp Boiled Broccoli & Carrots (Eat Clean Standard)',
+  'Cải thìa xào nấm đông cô': 'Stir-Fried Bok Choy with Shiitake Mushrooms',
+  'Cải thìa xào nấm đông cô sốt dầu hào': 'Bok Choy & Shiitake Mushrooms in Oyster Sauce',
+  'Nộm dưa leo cà rốt chua ngọt': 'Sweet & Sour Cucumber Carrot Salad',
+  'Gỏi dưa leo cà rốt trộn chua ngọt chống ngấy': 'Refreshing Sweet & Sour Cucumber Carrot Salad',
+  'Nước mắm tỏi ớt chua ngọt': 'Classic Sweet & Sour Garlic Chili Fish Sauce',
+  'Nước mắm tỏi ớt chua ngọt (Tỷ lệ vàng nổi tỏi ớt)':
+    'Golden-Ratio Sweet & Sour Garlic Chili Fish Sauce Dip',
+  'Kho quẹt tóp mỡ tôm khô': 'Southern Caramelized Dried Shrimp & Pork Crackling Dip (Kho Quet)',
+  'Kho quẹt tóp mỡ tôm khô chấm rau củ luộc':
+    'Southern Kho Quet Caramelized Dip for Boiled Veggies',
+  'Muối ớt xanh lá chanh': 'Green Chili & Kaffir Lime Leaf Dipping Sauce',
+  'Muối ớt xanh lá chanh chấm gà luộc & hải sản':
+    'Creamy Green Chili & Lime Leaf Dip for Chicken & Seafood',
+  'Ức gà áp chảo sốt mật ong tỏi chanh': 'Honey Lemon Garlic Pan-Seared Chicken Breast',
+  'Ức gà áp chảo sốt mật ong tỏi chanh (Ít Calo)':
+    'Low-Calorie Honey Lemon Garlic Pan-Seared Chicken Breast',
+  'Cá diêu hồng hấp xì dầu gừng hành': 'Steamed Red Tilapia with Soy, Ginger & Scallions',
+  'Cá diêu hồng hấp xì dầu gừng hành (Chuẩn NHS Ít Béo)':
+    'NHS Low-Fat Steamed Tilapia with Soy, Ginger & Scallions',
+  'Canh bí đao nấu tôm tươi gừng sợi': 'Winter Melon, Fresh Shrimp & Ginger Soup',
+  'Canh bí đao nấu tôm tươi thanh nhiệt giảm cân':
+    'Weight-Loss Cooling Winter Melon & Fresh Shrimp Soup',
+  'Canh nấm đậu hũ non nấu hẹ': 'Silken Tofu, Mushroom & Chive Clear Soup',
+  'Canh nấm đậu hũ non nấu hẹ nhẹ bụng ít Calo':
+    'Light Low-Calorie Silken Tofu, Mushroom & Chive Soup',
+  'Salad ức gà xé phay dưa leo sốt chanh': 'Shredded Chicken, Cucumber & Lemon Garlic Salad',
+  'Salad ức gà xé phay dưa leo cà rốt sốt chanh tươi':
+    'Shredded Chicken Breast, Cucumber & Carrot Fresh Lemon Salad',
+  'Thăn bò áp chảo bông cải xanh & nấm (Macro-Friendly)':
+    'Pan-Seared Beef Tenderloin with Broccoli & Mushrooms (Macro-Friendly)',
+  'Thăn bò áp chảo bông cải xanh & nấm sốt tiêu đen (Tăng cơ)':
+    'Black Pepper Beef Tenderloin with Broccoli & Shiitake (Muscle Gain)',
+  'Cá hồi áp chảo măng tây sốt chanh tỏi': 'Pan-Seared Salmon with Broccoli & Lemon Garlic',
+  'Cá hồi áp chảo bông cải sốt chanh tỏi giàu Omega-3 (Fit Men Cook)':
+    'Omega-3 Pan-Seared Salmon with Broccoli & Lemon Garlic (Fit Men Cook)',
+  'Ức gà xào ớt chuông hạt điều (Meal Prep)': 'Cashew & Bell Pepper Chicken Breast Stir-Fry (Meal Prep)',
+  'Ức gà xào ớt chuông & hạt điều (Meal Prep Tăng cơ)':
+    'Cashew & Bell Pepper Chicken Stir-Fry (Muscle Meal Prep)',
+  'Đậu hũ sốt thịt nạc băm nấm hương giàu đạm': 'High-Protein Minced Lean Pork & Shiitake Braised Tofu',
+  'Đậu hũ sốt thịt heo nạc băm & nấm hương (High-Protein)':
+    'High-Protein Lean Minced Pork & Shiitake Tofu Skillet',
+  'Trứng cuộn tôm tươi & rau cải bó xôi giàu Protein':
+    'High-Protein Prawn & Spinach Rolled Omelette',
+  'Trứng cuộn tôm nõn & cải bó xôi giàu Protein (10 phút)':
+    '10-Min High-Protein Peeled Shrimp & Spinach Omelette',
+  'Poke Bowl cá hồi áp chảo, bơ sáp & gạo lứt': 'Pan-Seared Salmon, Avocado & Brown Rice Poke Bowl',
+  'Poke Bowl cá hồi áp chảo, bơ sáp & gạo lứt (Chuẩn Yoga & Gym)':
+    'Pan-Seared Salmon, Avocado & Brown Rice Poke Bowl (Yoga & Gym)',
+  'Ức gà cuộn rong biển áp chảo sốt mè rang': 'Nori-Wrapped Chicken Breast Rolls with Sesame Glaze',
+  'Ức gà cuộn rong biển áp chảo (Meal Prep Gym & Yoga 15 phút)':
+    '15-Min Nori-Wrapped Chicken Breast Rolls (Gym & Yoga Meal Prep)',
+  'Tôm nõn áp chảo dầu ô liu tỏi & bông cải xanh':
+    'Olive Oil Garlic Shrimp & Broccoli Skillet',
+  'Tôm nõn áp chảo tỏi dầu ô liu & bông cải xanh (High-Protein 10 phút)':
+    '10-Min High-Protein Garlic Olive Oil Shrimp & Broccoli',
+  'Miến dong trộn ức gà xé, nấm hương & cải bó xôi':
+    'Glass Noodles with Shredded Chicken, Shiitake & Spinach',
+  'Miến dong trộn ức gà xé, nấm hương & cải bó xôi (Eat Clean nhẹ bụng)':
+    'Light Eat Clean Glass Noodles with Chicken, Shiitake & Spinach',
+  'Đậu hũ non áp chảo sốt nấm đông cô & cải thìa (Yoga)':
+    'Pan-Seared Tofu in Shiitake Sauce with Bok Choy (Yoga Plant Protein)',
+  'Đậu hũ áp chảo sốt nấm đông cô & cải thìa (Đạm thực vật Yoga)':
+    'Pan-Seared Tofu with Shiitake & Bok Choy (Yoga Plant-Based Protein)',
+  'Thăn bò lúc lắc ớt chuông & khoai lang mật áp chảo':
+    'Shaking Beef Tenderloin with Bell Peppers & Honey Sweet Potato',
+  'Thăn bò lúc lắc ớt chuông & khoai lang mật áp chảo (Tăng cơ Gym)':
+    'Shaking Beef Tenderloin with Bell Peppers & Sweet Potato (Gym Muscle)',
+  'Canh rong biển đậu hũ non nấu tôm tươi': 'Seaweed, Silken Tofu & Fresh Shrimp Soup',
+  'Canh rong biển đậu hũ non nấu tôm nõn (Thanh lọc & Bù khoáng)':
+    'Detox & Mineral Seaweed, Silken Tofu & Shrimp Soup',
+  'Canh cải bó xôi (Rau chân vịt) nấu bò băm gừng tươi':
+    'Spinach & Minced Beef Soup with Fresh Ginger',
+  'Canh cải bó xôi nấu thịt bò băm gừng tươi (Giàu sắt & Protein)':
+    'Iron & Protein-Rich Spinach & Minced Lean Beef Ginger Soup',
+  'Súp bí đỏ kem sữa chua Hy Lạp & hạt Chia': 'Creamy Pumpkin Soup with Greek Yogurt & Chia Seeds',
+  'Súp bí đỏ sữa chua Hy Lạp & hạt Chia (Eat Clean ấm bụng)':
+    'Warming Eat Clean Pumpkin Soup with Greek Yogurt & Chia Seeds',
+  'Salad bơ sáp, trứng gà luộc & bắp cải tím sốt sữa chua Hy Lạp':
+    'Avocado, Boiled Egg & Purple Cabbage Salad with Greek Yogurt Dressing',
+  'Gỏi cuốn tôm tươi & ức gà xà lách chấm sốt tương đậu phộng':
+    'Fresh Shrimp & Chicken Breast Summer Rolls with Peanut Soy Dip',
+  'Gỏi cuốn tôm tươi & ức gà rau xanh (Eat Clean không dầu mỡ)':
+    'Oil-Free Eat Clean Shrimp & Chicken Breast Fresh Summer Rolls',
+  'Bowl Yến mạch, Sữa chua Hy Lạp & Hạt Chia (Pre-Workout 5 phút)':
+    '5-Min Rolled Oats, Greek Yogurt & Chia Seeds Pre-Workout Bowl',
+  'Bowl Yến mạch, Sữa chua Hy Lạp & Hạt Chia (Bữa sáng / Trước tập 5 phút)':
+    '5-Min Rolled Oats, Greek Yogurt & Chia Breakfast / Pre-Workout Bowl',
+
+  // All 49 Recipe Short Descriptions
+  'Thịt ba chỉ thái con chì vừa ăn, thắng nước màu cánh gián, kho liu riu đậm đà thơm cay nồng hạt tiêu xay.':
+    'Bite-sized pork belly simmered slowly in amber caramel sauce with fragrant cracked black pepper.',
+  'Thịt gà ta chắc thịt rang xém cạnh vàng ruộm, thơm nức mùi gừng tươi và lá chanh thái chỉ, vị đậm đà ấm bụng.':
+    'Free-range chicken pan-roasted until golden at the edges with julienned fresh ginger and aromatic kaffir lime leaves.',
+  'Khúc cá basa béo ngậy được kho trong nồi đất với nước màu dừa, ớt hiểm và đầu hành lá, nước kho sánh quyện đậm đà.':
+    'Tender basa fish steaks braised in a traditional claypot with coconut caramel, bird’s eye chili, and scallion whites.',
+  'Từng miếng sườn non mềm róc xương ngập trong nước sốt chua ngọt bóng bẩy, vị hài hòa giữa giấm gạo, cà chua và đường thốt nốt.':
+    'Fall-off-the-bone baby ribs coated in a glossy sweet-and-tangy glaze of rice vinegar, ripe tomatoes, and palm sugar.',
+  'Thịt heo xắt mỏng xào nhanh cùng ớt chuông đỏ giòn ngọt, dậy mùi thơm của tỏi và dầu hào, màu sắc bắt mắt.':
+    'Thinly sliced lean pork wok-tossed with crisp red bell peppers, fragrant garlic, and savory oyster sauce.',
+  'Bát canh rau ngót xanh mướt, nước canh ngọt lịm tự nhiên từ thịt nạc thăn băm nhỏ, giải nhiệt ngày hè.':
+    'Vibrant green katuk leaves in a naturally sweet minced pork loin broth — a classic Vietnamese summer cooling soup.',
+  'Vị chua thanh mát từ me dốt, cá lóc ngọt thịt, giòn tươi từ dứa, cà chua và đậu bắp, ngào ngạt rau ngò om.':
+    'Refreshing tamarind broth with sweet snakehead fish, pineapple, tomato, okra, and aromatic rice paddy herbs.',
+  'Nước canh hầm từ sườn non ngọt đậm đà, kết hợp vị chua dìu dịu của cà chua và hành hoa thái nhỏ.':
+    'Savory slow-simmered pork rib broth balanced with ripe tomatoes and fresh chopped scallions.',
+  'Canh gà ta nấu cùng gừng tươi thái sợi, nước dùng vàng óng sóng sánh, cay ấm nồng nàn giải cảm mùa đông.':
+    'Free-range chicken simmered with julienned fresh ginger in a golden, warming broth.',
+  'Ngọn rau muống xanh mướt giòn sần sật, dậy mùi thơm lừng của tỏi phi vàng giòn rụm trên chảo lửa lớn.':
+    'Crisp green morning glory stems wok-seared over high heat with golden crispy garlic.',
+  'Miếng đậu hũ chiên vàng ươm, mềm mọng ngập trong nước sốt cà chua sánh mịn, phủ đầy hành hoa thơm nức.':
+    'Lightly golden tofu cubes simmered in a rich, velvety fresh tomato sauce topped with green onions.',
+  'Từng quả đậu cove xanh mướt tước sạch xơ, xào chín tới giữ trọn vị ngọt tự nhiên quyện cùng tỏi phi thơm phức.':
+    'Crisp-tender green beans stir-fried with fragrant sautéed garlic to lock in their natural sweetness.',
+  'Ức gà phi lê mềm mọng không hề khô bở, hấp cách thủy cùng nấm hương, gừng sợi và nước tương thanh dịu — giàu đạm, cực ít béo.':
+    'Juicy, tender chicken breast fillet gently steamed with shiitake mushrooms, ginger strips, and light soy sauce — high protein, ultra-low fat.',
+  'Thịt cá diêu hồng trắng ngần ngọt lịm, hấp cùng gừng tươi, đầu hành trắng và chút xì dầu thơm dịu — món mặn lý tưởng cho người lớn tuổi và người giữ dáng.':
+    'Delicate white red-tilapia steamed with fresh ginger, scallion whites, and light soy sauce — ideal for seniors and clean eating.',
+  'Món quốc dân của mọi gia đình Việt: trứng gà đánh bông quyện thịt nạc băm mềm ngọt và hành hoa thơm phức, bé nhỏ hay người lớn đều mê.':
+    'A beloved Vietnamese family staple: fluffy beaten eggs with savory minced lean pork and fragrant scallions.',
+  'Thịt bò phi lê mềm ngọt xào lửa lớn cùng bông cải xanh và cà rốt giòn sần sật, bổ sung dồi dào đạm, sắt và chất xơ trong 15 phút.':
+    'Tender beef tenderloin flash-seared with crisp broccoli and carrots — packed with protein, iron, and fiber in 15 minutes.',
+  'Từng con tôm sú đỏ au săn chắc, áo đều lớp sốt mắm đường keo sánh bóng mượt, thơm nức mùi tỏi phi và hành lá.':
+    'Firm tiger prawns glazed in a glossy caramelized fish sauce reduction with crispy garlic and scallions.',
+  'Đậu hũ vàng mềm nhồi nhân thịt heo băm mộc nhĩ thơm ngọt, om trong nước sốt cà chua sánh đỏ chua dịu dễ ăn.':
+    'Tender tofu pockets stuffed with minced pork and wood-ear mushrooms, braised in a tangy fresh tomato sauce.',
+  'Miếng bí đao trong xanh mềm mát nấu cùng tôm tươi giã dập ngọt nước tự nhiên, cực kỳ thanh đạm cho thực đơn giảm cân.':
+    'Translucent winter melon slices in a naturally sweet crushed-shrimp broth — ultra-light for weight-loss menus.',
+  'Hương thơm dịu dàng đặc trưng của mướp hương quyện cùng vị ngọt đậm của tôm khô ngâm mềm, nấu nhanh trong 10 phút.':
+    'Fragrant luffa gourd cooked with umami-rich softened dried shrimp in just 10 minutes.',
+  'Cải ngọt xanh non nấu cùng thịt nạc băm và vài lát gừng tươi thơm ấm, dễ tiêu hóa và giàu chất xơ cho cả nhà.':
+    'Tender choy sum greens in a warming ginger and minced lean pork broth — easy to digest and high in fiber.',
+  'Đĩa rau củ luộc xanh mướt giòn ngọt không dùng dầu mỡ, giữ trọn vitamin và chất xơ cho thực đơn giảm cân hoặc người lớn tuổi.':
+    'Vibrant oil-free boiled broccoli and carrots that preserve 100% of vitamins and dietary fiber.',
+  'Bẹ cải thìa xanh ngọc giòn ngọt quyện cùng mũ nấm đông cô mềm thơm trong lớp sốt dầu hào bóng mượt như ngoài nhà hàng.':
+    'Crisp jade-green bok choy and tender shiitake mushroom caps tossed in a glossy restaurant-style oyster sauce glaze.',
+  'Đĩa gỏi dưa leo cà rốt giòn tan, chua ngọt thanh mát giúp giải ngấy cực tốt khi ăn kèm các món kho, chiên hoặc nướng.':
+    'Crunchy cucumber and carrot ribbons in a light sweet-and-sour dressing to refresh the palate alongside rich mains.',
+  'Bí quyết pha chén nước mắm chua ngọt hài hòa theo tỷ lệ muỗng bếp nhà, tỏi ớt băm nổi đều trên mặt đẹp mắt, chấm cá chiên, chả giò hay thịt luộc đều ngon.':
+    'The golden kitchen spoon ratio for Vietnamese sweet & sour dipping fish sauce with floating minced garlic and chili.',
+  'Niêu kho quẹt Nam Bộ sệt kẹo màu cánh gián, dậy mùi thơm của tôm khô, tóp mỡ giòn rụm và hạt tiêu xanh, biến đĩa rau luộc thành mỹ vị.':
+    'Southern Vietnamese caramelized fish sauce dip with dried shrimp, crispy pork cracklings, and green peppercorns.',
+  'Chén sốt chấm màu xanh ngọc bích sánh mịn, thơm lừng lá chanh và ớt xiêm xanh, chấm ức gà hấp Eat Clean hay hải sản đều tuyệt hảo.':
+    'Emerald-green dipping sauce blended from green bird’s eye chilies, lime juice, and kaffir lime leaves — perfect for steamed chicken or seafood.',
+  'Lấy cảm hứng từ thực đơn giảm cân BBC Good Food & WeightWatchers: ức gà phi lê áp chảo mọng nước không khô bở, áo lớp sốt mật ong tỏi chanh bóng mượt chỉ ~185 kcal/khẩu phần.':
+    'Inspired by BBC Good Food & WeightWatchers: juicy pan-seared chicken breast in a glossy honey-garlic-lemon glaze at only ~185 kcal/serving.',
+  'Phương pháp hấp thanh đạm chuẩn khuyến nghị NHS Better Health: thịt cá trắng ngọt tự nhiên quyện hương gừng tươi, hành lá và nước tương dịu nhẹ, hoàn toàn không chiên rán.':
+    'NHS Better Health recommended steaming method: naturally sweet white fish with fresh ginger, scallions, and light soy sauce — zero frying.',
+  'Món canh kiểm soát calo lý tưởng cho bữa tối nhẹ bụng theo phong cách BBC Low-Calorie: bí đao mọng nước giàu chất xơ nấu cùng tôm tươi băm ngọt thanh, dưới 85 kcal/bát.':
+    'BBC Low-Calorie style light dinner soup: fiber-rich winter melon with minced fresh shrimp at under 85 kcal per bowl.',
+  'Món canh thực dưỡng ít calo chuẩn Hungry Girl & BBC Good Food: đậu hũ non mềm mượt kết hợp nấm tươi ngọt tự nhiên và lá hẹ thơm dịu, chỉ ~75 kcal/khẩu phần.':
+    'Hungry Girl & BBC Good Food inspired macrobiotic soup: silky soft tofu with fresh mushrooms and aromatic chives at only ~75 kcal/serving.',
+  'Món rau trộn giảm cân giàu đạm nhẹ bụng: ức gà luộc xé phay mềm ngọt trộn cùng dưa leo, cà rốt giòn tan và sốt chanh tỏi thanh mát, giúp no lâu mà không tích mỡ.':
+    'High-protein weight-loss salad: tender poached shredded chicken breast tossed with crunchy cucumber, carrot, and fresh lemon-garlic dressing.',
+  'Công thức One-Pan giàu Protein theo chuẩn Eat the Gains: thăn bò nạc mềm giàu sắt và creatine tự nhiên, kết hợp bông cải xanh và nấm đông cô chỉ trong 15 phút (~31g Đạm/phần).':
+    'Eat the Gains One-Pan high-protein skillet: iron-rich lean beef tenderloin with broccoli and shiitake mushrooms in 15 minutes (~31g Protein/serving).',
+  'Món ăn tăng cơ giảm mỡ kinh điển từ Fit Men Cook: cá hồi phi lê áp chảo giòn da, cung cấp đạm chất lượng cao và axit béo tốt Omega-3 hỗ trợ phục hồi cơ bắp sau tập.':
+    'Fit Men Cook classic lean-muscle meal: crispy-skin pan-seared salmon fillet rich in high-quality protein and Omega-3 fatty acids for post-workout recovery.',
+  'Công thức chuẩn bị hộp cơm (Meal Prep) nổi tiếng từ Fit Men Cook & Strongr Fastr: ức gà thái vuông xào cùng ớt chuông giàu Vitamin C và hạt điều bùi béo, hâm nóng lại vẫn mềm ngon.':
+    'Fit Men Cook & Strongr Fastr favorite meal-prep recipe: diced chicken breast stir-fried with Vitamin C-rich bell peppers and roasted cashews.',
+  'Sự kết hợp hoàn hảo giữa đạm động vật (thịt thăn nạc băm) và đạm thực vật (đậu hũ), ít chất béo bão hòa, giàu axit amin thiết yếu cho người tập luyện và gia đình.':
+    'Balanced animal protein (minced lean pork loin) and plant protein (tofu), low in saturated fat and rich in essential amino acids.',
+  'Món phụ tăng cơ siêu tốc lấy cảm hứng từ Eat the Gains: kết hợp đạm sinh học cao từ trứng gà và tôm nõn cùng sắt, folate trong rau cải xanh, chỉ mất 10 phút chế biến.':
+    'Eat the Gains 10-minute muscle-building side: high-bioavailability egg and peeled shrimp rolled with iron-rich spinach.',
+  'Tô cơm dinh dưỡng hiện đại rất được người tập Yoga & Gym ưa chuộng: cá hồi giàu Omega-3 kết hợp quả bơ sáp béo tốt, dưa leo, rong biển và tinh bột hấp thu chậm từ gạo lứt.':
+    'Modern nutrient-dense Poke Bowl loved by Yoga & Gym practitioners: Omega-3 salmon, creamy avocado, cucumber, seaweed, and slow-digesting brown rice.',
+  'Cách chế biến giúp ức gà mềm ngọt tuyệt đối, không còn cảm giác khô xơ: ức gà cuộn lá rong biển và cà rốt áp chảo dầu ô liu thơm lừng, cực hợp mang đi làm hoặc ăn sau tập.':
+    'Keeps chicken breastextra-juicy: chicken breast rolled with nori seaweed and carrot, pan-seared in olive oil with roasted sesame glaze.',
+  'Món ăn tối siêu tốc chỉ 10 phút cho người bận rộn tập Gym/Yoga: tôm bóc nõn săn giòn giàu đạm nạc, áp chảo cùng tỏi thơm, dầu ô liu và bông cải xanh giòn ngọt.':
+    '10-minute high-protein dinner for busy Gym/Yoga days: plump peeled shrimp seared in garlic olive oil with crisp-tender broccoli.',
+  'Món miến trộn thanh mát giúp đổi vị khi ngán cơm: sợi miến dong dai giòn trộn cùng ức gà xé, rau chân vịt (cải bó xôi), nấm đông cô và dầu mè thơm dịu.':
+    'Refreshing glass noodle bowl when you want a break from rice: chewy arrowroot glass noodles tossed with shredded chicken breast, spinach, shiitake, and sesame oil.',
+  'Món mặn đạm thực vật nhẹ bụng chuẩn thực dưỡng cho người tập Yoga: đậu phụ trắng áp chảo xém vàng không ngập dầu, quyện cùng sốt nấm đông cô và cải thìa xanh mướt.':
+    'Light plant-protein main for Yoga practitioners: golden pan-seared white tofu in savory shiitake mushroom sauce with crisp bok choy.',
+  'Bữa ăn phục hồi cơ bắp toàn diện sau buổi tập nặng: thăn bò phi lê giàu đạm & sắt kết hợp ớt chuông giàu Vitamin C và tinh bột tốt từ khoai lang mật.':
+    'Complete post-workout muscle recovery plate: high-protein, iron-rich beef tenderloin cubes with bell peppers and pan-roasted honey sweet potato.',
+  'Món canh thanh lọc cơ thể cực nhanh (8 phút) cho người tập Yoga và giảm cân: rong biển giàu khoáng chất và chất xơ hòa tan kết hợp đậu hũ non mềm mượt cùng tôm tươi.':
+    '8-minute mineral-rich detox soup for Yoga and weight loss: wakame seaweed, silky soft tofu, and sweet fresh peeled shrimp.',
+  'Sự kết hợp vàng giữa siêu thực phẩm cải bó xôi (Spinach) và thịt bò nạc băm, bổ sung sắt, folate và đạm phục hồi cơ bắp cho người tập Gym & Yoga.':
+    'Golden superfood pairing of fresh spinach and lean minced beef with ginger — rich in iron, folate, and muscle-repairing protein.',
+  'Thay thế hoàn toàn kem béo whipping cream bằng sữa chua Hy Lạp giàu đạm và hạt Chia: bát súp bí đỏ sánh mịn, ngọt tự nhiên, cực kỳ nhẹ bụng trước hoặc sau buổi tập Yoga.':
+    'Replaces heavy cream with high-protein Greek yogurt and Chia seeds: velvety, naturally sweet pumpkin soup that feels light before or after Yoga.',
+  'Đĩa salad chuẩn Eat Clean không dùng sốt Mayonnaise công nghiệp: tận dụng độ béo sánh của sữa chua Hy Lạp và quả bơ sáp, kết hợp trứng gà luộc và rau củ tươi giòn.':
+    'Mayo-free Eat Clean salad: creamy Greek yogurt dressing paired with ripe avocado, boiled farm eggs, and crisp purple cabbage.',
+  'Biến tấu gỏi cuốn Việt Nam chuẩn Fitness: thay thịt ba chỉ mỡ bằng ức gà phi lê mềm ngọt và tôm tươi, cuốn đầy xà lách, dưa leo và rau thơm thanh mát.':
+    'Fitness-friendly Vietnamese summer rolls: swaps fatty pork belly for tender chicken breast and fresh shrimp wrapped with lettuce, cucumber, and herbs.',
+  'Món ăn nhanh 5 phút không cần nấu dành cho người tập Yoga buổi sáng hoặc nạp năng lượng sạch trước khi tập Gym: giàu chất xơ hòa tan Beta-glucan, đạm dễ tiêu và Omega-3 thực vật.':
+    'No-cook 5-minute morning Yoga or pre-workout bowl: rich in Beta-glucan soluble fiber from rolled oats, Greek yogurt protein, and plant Omega-3 from Chia seeds.',
 };
 
 const PATTERN_REPLACEMENTS: Array<[RegExp, string]> = [
@@ -603,6 +1139,7 @@ const PATTERN_REPLACEMENTS: Array<[RegExp, string]> = [
   [/^Lộ trình nấu món này \((\d+) giai đoạn\)$/i, 'Cooking Roadmap ($1 phases)'],
   [/^Năng lượng 1 người ăn \(1\/(\d+) nồi\)$/i, 'Energy per serving (1/$1 of batch)'],
   [/^(\d+) thành phần$/i, '$1 ingredients'],
+  [/^(\d+) thành phần đã bóc tách$/i, '$1 detected items'],
   [/^(\d+) nhãn$/i, '$1 tags'],
   [/^Ăn được: (\d+)%$/i, 'Edible: $1%'],
   [/^Độ khó: Dễ$/i, 'Difficulty: Easy'],
@@ -615,12 +1152,62 @@ const PATTERN_REPLACEMENTS: Array<[RegExp, string]> = [
   [/^kcal\/ngày \((.+)\)$/i, 'kcal/day ($1)'],
   [/^Nước uống: ([\d.]+) lít\/ngày$/i, 'Water Intake: $1 L/day'],
   [/^~(\d+)g tươi sống \/ ngày$/i, '~$1g raw weight / day'],
+  [/^~(\d+)g tươi sống\/ngày$/i, '~$1g raw weight/day'],
   [/^~(\d+)g Đạm$/i, '~$1g Protein'],
+  [/^(\d+(?:\.\d+)?)g Đạm$/i, '$1g Protein'],
+  [/^• (\d+)% đĩa$/i, '• $1% of plate'],
   [/^~(\d+) kcal\/người$/i, '~$1 kcal/person'],
   [/^Ghép ngay Mâm cơm 3 món khớp mức (\d+) kcal\/bữa tối$/i, 'Build 3-Dish Meal Tray Matching $1 kcal Dinner'],
   [/^Xem các món ăn ≤ (\d+) kcal\/khẩu phần$/i, 'Browse Dishes ≤ $1 kcal/serving'],
   [/^Đạm (\d+(?:\.\d+)?)g$/i, 'Protein $1g'],
   [/^· Béo (\d+(?:\.\d+)?)g$/i, '· Fat $1g'],
+  [/^⭐ Điểm đĩa: (\d+(?:\.\d+)?)\/10$/i, '⭐ Plate Score: $1/10'],
+  [/^🥩 (\d+(?:\.\d+)?)g Đạm • 🥦 (\d+(?:\.\d+)?)g Xơ$/i, '🥩 $1g Pro • 🥦 $2g Fiber'],
+  [/^Đĩa (\d+)g \((\d+)% bữa\)$/i, 'Plate $1g ($2% of meal)'],
+  [/^🥦 Rau (\d+)%$/i, '🥦 Veggies $1%'],
+  [/^🥩 Đạm (\d+(?:\.\d+)?)g$/i, '🥩 Pro $1g'],
+  [/^🍚 Carb (\d+(?:\.\d+)?)g$/i, '🍚 Carb $1g'],
+  [/^🥑 Béo (\d+(?:\.\d+)?)g$/i, '🥑 Fat $1g'],
+  [/^(\d+(?:\.\d+)?)g Béo$/i, '$1g Fat'],
+  [/^(\d+(?:\.\d+)?)g Xơ$/i, '$1g Fiber'],
+  [/^💡 Thiếu đạm\/rau → (.+)$/i, '💡 Boost plate → $1'],
+  [/^📊 Tỷ lệ Đĩa Ăn \((\d+)g\)$/i, '📊 Plate Ratio ($1g)'],
+  [/^Đạt (\d+)% • Dư (\d+) kcal$/i, '$1% of target • $2 kcal left'],
+  [/^Đạt (\d+)% • Vượt (\d+) kcal$/i, '$1% of target • +$2 kcal over'],
+  [/^🍽️ Thành phần trên đĩa \((\d+) món\) — Bấm \[-\] \/ \[\+\] để chỉnh gram:$/i, '🍽️ Detected Plate Items ($1 items) — Click [-] / [+] to adjust grams:'],
+  [/^🔍 Xem cơ sở đo lường AI \((\d+)% chuẩn\) & lời khuyên$/i, '🔍 View AI Measurement Basis ($1% confidence) & Coach Notes'],
+  [/^✅ Tỷ lệ Đạm \((\d+(?:\.\d+)?)g\) & Rau xanh \((\d+)%\) đã cân đối chuẩn vàng!$/i, '✅ Protein ($1g) & Veggies ($2%) are in golden balance!'],
+  [/^Lưu vào Nhật Ký \((\d+) kcal\)$/i, 'Save to Diary ($1 kcal)'],
+  [/^📝 Lưu đĩa ăn này vào Nhật ký hôm nay \((.+)\):$/i, '📝 Save this scanned plate to today’s Diary ($1):'],
+  [/^1\. Chia ([\d.,]+) kcal Vào 3 Bữa Ăn Trong Ngày Như Thế Nào\?$/i, '1. How to Split $1 kcal Across Your 3 Daily Meals?'],
+  [/^ĐÃ LỌC (\d+) MÓN ĂN TRÊN WEBSITE KHỚP CHỈ SỐ CỦA BẠN$/i, 'MATCHED $1 VERIFIED RECIPES TO YOUR PERSONAL MACROS'],
+  [/^✨ Tất cả \((\d+) món\)$/i, '✨ All ($1 dishes)'],
+  [/^🧘 Yoga & Eat Clean \((\d+)\)$/i, '🧘 Yoga & Eat Clean ($1)'],
+  [/^💪 Tập Gym Tăng Cơ \((\d+)\)$/i, '💪 Gym Muscle ($1)'],
+  [/^📉 Giảm Cân Ít Calo \((\d+)\)$/i, '📉 Low Calorie ($1)'],
+  [/^🌤️ Trưa \((\d+) kcal\)$/i, '🌤️ Lunch ($1 kcal)'],
+  [/^🌙 Tối \((\d+) kcal\)$/i, '🌙 Dinner ($1 kcal)'],
+  [/^☀️ Sáng \((\d+) kcal\)$/i, '☀️ Breakfast ($1 kcal)'],
+  [/^🍱 Gợi ý Mâm Cơm 3 Món #(\d+) \((.+)\):$/i, '🍱 Suggested 3-Dish Tray #$1 ($2):'],
+  [/^Tổng mâm \+ ([\d.]+) chén cơm: ~(\d+) kcal • ([\d.]+)g Đạm$/i, 'Full tray + $1 bowls rice: ~$2 kcal • $3g Protein'],
+  [/^Đổi mâm gợi ý khác \((\d+)\/(\d+)\)$/i, 'Spin another tray ($1/$2)'],
+  [/^(\d+) kcal\/phần$/i, '$1 kcal/serving'],
+  [/^🥩 Món Mặn \((\d+)\)$/i, '🥩 Mains ($1)'],
+  [/^🍲 Món Canh \((\d+)\)$/i, '🍲 Soups ($1)'],
+  [/^🥬 Món Rau \((\d+)\)$/i, '🥬 Veggies ($1)'],
+  [/^Xem thêm \((\d+) món phù hợp nữa\)$/i, 'Show $1 more matching dishes'],
+  [/^💪 Gym • ([\d.]+)g Đạm$/i, '💪 Gym • $1g Pro'],
+  [/^🧘 Eat Clean • ([\d.]+)g Đạm$/i, '🧘 Eat Clean • $1g Pro'],
+  [/^Giảm cân • ([\d.]+)g Đạm$/i, 'Weight Loss • $1g Pro'],
+  [/^🧘 Nhẹ bụng \((\d+) kcal\)$/i, '🧘 Light ($1 kcal)'],
+  [/^Ít Calo \((\d+) kcal\)$/i, 'Low Cal ($1 kcal)'],
+  [/^Đạm cao \(([\d.]+)g\)$/i, 'High Pro ($1g)'],
+  [/^🧘 Eat Clean \((\d+) kcal\)$/i, '🧘 Eat Clean ($1 kcal)'],
+  [/^Giàu chất xơ \((\d+) kcal\)$/i, 'High Fiber ($1 kcal)'],
+  [/^💪 Tăng cơ • ([\d.]+)g Đạm$/i, '💪 Muscle • $1g Pro'],
+  [/^💪 Phục hồi • ([\d.]+)g Đạm$/i, '💪 Recovery • $1g Pro'],
+  [/^🥩 ([\d.]+)g Đạm$/i, '🥩 $1g Pro'],
+  [/^🥑 ([\d.]+)g Béo$/i, '🥑 $1g Fat'],
   [/^(\d+) người$/i, '$1 servings'],
   [/^(\d+) phút$/i, '$1 mins'],
   [/^(\d+(?:\.\d+)?)\s*muỗng canh$/i, '$1 tbsp'],
@@ -655,13 +1242,26 @@ export function translateViTextToEn(raw: string): string {
   // Inline token replacements for mixed dynamic strings
   if (
     trimmed.includes('Phân loại Bộ Y Tế VN') ||
+    trimmed.includes('Cân nặng chuẩn chiều cao') ||
     trimmed.includes('Lộ trình từ ') ||
     trimmed.includes('Dự kiến ~') ||
     trimmed.includes('chén cơm') ||
+    trimmed.includes('chén/ngày') ||
+    trimmed.includes('tươi sống/ngày') ||
+    trimmed.includes('lít/ngày') ||
     trimmed.includes('so với TDEE') ||
     trimmed.includes('Tổng thời gian khoảng') ||
     trimmed.includes('Hiện có ') ||
-    trimmed.includes('Đang xem dòng ')
+    trimmed.includes('Đang xem dòng ') ||
+    trimmed.includes('Điểm Đĩa Ăn') ||
+    trimmed.includes('Bổ sung thêm') ||
+    trimmed.includes('Đã lưu') ||
+    trimmed.includes('Phù hợp: Phở') ||
+    trimmed.includes('Phù hợp: 1 chén cơm') ||
+    trimmed.includes('Phù hợp: ½ – 1 chén cơm') ||
+    trimmed.includes('Bữa Sáng') ||
+    trimmed.includes('Bữa Trưa') ||
+    trimmed.includes('Bữa Tối')
   ) {
     const out = trimmed
       .replace(/Phân loại Bộ Y Tế VN & WHO Châu Á:/g, 'VN MOH & WHO Asia Classification:')
@@ -671,12 +1271,19 @@ export function translateViTextToEn(raw: string): string {
       .replace(/Béo phì độ II/g, 'Obesity Class II')
       .replace(/Thiếu cân \/ Thể trạng gầy/g, 'Underweight')
       .replace(/Chuẩn Châu Á/g, 'Asian Standard')
+      .replace(/Cân nặng chuẩn chiều cao (\d+)cm:/g, 'Ideal weight for $1cm:')
       .replace(/Lộ trình từ /g, 'Timeline from ')
+      .replace(/Lộ trình:/g, 'Target:')
       .replace(/Giảm /g, 'Lose ')
       .replace(/Tăng /g, 'Gain ')
       .replace(/Dự kiến ~(\d+) tuần \(([\d.]+) tháng\) an toàn y khoa/g, 'Est. ~$1 weeks ($2 months) clinically safe')
+      .replace(/\(~(\d+) tuần\)/g, '(~$1 weeks)')
       .replace(/chén cơm trắng/g, 'bowls white rice')
       .replace(/chén gạo lứt/g, 'bowls brown rice')
+      .replace(/chén\/ngày/g, 'bowls/day')
+      .replace(/tươi sống\/ngày/g, 'raw weight/day')
+      .replace(/lít\/ngày/g, 'L/day')
+      .replace(/(\d+)\s*ml\/kg cân nặng/g, '$1 ml/kg body weight')
       .replace(/so với TDEE/g, 'vs. TDEE')
       .replace(/Tổng thời gian khoảng/g, 'Total time approx.')
       .replace(/Biên soạn bởi/g, 'Curated by')
@@ -687,6 +1294,14 @@ export function translateViTextToEn(raw: string): string {
       .replace(/Đang xem dòng/g, 'Showing rows')
       .replace(/trên tổng số/g, 'of')
       .replace(/nguyên liệu/g, 'ingredients')
+      .replace(/Phù hợp: Phở bò\/gà ít bánh, Yến mạch sữa chua Hy Lạp hoặc Khoai lang \+ 2 quả trứng luộc\./g, 'Ideal: Light Pho, Greek Yogurt Rolled Oats, or Sweet Potato + 2 Boiled Eggs.')
+      .replace(/Phù hợp: 1 chén cơm \+ Ức gà\/Cá\/Thịt bò áp chảo \+ Rau củ luộc hoặc xào ít dầu\./g, 'Ideal: 1 bowl rice + Pan-seared Chicken/Fish/Beef + Boiled or light stir-fried veggies.')
+      .replace(/Phù hợp: ½ – 1 chén cơm \(hoặc miến\/khoai\) \+ Món mặn thanh đạm \+ 1 bát canh rau\/nấm ấm bụng\./g, 'Ideal: ½ – 1 bowl rice (or glass noodles) + Light protein main + Warm veggie/mushroom soup.')
+      .replace(/Bữa Sáng/g, 'Breakfast')
+      .replace(/Bữa Trưa/g, 'Lunch')
+      .replace(/Bữa Tối/g, 'Dinner')
+      .replace(/Bổ sung thêm \(~(\d+)g\)/g, 'Added item (~$1g)')
+      .replace(/Đã lưu \(([\d.,]+) kcal\) vào Nhật ký hôm nay!/g, 'Saved ($1 kcal) to today’s Diary!')
       .replace(/(\d+)\s*người/g, '$1 servings')
       .replace(/(\d+)\s*phút/g, '$1 mins');
     return raw.replace(trimmed, out);

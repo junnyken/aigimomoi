@@ -21,8 +21,10 @@ const STORAGE_KEY = 'angimom_locale';
 
 // Lưu trữ bản gốc Tiếng Việt của từng Text Node và Attribute để khôi phục chính xác 100% khi chuyển lại VI
 const originalTextMap = new WeakMap<Text, string>();
+const lastTranslatedMap = new WeakMap<Text, string>();
 const trackedTextNodes = new Set<Text>();
 const originalAttrMap = new WeakMap<HTMLElement, { placeholder?: string; title?: string }>();
+const lastTranslatedAttrMap = new WeakMap<HTMLElement, { placeholder?: string; title?: string }>();
 const trackedElements = new Set<HTMLElement>();
 
 const IGNORED_TAGS = new Set(['SCRIPT', 'STYLE', 'NOSCRIPT', 'TEXTAREA', 'CODE', 'PRE', 'SVG']);
@@ -72,12 +74,15 @@ function applyDomTranslation(root: Node, targetLocale: Locale) {
       if (parentEl && !shouldIgnoreNode(parentEl)) {
         const val = textNode.nodeValue ?? '';
         if (val.trim().length > 0) {
-          if (!originalTextMap.has(textNode)) {
+          const lastEn = lastTranslatedMap.get(textNode);
+          // Nếu React vừa cập nhật nội dung mới vào TextNode này (khác với bản dịch EN lần trước)
+          if (!originalTextMap.has(textNode) || (lastEn !== undefined && val !== lastEn)) {
             originalTextMap.set(textNode, val);
             trackedTextNodes.add(textNode);
           }
           const baseVi = originalTextMap.get(textNode) ?? val;
           const translated = translateViTextToEn(baseVi);
+          lastTranslatedMap.set(textNode, translated);
           if (translated !== val) {
             textNode.nodeValue = translated;
           }
@@ -89,22 +94,37 @@ function applyDomTranslation(root: Node, targetLocale: Locale) {
         const placeholder = el.getAttribute('placeholder');
         const title = el.getAttribute('title');
         if (placeholder || title) {
+          const lastAttr = lastTranslatedAttrMap.get(el);
           if (!originalAttrMap.has(el)) {
             originalAttrMap.set(el, {
               placeholder: placeholder ?? undefined,
               title: title ?? undefined,
             });
             trackedElements.add(el);
+          } else {
+            const orig = originalAttrMap.get(el) ?? {};
+            if (placeholder && lastAttr?.placeholder && placeholder !== lastAttr.placeholder) {
+              orig.placeholder = placeholder;
+            }
+            if (title && lastAttr?.title && title !== lastAttr.title) {
+              orig.title = title;
+            }
+            originalAttrMap.set(el, orig);
           }
           const orig = originalAttrMap.get(el);
+          let nextP = placeholder ?? undefined;
+          let nextT = title ?? undefined;
           if (orig?.placeholder) {
             const trP = translateViTextToEn(orig.placeholder);
+            nextP = trP;
             if (trP !== placeholder) el.setAttribute('placeholder', trP);
           }
           if (orig?.title) {
             const trT = translateViTextToEn(orig.title);
+            nextT = trT;
             if (trT !== title) el.setAttribute('title', trT);
           }
+          lastTranslatedAttrMap.set(el, { placeholder: nextP, title: nextT });
         }
       }
     }
@@ -190,6 +210,7 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
     observer.observe(document.body, {
       childList: true,
       subtree: true,
+      characterData: true,
     });
 
     return () => {
