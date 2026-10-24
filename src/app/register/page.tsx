@@ -468,6 +468,9 @@ function RegisterForm() {
             <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
               Mã OTP đã được gửi tới hộp thư <strong>{email}</strong> (hiệu lực 10 phút). Tài khoản chỉ được tạo và đăng nhập sau khi xác nhận đúng mã này.
             </p>
+            <p className="text-[11px] text-amber-800 bg-amber-50/80 border border-amber-200 rounded-xl px-3 py-2 leading-relaxed">
+              💡 <strong>Mẹo nhỏ:</strong> Nếu chưa thấy trong <strong>Hộp thư đến (Inbox)</strong> sau 10 giây, vui lòng kiểm tra mục <strong>Thư rác (Spam)</strong> hoặc <strong>Quảng cáo</strong> và bấm <em>&ldquo;Không phải thư rác (Report not spam)&rdquo;</em> để các thư sau luôn vào thẳng Inbox.
+            </p>
 
             {demoOtpCode && (
               <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-300 text-amber-950 text-xs flex items-center justify-between gap-2">

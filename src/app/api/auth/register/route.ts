@@ -252,6 +252,7 @@ export async function POST(request: NextRequest) {
       step,
       otpCode,
       otpToken,
+      turnstileToken,
       humanVerified,
       challengeAnswer,
       challengeExpected,
@@ -273,6 +274,37 @@ export async function POST(request: NextRequest) {
         { error: 'Thao tác quá nhanh bất thường. Vui lòng xác nhận bạn là người thật.' },
         { status: 400 }
       );
+    }
+
+    // 1.6. Nếu máy chủ đã cấu hình TURNSTILE_SECRET_KEY của Cloudflare Turnstile -> xác thực trực tiếp với Cloudflare
+    const turnstileSecret = process.env.TURNSTILE_SECRET_KEY?.trim();
+    if (turnstileSecret && step === 'send-otp') {
+      if (!turnstileToken || typeof turnstileToken !== 'string') {
+        return NextResponse.json(
+          { error: 'Vui lòng hoàn tất xác thực chống Bot Cloudflare Turnstile.' },
+          { status: 400 }
+        );
+      }
+      try {
+        const cfRes = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            secret: turnstileSecret,
+            response: turnstileToken,
+            remoteip: getClientIp(request),
+          }),
+        });
+        const cfData = (await cfRes.json()) as { success?: boolean };
+        if (!cfData.success) {
+          return NextResponse.json(
+            { error: 'Xác thực Cloudflare Turnstile không hợp lệ hoặc đã hết hạn. Vui lòng thử lại.' },
+            { status: 400 }
+          );
+        }
+      } catch (cfErr) {
+        logger.warn('Lỗi kết nối Cloudflare Turnstile siteverify', { error: String(cfErr) });
+      }
     }
 
     // Yêu cầu xác nhận người thật khi gọi từ giao diện đăng ký

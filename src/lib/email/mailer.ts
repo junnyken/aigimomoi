@@ -1,5 +1,11 @@
 import net from 'node:net';
 import tls from 'node:tls';
+import crypto from 'node:crypto';
+
+function wrapBase64Mime(str: string): string {
+  const b64 = Buffer.from(str, 'utf-8').toString('base64');
+  return b64.match(/.{1,76}/g)?.join('\r\n') || b64;
+}
 
 export interface EmailOptions {
   to: string;
@@ -77,7 +83,7 @@ async function sendViaSmtp(options: EmailOptions): Promise<SendEmailResult> {
       try {
         if (step === 0 && code === 220) {
           step = 1;
-          socket.write(`EHLO angimom.vn\r\n`);
+          socket.write(`EHLO gmail.com\r\n`);
         } else if (step === 1 && code === 250) {
           step = 2;
           socket.write(`AUTH LOGIN\r\n`);
@@ -98,15 +104,36 @@ async function sendViaSmtp(options: EmailOptions): Promise<SendEmailResult> {
           socket.write(`DATA\r\n`);
         } else if (step === 7 && code === 354) {
           step = 8;
+          const senderDomain = fromEmail.split('@')[1] || 'gmail.com';
+          const msgId = `<${crypto.randomUUID()}@${senderDomain}>`;
+          const boundary = `----=_Part_${crypto.randomBytes(12).toString('hex')}`;
+          const plainText =
+            options.text ||
+            options.html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+
           const msg = [
-            `From: ${fromHeader}`,
-            `To: <${options.to}>`,
-            `Subject: =?UTF-8?B?${Buffer.from(options.subject).toString('base64')}?=`,
+            `Message-ID: ${msgId}`,
             `Date: ${new Date().toUTCString()}`,
+            `From: ${fromHeader}`,
+            `Reply-To: <${fromEmail}>`,
+            `To: <${options.to}>`,
+            `Subject: =?UTF-8?B?${Buffer.from(options.subject, 'utf-8').toString('base64')}?=`,
             `MIME-Version: 1.0`,
-            `Content-Type: text/html; charset=UTF-8`,
+            `Content-Type: multipart/alternative; boundary="${boundary}"`,
             ``,
-            options.html,
+            `--${boundary}`,
+            `Content-Type: text/plain; charset=UTF-8`,
+            `Content-Transfer-Encoding: base64`,
+            ``,
+            wrapBase64Mime(plainText),
+            ``,
+            `--${boundary}`,
+            `Content-Type: text/html; charset=UTF-8`,
+            `Content-Transfer-Encoding: base64`,
+            ``,
+            wrapBase64Mime(options.html),
+            ``,
+            `--${boundary}--`,
             `.`,
             ``
           ].join('\r\n');
@@ -250,34 +277,53 @@ export async function sendVerificationOtpEmail(
   const safeEmail = email.replace(/[\r\n<>]/g, '').trim();
   const escapedName = escapeHtml(displayName.trim());
   const escapedOtp = escapeHtml(otpCode.trim());
-  const subject = `[${escapedOtp}] Mã xác nhận tạo tài khoản ĂN GÌ MOM`;
+  // Tiêu đề tự nhiên chuẩn Transactional (tránh dùng ngoặc vuông [ ] và chữ IN HOA toàn bộ để không bị bộ lọc Gmail đẩy vào Spam)
+  const subject = `Mã xác thực tài khoản Ăn Gì Mom của ${displayName.trim()}: ${otpCode.trim()}`;
   const html = `
-    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 560px; margin: 0 auto; padding: 24px; border: 1px solid #e5e7eb; border-radius: 14px; background-color: #ffffff;">
-      <div style="text-align: center; margin-bottom: 20px;">
-        <span style="display: inline-block; padding: 6px 14px; background: #EAF0EA; color: #3F6240; border-radius: 20px; font-weight: 700; font-size: 14px;">ĂN GÌ MOM • XÁC MINH EMAIL</span>
-        <h1 style="color: #253126; font-size: 20px; margin-top: 12px; margin-bottom: 6px;">Xác nhận Email đăng ký tài khoản</h1>
-        <p style="color: #596454; font-size: 14px; margin: 0;">Xin chào <strong>${escapedName}</strong>, vui lòng nhập mã 6 số dưới đây để hoàn tất kích hoạt tài khoản của bạn:</p>
-      </div>
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 540px; margin: 0 auto; padding: 24px; border: 1px solid #e5e7eb; border-radius: 12px; background-color: #ffffff; color: #253126;">
+      <p style="font-size: 14px; color: #3F6240; font-weight: 700; margin-top: 0; margin-bottom: 12px;">
+        Ăn Gì Mom — Gian bếp gia đình Việt
+      </p>
+      <p style="font-size: 15px; line-height: 1.6; margin-top: 0; margin-bottom: 16px;">
+        Chào <strong>${escapedName}</strong>,
+      </p>
+      <p style="font-size: 14px; line-height: 1.6; color: #4b5563; margin-top: 0; margin-bottom: 16px;">
+        Cảm ơn bạn đã đăng ký thành viên tại Ăn Gì Mom bằng địa chỉ <strong>${escapeHtml(safeEmail)}</strong>. Đây là mã xác thực 6 chữ số để hoàn tất kích hoạt tài khoản của bạn:
+      </p>
 
-      <div style="background-color: #F4F8F4; border: 2px dashed #3F6240; border-radius: 12px; padding: 20px; text-align: center; margin-bottom: 20px;">
-        <div style="font-size: 32px; font-weight: 900; letter-spacing: 8px; color: #2F4F30; font-family: monospace;">
+      <div style="background-color: #F4F8F4; border: 1px solid #C6DEC6; border-radius: 10px; padding: 16px; text-align: center; margin-bottom: 18px;">
+        <span style="font-size: 28px; font-weight: 800; letter-spacing: 6px; color: #2F4F30; font-family: monospace;">
           ${escapedOtp}
-        </div>
-        <p style="color: #596454; font-size: 12px; margin-top: 8px; margin-bottom: 0;">
-          Mã xác nhận có hiệu lực trong vòng <strong>10 phút</strong>. Tuyệt đối không chia sẻ mã này cho người khác.
-        </p>
+        </span>
       </div>
 
-      <p style="color: #9ca3af; font-size: 12px; text-align: center; margin: 0;">
-        Nếu bạn không yêu cầu tạo tài khoản tại Ăn Gì Mom, vui lòng bỏ qua email này.
+      <p style="font-size: 13px; line-height: 1.6; color: #6b7280; margin-top: 0; margin-bottom: 16px;">
+        Mã này có hiệu lực trong 10 phút. Bạn chỉ cần nhập 6 chữ số trên vào trang đăng ký để bắt đầu lưu thực đơn và nhật ký dinh dưỡng.
+      </p>
+
+      <hr style="border: 0; border-top: 1px solid #f3f4f6; margin: 16px 0;" />
+      <p style="color: #9ca3af; font-size: 12px; margin: 0;">
+        Thân mến,<br/>Đội ngũ Ăn Gì Mom (https://angimom.vibe.tinhgon.xyz)
       </p>
     </div>
   `;
+
+  const text = [
+    `Chào ${displayName.trim()},`,
+    ``,
+    `Cảm ơn bạn đã đăng ký thành viên tại Ăn Gì Mom (${safeEmail}).`,
+    `Mã xác thực 6 chữ số của bạn là: ${otpCode.trim()}`,
+    ``,
+    `Mã có hiệu lực trong 10 phút. Vui lòng nhập mã này trên trang đăng ký để kích hoạt tài khoản.`,
+    ``,
+    `Thân mến,`,
+    `Đội ngũ Ăn Gì Mom (https://angimom.vibe.tinhgon.xyz)`
+  ].join('\r\n');
 
   return sendEmail({
     to: safeEmail,
     subject,
     html,
-    text: `Mã xác nhận tạo tài khoản Ăn Gì Mom của ${displayName} là: ${otpCode} (hiệu lực 10 phút).`,
+    text,
   });
 }
