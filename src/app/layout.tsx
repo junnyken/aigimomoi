@@ -94,20 +94,20 @@ export default function RootLayout({
           <ServiceWorkerRegister />
           {/* Sticky Header */}
           <header className="sticky top-0 z-40 w-full bg-[var(--color-surface-white)] border-b border-[var(--color-border-base)] shadow-xs">
-            <div className="w-full lg:max-w-[88vw] xl:max-w-[85vw] mx-auto px-3.5 sm:px-6 py-2.5 sm:py-3 flex flex-col gap-2">
-              <div className="flex items-center justify-between gap-2 sm:gap-4">
+            <div className="w-full lg:max-w-[95vw] xl:max-w-[92vw] mx-auto px-3.5 sm:px-5 py-2.5 sm:py-3 flex flex-col gap-2">
+              <div className="flex items-center justify-between gap-2 sm:gap-3">
                 <Link href="/" className="flex flex-col no-underline shrink-0">
                   <div className="text-xl sm:text-2xl font-bold tracking-tight leading-none" data-no-i18n="true">
                     <span className="text-[var(--color-brand-primary)]">ĂN GÌ</span>
                     <span className="text-[var(--color-accent-primary)] ml-1">MOM</span>
                   </div>
-                  <span className="text-[11px] text-[var(--color-text-secondary)] mt-1 hidden 2xl:inline">
+                  <span className="text-[10px] text-[var(--color-text-secondary)] mt-0.5 hidden xl:inline whitespace-nowrap">
                     Bữa cơm nhà, bớt nghĩ hôm nay ăn gì.
                   </span>
                 </Link>
 
                 {/* Desktop & Tablet Navigation (Single Row) */}
-                <div className="hidden md:flex items-center justify-center min-w-0 flex-1 px-1">
+                <div className="hidden md:flex items-center justify-center min-w-0 flex-1">
                   <HeaderNav />
                 </div>
 
