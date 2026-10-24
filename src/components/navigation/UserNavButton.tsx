@@ -47,20 +47,19 @@ export function UserNavButton() {
   if (user) {
     const initials = user.displayName?.slice(0, 2).toUpperCase() || 'AM';
     const isStaff = user.role === 'ADMIN' || user.role === 'EDITOR';
-    const cleanDisplayName =
-      user.displayName === 'Quản trị viên Ăn Gì Mom'
-        ? locale === 'en'
-          ? 'Editorial Admin'
-          : 'Quản trị viên'
-        : user.displayName;
+    const cleanDisplayName = user.displayName?.startsWith('Quản trị viên')
+      ? locale === 'en'
+        ? 'Admin'
+        : 'Tài khoản'
+      : user.displayName;
     return (
-      <div className="flex items-center gap-1.5 sm:gap-2 shrink-0" data-no-i18n="true">
+      <div className="flex items-center gap-1.5 shrink-0" data-no-i18n="true">
         {isStaff && (
           <Link
-            href="/editor/recipes"
+            href="/editor/dashboard"
             prefetch={false}
             title="Vào trang Quản trị & Ban biên tập"
-            className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-xs sm:text-sm leading-5 font-bold transition-colors"
+            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-xs leading-5 font-bold transition-colors shrink-0"
           >
             <ShieldCheck className="w-3.5 h-3.5 text-amber-700 shrink-0" />
             <span className="hidden sm:inline">{labels.admin}</span>
@@ -70,12 +69,12 @@ export function UserNavButton() {
           href="/profile"
           prefetch={false}
           title={`${labels.account}: ${user.displayName}`}
-          className="inline-flex items-center gap-1.5 p-1 sm:px-3 sm:py-1.5 rounded-full bg-[var(--color-brand-light)] hover:bg-[var(--color-brand-border)]/40 text-[var(--color-brand-primary)] border border-[var(--color-brand-border)] text-xs sm:text-sm leading-5 font-semibold transition-colors shrink-0"
+          className="inline-flex items-center gap-1.5 p-1 sm:px-2.5 sm:py-1.5 rounded-full bg-[var(--color-brand-light)] hover:bg-[var(--color-brand-border)]/40 text-[var(--color-brand-primary)] border border-[var(--color-brand-border)] text-xs leading-5 font-semibold transition-colors shrink-0"
         >
-          <span className="w-5 h-5 rounded-full bg-[var(--color-brand-primary)] text-white flex items-center justify-center text-[10px] font-bold">
+          <span className="w-5 h-5 rounded-full bg-[var(--color-brand-primary)] text-white flex items-center justify-center text-[10px] font-bold shrink-0">
             {initials}
           </span>
-          <span className="hidden lg:inline max-w-[130px] truncate">{cleanDisplayName}</span>
+          <span className="hidden xl:inline max-w-[95px] truncate">{cleanDisplayName}</span>
         </Link>
       </div>
     );

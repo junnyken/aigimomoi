@@ -101,13 +101,13 @@ export default function RootLayout({
                     <span className="text-[var(--color-brand-primary)]">ĂN GÌ</span>
                     <span className="text-[var(--color-accent-primary)] ml-1">MOM</span>
                   </div>
-                  <span className="text-[11px] text-[var(--color-text-secondary)] mt-1 hidden xl:inline">
+                  <span className="text-[11px] text-[var(--color-text-secondary)] mt-1 hidden 2xl:inline">
                     Bữa cơm nhà, bớt nghĩ hôm nay ăn gì.
                   </span>
                 </Link>
 
                 {/* Desktop & Tablet Navigation (Single Row) */}
-                <div className="hidden md:flex items-center justify-center min-w-0 flex-1">
+                <div className="hidden md:flex items-center justify-center min-w-0 flex-1 px-1">
                   <HeaderNav />
                 </div>
 

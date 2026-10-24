@@ -38,12 +38,12 @@ const ADMIN_NAV_ITEMS: AdminNavItem[] = [
   },
   {
     href: '/editor/recipes',
-    label: 'Bài viết & Công thức',
+    label: 'Kho Công thức',
     icon: BookOpen,
   },
   {
     href: '/editor/ingredients',
-    label: 'Dữ liệu Dinh dưỡng (FCT)',
+    label: 'Nguyên liệu FCT',
     icon: Carrot,
   },
   {
@@ -144,10 +144,10 @@ export function AdminTopNav({ title, subtitle, rightActions }: AdminTopNavProps)
           </div>
         </div>
 
-        {/* Hàng 2: Thanh Tab 8 Phân hệ Quản trị Thống nhất */}
+        {/* Hàng 2: Thanh Tab 8 Phân hệ Quản trị Thống nhất — Tự động co giãn trọn vẹn trên 1 hàng không thanh cuộn */}
         <nav
           aria-label="Phân hệ quản trị"
-          className="flex items-center gap-1.5 overflow-x-auto pb-0.5 no-scrollbar"
+          className="flex flex-wrap items-center gap-1.5"
         >
           {ADMIN_NAV_ITEMS.map((item) => {
             const Icon = item.icon;
@@ -160,7 +160,7 @@ export function AdminTopNav({ title, subtitle, rightActions }: AdminTopNavProps)
               <Link
                 key={item.href}
                 href={item.href}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all border ${
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all border ${
                   isActive
                     ? 'bg-[#3F6240] text-white border-[#3F6240] shadow-2xs'
                     : 'bg-[#FAF7F0] text-[#5C4A3A] border-[#E5DAC8] hover:border-[#3F6240] hover:text-[#2F4F30]'
