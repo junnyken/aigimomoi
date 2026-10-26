@@ -1,7 +1,8 @@
 import Link from 'next/link';
-import { Clock, Users, ChefHat, UtensilsCrossed, Store, Flame } from 'lucide-react';
+import { Clock, Users, ChefHat, UtensilsCrossed, Store, Flame, Wallet } from 'lucide-react';
 import type { PublicRecipeCard } from '@/lib/recipes/publicQueries';
 import { ROLE_LABELS, formatDuration, recipePath, isIllustrationImage } from '@/lib/recipes/labels';
+import { estimateDishCostVnd } from '@/lib/recipes/marketTips';
 import { formatPriceVND } from '@/lib/gating/pricing';
 import { BookmarkButton } from './BookmarkButton';
 
@@ -11,6 +12,7 @@ export function RecipeCard({ recipe }: { recipe: PublicRecipeCard }) {
     typeof recipe.caloriesPerServing === 'number' &&
     recipe.caloriesPerServing > 0 &&
     recipe.nutritionStatus !== 'NO_DATA';
+  const costEst = estimateDishCostVnd(recipe, recipe.baseServings || 4);
 
   return (
     <article className="group relative bg-[var(--color-surface-white)] border border-[var(--color-border-base)] rounded-2xl overflow-hidden shadow-xs hover:shadow-md transition-all hover:-translate-y-1 flex flex-col focus-within:ring-2 focus-within:ring-[var(--color-brand-primary)]">
@@ -87,15 +89,26 @@ export function RecipeCard({ recipe }: { recipe: PublicRecipeCard }) {
               {recipe.baseServings} người
             </span>
           </div>
-          {hasCalorieData && (
-            <span
-              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[var(--color-accent-light)]/70 text-[var(--color-accent-text)] font-semibold text-[11px]"
-              title="Năng lượng ước tính trên 1 khẩu phần (chưa gồm cơm trắng & nước chấm)"
-            >
-              <Flame className="w-3 h-3 text-[var(--color-accent-primary)]" aria-hidden="true" />
-              ~{recipe.caloriesPerServing} kcal
-            </span>
-          )}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {costEst.formattedPerServing && (
+              <span
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200/70 font-semibold text-[11px]"
+                title={`Chi phí nguyên liệu ước tính (${costEst.formattedRange} / ${recipe.baseServings} người)`}
+              >
+                <Wallet className="w-3 h-3 text-emerald-600" aria-hidden="true" />
+                {costEst.formattedPerServing}
+              </span>
+            )}
+            {hasCalorieData && (
+              <span
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[var(--color-accent-light)]/70 text-[var(--color-accent-text)] font-semibold text-[11px]"
+                title="Năng lượng ước tính trên 1 khẩu phần (chưa gồm cơm trắng & nước chấm)"
+              >
+                <Flame className="w-3 h-3 text-[var(--color-accent-primary)]" aria-hidden="true" />
+                ~{recipe.caloriesPerServing} kcal
+              </span>
+            )}
+          </div>
           {recipe.source === 'COMMUNITY' && (
             <span
               className={`font-semibold ${recipe.isFree ? 'text-emerald-600' : 'text-amber-700'}`}

@@ -12,12 +12,14 @@ import { logger } from '@/lib/logger';
 
 export async function POST(req: NextRequest) {
   try {
-    // 1. Phân quyền: Chỉ EDITOR hoặc ADMIN mới được tạo bản thảo
+    // 1. Phân quyền: Bắt buộc đăng nhập.
+    // - Chế độ GENERATE (bóc tách văn bản/link để điền vào form, chưa ghi DB) mở cho cả COOK/Contributor.
+    // - Chế độ SAVE_DRAFT và BATCH_SAVE_DRAFT (ghi thẳng vào DB với provenance AI_ASSISTED) chỉ dành cho EDITOR / ADMIN.
     const user = await getSessionUser();
-    if (!user || (user.role !== 'EDITOR' && user.role !== 'ADMIN')) {
+    if (!user) {
       return NextResponse.json(
-        { error: 'Chỉ Biên tập viên hoặc Quản trị viên mới có quyền sử dụng tính năng Soạn thảo AI.' },
-        { status: 403 }
+        { error: 'Vui lòng đăng nhập để sử dụng tính năng Trợ lý Soạn thảo Công thức AI.' },
+        { status: 401 }
       );
     }
 
@@ -39,6 +41,17 @@ export async function POST(req: NextRequest) {
         : body.mode === 'BATCH_SAVE_DRAFT'
         ? 'BATCH_SAVE_DRAFT'
         : 'GENERATE';
+
+    if (
+      (mode === 'SAVE_DRAFT' || mode === 'BATCH_SAVE_DRAFT') &&
+      user.role !== 'EDITOR' &&
+      user.role !== 'ADMIN'
+    ) {
+      return NextResponse.json(
+        { error: 'Chỉ Biên tập viên hoặc Quản trị viên mới có quyền lưu trực tiếp bản thảo AI vào hệ thống.' },
+        { status: 403 }
+      );
+    }
 
     const clientIp =
       req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||

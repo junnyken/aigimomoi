@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSessionUser } from '@/lib/auth/session';
 import { saveUploadedFile, deleteUploadedFile } from '@/lib/storage';
 import { isCrossSiteRequest } from '@/lib/http/sameOrigin';
+import { checkRateLimit } from '@/lib/auth/rateLimit';
 
 // POST /api/upload
 export async function POST(request: NextRequest) {
@@ -10,10 +11,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Yêu cầu bị từ chối do khác nguồn gốc (CSRF).' }, { status: 403 });
     }
     const user = await getSessionUser();
-    if (!user || (user.role !== 'ADMIN' && user.role !== 'EDITOR')) {
+    if (!user) {
       return NextResponse.json(
-        { error: 'Yêu cầu quyền Biên tập viên (EDITOR) hoặc Quản trị viên (ADMIN) để tải tệp lên.' },
-        { status: 403 }
+        { error: 'Vui lòng đăng nhập để tải ảnh món ăn lên hệ thống.' },
+        { status: 401 }
+      );
+    }
+
+    const rate = await checkRateLimit('upload', `user:${user.id}`, 30, 10 * 60 * 1000);
+    if (!rate.allowed) {
+      return NextResponse.json(
+        { error: 'Bạn đã tải lên quá nhiều ảnh trong thời gian ngắn. Vui lòng thử lại sau ít phút.' },
+        { status: 429 }
       );
     }
 

@@ -1,11 +1,14 @@
-import type { PublicRecipe } from './publicQueries';
+import type { PublicRecipe, PublicRecipeIngredient } from './publicQueries';
 import type { MealDishSummary } from '@/lib/meal/mealPresets';
+import { calculateRecipeRealCost, formatVndCurrency } from './priceDictionary';
 
 export interface MarketCostEstimate {
   minVnd: number;
   maxVnd: number;
+  perServingVnd?: number;
   tierLabel: 'Tiết kiệm' | 'Hợp lý' | 'Đổi vị / Bổ dưỡng';
   formattedRange: string;
+  formattedPerServing?: string;
 }
 
 export interface FreshnessGuideTip {
@@ -21,14 +24,38 @@ function formatVndShort(amount: number): string {
 }
 
 /**
- * Ước tính chi phí đi chợ tham khảo tại Việt Nam cho 1 món ăn (theo khẩu phần)
+ * Ước tính chi phí đi chợ tham khảo tại Việt Nam cho 1 món ăn (theo khẩu phần).
+ * Nếu món ăn có danh sách nguyên liệu định lượng (`ingredients`), tự động tính chính xác
+ * từ đơn giá bán lẻ Bách Hóa Xanh / Siêu thị (`calculateRecipeRealCost`).
  */
 export function estimateDishCostVnd(
-  dish: { name: string; role: string; baseServings?: number },
+  dish: {
+    name: string;
+    role: string;
+    baseServings?: number;
+    ingredients?: PublicRecipeIngredient[];
+  },
   targetServings = 4
 ): MarketCostEstimate {
+  if (Array.isArray(dish.ingredients) && dish.ingredients.length > 0) {
+    const real = calculateRecipeRealCost(
+      dish.ingredients,
+      dish.baseServings || 4,
+      targetServings
+    );
+    return {
+      minVnd: real.minVnd,
+      maxVnd: real.maxVnd,
+      perServingVnd: real.perServingVnd,
+      tierLabel: real.tierLabel,
+      formattedRange: real.formattedRange,
+      formattedPerServing: real.formattedPerServing,
+    };
+  }
+
   const lower = dish.name.toLowerCase();
-  const scale = Math.max(0.5, targetServings / 4);
+  const safeServings = Math.max(1, targetServings);
+  const scale = Math.max(0.5, safeServings / 4);
 
   let baseMin4 = 35000;
   let baseMax4 = 55000;
@@ -77,12 +104,16 @@ export function estimateDishCostVnd(
 
   const minVnd = Math.max(5000, Math.round((baseMin4 * scale) / 5000) * 5000);
   const maxVnd = Math.max(minVnd + 10000, Math.round((baseMax4 * scale) / 5000) * 5000);
+  const avgVnd = (minVnd + maxVnd) / 2;
+  const perServingVnd = Math.max(2000, Math.round(avgVnd / safeServings / 500) * 500);
 
   return {
     minVnd,
     maxVnd,
+    perServingVnd,
     tierLabel,
     formattedRange: `${formatVndShort(minVnd)} – ${formatVndShort(maxVnd)}`,
+    formattedPerServing: `~${formatVndCurrency(perServingVnd)}/người`,
   };
 }
 

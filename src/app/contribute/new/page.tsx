@@ -44,6 +44,7 @@ interface StepRow {
   instruction: string;
   timerMinutes: number | '';
   tipText: string;
+  image?: string;
 }
 
 export default function ContributorNewRecipePage() {
@@ -253,6 +254,7 @@ export default function ContributorNewRecipePage() {
           instruction: s.instruction.trim(),
           timerMinutes: s.timerMinutes ? Number(s.timerMinutes) : null,
           tipText: s.tipText.trim() || null,
+          image: s.image?.trim() || null,
         })),
         submitNow,
       };
@@ -681,6 +683,15 @@ export default function ContributorNewRecipePage() {
                   placeholder="💡 Mẹo nhỏ cho bước này (ví dụ: vặn nhỏ lửa, thêm chút tiêu khi tắt bếp...)"
                   className="w-full px-3 py-1.5 bg-amber-50/50 border border-amber-200/60 rounded-lg text-xs text-[#5C4A3A]"
                 />
+
+                <div className="pt-1">
+                  <ImageUpload
+                    value={step.image || ''}
+                    onChange={(url) => updateStepRow(index, { image: url })}
+                    label={`📸 Ảnh minh họa bước ${index + 1} (tùy chọn)`}
+                    hint="Tải ảnh hoặc dán link ảnh sơ chế / chế biến của bước này"
+                  />
+                </div>
               </div>
             ))}
           </div>

@@ -1,10 +1,16 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ShoppingBasket, Flame } from 'lucide-react';
+import { ShoppingBasket, Flame, Wallet, Store } from 'lucide-react';
 import type { PublicRecipeIngredient } from '@/lib/recipes/publicQueries';
 import type { RecipeNutritionSnapshot, IngredientNutritionDetail } from '@/lib/nutrition/types';
 import { scaleRecipeIngredients, clampServings, type ScaledIngredient } from '@/lib/recipes/scaling';
+import {
+  calculateRecipeRealCost,
+  estimateIngredientCostVnd,
+  formatVndCurrency,
+  formatVndRounded1k,
+} from '@/lib/recipes/priceDictionary';
 import { ServingSelector } from './ServingSelector';
 
 interface IngredientListProps {
@@ -65,6 +71,7 @@ export function IngredientList({
   }
 
   const scaleFactor = safeBase > 0 ? servings / safeBase : 1;
+  const costBreakdown = calculateRecipeRealCost(ingredients, safeBase, servings);
 
   return (
     <section
@@ -74,7 +81,7 @@ export function IngredientList({
       <div className="flex items-center justify-between gap-3">
         <h2 id="ingredients-heading" className="text-lg font-bold text-[var(--color-text-primary)] flex items-center gap-2">
           <ShoppingBasket className="w-5 h-5 text-[var(--color-brand-primary)]" aria-hidden="true" />
-          <span>Nguyên liệu & Calo</span>
+          <span>Nguyên liệu, Calo & Giá đi chợ</span>
         </h2>
         <button
           type="button"
@@ -102,8 +109,41 @@ export function IngredientList({
         onChange={(val) => setServings(val)}
       />
 
-      {/* Danh sách nguyên liệu chính kèm Calo từng thành phần */}
-      <div className="pt-2">
+      {/* Bảng Dự toán Chi phí Nguyên liệu theo chuẩn Bách Hóa Xanh & Chợ */}
+      <div
+        className="rounded-2xl border border-emerald-200/80 bg-emerald-50/60 p-3.5 flex flex-col gap-2"
+        data-testid="recipe-cost-breakdown"
+      >
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-900">
+            <Wallet className="w-4 h-4 text-emerald-700 shrink-0" aria-hidden="true" />
+            <span>Ước tính chi phí ({servings} người):</span>
+          </div>
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-700 text-white">
+            ~{costBreakdown.formattedTotal} ({costBreakdown.formattedPerServing})
+          </span>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2 text-[11px] text-emerald-900/90 pt-1 border-t border-emerald-200/60">
+          <div className="flex flex-col">
+            <span className="text-emerald-700 font-medium">Chợ truyền thống:</span>
+            <strong className="text-xs text-emerald-950">~{formatVndRounded1k(costBreakdown.minVnd)}</strong>
+          </div>
+          <div className="flex flex-col">
+            <span className="text-emerald-700 font-medium inline-flex items-center gap-1">
+              <Store className="w-3 h-3" aria-hidden="true" />
+              Bách Hóa Xanh / Siêu thị:
+            </span>
+            <strong className="text-xs text-emerald-950">~{formatVndRounded1k(costBreakdown.maxVnd)}</strong>
+          </div>
+        </div>
+        <p className="text-[10px] text-emerald-800/80 leading-snug">
+          * Tính theo lượng thực dùng trong nồi (nguyên liệu tươi ~{formatVndRounded1k(costBreakdown.freshMarketVnd)}, gia vị bếp ~{formatVndCurrency(costBreakdown.seasoningVnd)}).
+        </p>
+      </div>
+
+      {/* Danh sách nguyên liệu chính kèm Calo & Giá từng thành phần */}
+      <div className="pt-1">
         <IngredientRows
           items={required}
           isScaledDifferent={servings !== safeBase}
@@ -175,6 +215,7 @@ function IngredientRows({
           nutDetail?.edibleGrams !== undefined
             ? Math.round(nutDetail.edibleGrams * effectiveFactor)
             : null;
+        const costInfo = estimateIngredientCostVnd(ing.name, ing.scaledAmount, ing.unit);
 
         return (
           <li key={ing.id} className="flex items-start justify-between gap-3 py-3">
@@ -195,29 +236,37 @@ function IngredientRows({
                 <span className="block text-xs text-[var(--color-text-muted)] mt-0.5">{ing.preparation}</span>
               )}
 
-              {/* Hiển thị thông số dinh dưỡng chi tiết của từng thành phần */}
-              {scaledKcal !== null && (
-                <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-[var(--color-text-secondary)]">
+              {/* Hiển thị thông số dinh dưỡng & đơn giá tham khảo Bách Hóa Xanh của từng thành phần */}
+              <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-[var(--color-text-secondary)]">
+                {costInfo.usedCostVnd > 0 && (
+                  <span
+                    className="inline-flex items-center gap-0.5 font-semibold text-emerald-800 bg-emerald-50 px-1.5 py-0.5 rounded-md border border-emerald-200/70"
+                    title={costInfo.bhxPackHint}
+                  >
+                    ~{formatVndCurrency(costInfo.usedCostVnd)}
+                  </span>
+                )}
+                {scaledKcal !== null && (
                   <span className="inline-flex items-center gap-0.5 font-semibold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded-md border border-amber-200/70">
                     <Flame className="w-3 h-3 text-amber-500" aria-hidden="true" />
                     {scaledKcal} kcal
                   </span>
-                  {scaledProtein !== null && scaledProtein > 0 && (
-                    <span>Đạm {scaledProtein}g</span>
-                  )}
-                  {scaledFat !== null && scaledFat > 0 && (
-                    <span>· Béo {scaledFat}g</span>
-                  )}
-                  {scaledEdibleG !== null && scaledEdibleG > 0 && (
-                    <span className="text-[var(--color-text-muted)]">
-                      (thực ăn ~{scaledEdibleG}g)
-                    </span>
-                  )}
-                </div>
-              )}
+                )}
+                {scaledProtein !== null && scaledProtein > 0 && (
+                  <span>Đạm {scaledProtein}g</span>
+                )}
+                {scaledFat !== null && scaledFat > 0 && (
+                  <span>· Béo {scaledFat}g</span>
+                )}
+                {scaledEdibleG !== null && scaledEdibleG > 0 && (
+                  <span className="text-[var(--color-text-muted)]">
+                    (thực ăn ~{scaledEdibleG}g)
+                  </span>
+                )}
+              </div>
             </div>
 
-            <div className="shrink-0 text-right">
+            <div className="shrink-0 text-right flex flex-col items-end">
               <span
                 className={`tabular-nums text-sm font-bold transition-colors ${
                   ing.isScaled
@@ -227,6 +276,11 @@ function IngredientRows({
               >
                 {ing.formattedAmount} {ing.unit}
               </span>
+              {!costInfo.isPantrySeasoning && costInfo.pricePer100gVnd > 0 && (
+                <span className="text-[10px] text-[var(--color-text-muted)]">
+                  {(costInfo.pricePer100gVnd / 1000).toFixed(1).replace('.0', '')}k/100g
+                </span>
+              )}
             </div>
           </li>
         );

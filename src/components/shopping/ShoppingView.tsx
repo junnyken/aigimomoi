@@ -12,10 +12,13 @@ import {
   ChefHat,
   ShoppingBag,
   Share2,
+  Wallet,
+  Store,
 } from 'lucide-react';
 import type { AggregationResult } from '@/lib/recipes/aggregation';
 import { useShoppingChecklist, generateShoppingPlainText } from '@/lib/shopping/shoppingClient';
 import { mealQueryFromDishes } from '@/lib/meal/flowUrls';
+import { estimateIngredientCostVnd, formatVndRounded1k, formatVndCurrency } from '@/lib/recipes/priceDictionary';
 import { ShoppingProgressBar } from './ShoppingProgressBar';
 import { ShoppingItemRow } from './ShoppingItemRow';
 
@@ -36,6 +39,18 @@ export function ShoppingView({ result, dishes, servings }: ShoppingViewProps) {
 
   const totalItemsCount = allKeys.length;
   const checkedItemsCount = allKeys.filter((k) => isChecked(k)).length;
+
+  // Dự toán ngân sách giỏ đi chợ theo chuẩn đơn giá Bách Hóa Xanh & Chợ
+  let totalMarketVnd = 0;
+  let remainingToBuyVnd = 0;
+  for (const item of result.freshItems) {
+    const c = estimateIngredientCostVnd(item.name, item.totalAmount, item.unit);
+    totalMarketVnd += c.usedCostVnd;
+    if (!isChecked(item.key)) {
+      remainingToBuyVnd += c.usedCostVnd;
+    }
+  }
+  const perPersonVnd = Math.max(2000, Math.round(totalMarketVnd / Math.max(1, servings) / 500) * 500);
 
   const handleCopy = useCallback(() => {
     const dishNames = dishes.map((d) => d.name);
@@ -148,6 +163,59 @@ export function ShoppingView({ result, dishes, servings }: ShoppingViewProps) {
       {/* Progress Bar */}
       <ShoppingProgressBar total={totalItemsCount} checkedCount={checkedItemsCount} />
 
+      {/* Bảng Dự toán Ngân sách Giỏ Đi Chợ Hôm Nay (Tham khảo Bách Hóa Xanh & Chợ) */}
+      {totalMarketVnd > 0 && (
+        <section
+          aria-label="Dự toán chi phí đi chợ hôm nay"
+          className="rounded-3xl border border-emerald-200 bg-gradient-to-r from-emerald-50/80 via-white to-teal-50/60 p-4 sm:p-5 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+        >
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+              <Wallet className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center flex-wrap gap-2">
+                <h2 className="text-sm sm:text-base font-bold text-emerald-950">
+                  Dự toán tiền đi chợ hôm nay
+                </h2>
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                  <Store className="w-3 h-3" />
+                  Tham chiếu giá Bách Hóa Xanh & Chợ
+                </span>
+              </div>
+              <p className="text-xs text-emerald-800/90 mt-0.5">
+                Tick vào các nguyên liệu đã có sẵn trong tủ lạnh để biết chính xác số tiền cần cầm đi chợ.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-2 sm:gap-4 pt-2 sm:pt-0 border-t sm:border-t-0 border-emerald-200/60 text-right">
+            <div className="flex flex-col items-end">
+              <span className="text-[11px] font-medium text-emerald-700">Tổng cả mâm</span>
+              <strong className="text-sm sm:text-base font-bold text-emerald-950">
+                ~{formatVndRounded1k(totalMarketVnd)}
+              </strong>
+              <span className="text-[10px] text-emerald-700">~{formatVndCurrency(perPersonVnd)}/người</span>
+            </div>
+            <div className="flex flex-col items-end">
+              <span className="text-[11px] font-medium text-emerald-700">Đã có / Đã mua</span>
+              <strong className="text-sm sm:text-base font-bold text-teal-700">
+                {totalMarketVnd - remainingToBuyVnd > 0
+                  ? `~${formatVndRounded1k(totalMarketVnd - remainingToBuyVnd)}`
+                  : '0đ'}
+              </strong>
+              <span className="text-[10px] text-emerald-700">{checkedItemsCount}/{totalItemsCount} mục</span>
+            </div>
+            <div className="flex flex-col items-end bg-emerald-600 text-white px-3 py-1.5 rounded-2xl shadow-2xs">
+              <span className="text-[10px] font-semibold uppercase tracking-wide opacity-90">Cần mua thêm</span>
+              <strong className="text-sm sm:text-base font-extrabold">
+                {remainingToBuyVnd > 0 ? `~${formatVndRounded1k(remainingToBuyVnd)}` : '0đ'}
+              </strong>
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Empty State nếu không có nguyên liệu nào */}
       {totalItemsCount === 0 ? (
         <div className="py-16 px-4 bg-[var(--color-surface-white)] border border-[var(--color-border-base)] rounded-3xl text-center flex flex-col items-center max-w-md mx-auto shadow-xs">
@@ -188,6 +256,7 @@ export function ShoppingView({ result, dishes, servings }: ShoppingViewProps) {
                     key={item.key}
                     itemKey={item.key}
                     name={item.name}
+                    totalAmount={item.totalAmount}
                     formattedAmount={item.formattedTotal}
                     unit={item.unit}
                     isChecked={isChecked(item.key)}
@@ -217,6 +286,7 @@ export function ShoppingView({ result, dishes, servings }: ShoppingViewProps) {
                     key={item.key}
                     itemKey={item.key}
                     name={item.name}
+                    totalAmount={item.totalAmount}
                     formattedAmount={item.formattedTotal}
                     unit={item.unit}
                     isChecked={isChecked(item.key)}
@@ -246,6 +316,7 @@ export function ShoppingView({ result, dishes, servings }: ShoppingViewProps) {
                     key={item.key}
                     itemKey={item.key}
                     name={item.name}
+                    totalAmount={item.totalAmount}
                     formattedAmount={item.formattedTotal}
                     unit={item.unit}
                     isChecked={isChecked(item.key)}
@@ -275,6 +346,7 @@ export function ShoppingView({ result, dishes, servings }: ShoppingViewProps) {
                     key={item.key}
                     itemKey={item.key}
                     name={item.name}
+                    totalAmount={item.totalAmount}
                     formattedAmount={item.formattedTotal}
                     unit={item.unit}
                     isChecked={isChecked(item.key)}

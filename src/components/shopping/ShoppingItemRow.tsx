@@ -3,10 +3,12 @@
 import { Check } from 'lucide-react';
 import type { IngredientTrace } from '@/lib/recipes/aggregation';
 import { formatScaledAmount } from '@/lib/recipes/scaling';
+import { estimateIngredientCostVnd, formatVndCurrency } from '@/lib/recipes/priceDictionary';
 
 interface ShoppingItemRowProps {
   itemKey: string;
   name: string;
+  totalAmount?: number;
   formattedAmount?: string;
   unit?: string;
   isChecked: boolean;
@@ -18,6 +20,7 @@ interface ShoppingItemRowProps {
 export function ShoppingItemRow({
   itemKey,
   name,
+  totalAmount,
   formattedAmount,
   unit,
   isChecked,
@@ -25,6 +28,10 @@ export function ShoppingItemRow({
   traces = [],
   isSeasoning = false,
 }: ShoppingItemRowProps) {
+  const costInfo =
+    !isSeasoning && typeof totalAmount === 'number' && totalAmount > 0 && unit
+      ? estimateIngredientCostVnd(name, totalAmount, unit)
+      : null;
   return (
     <div
       onClick={() => onToggle(itemKey)}
@@ -68,15 +75,27 @@ export function ShoppingItemRow({
           </span>
 
           {formattedAmount && unit && (
-            <span
-              className={`text-sm font-bold shrink-0 ${
-                isChecked
-                  ? 'line-through text-[var(--color-text-muted)]'
-                  : 'text-[var(--color-brand-primary)]'
-              }`}
-            >
-              {formattedAmount} <span className="text-xs font-medium text-[var(--color-text-secondary)]">{unit}</span>
-            </span>
+            <div className="flex flex-col items-end shrink-0">
+              <span
+                className={`text-sm font-bold ${
+                  isChecked
+                    ? 'line-through text-[var(--color-text-muted)]'
+                    : 'text-[var(--color-brand-primary)]'
+                }`}
+              >
+                {formattedAmount} <span className="text-xs font-medium text-[var(--color-text-secondary)]">{unit}</span>
+              </span>
+              {costInfo && costInfo.usedCostVnd > 0 && (
+                <span
+                  className={`text-[11px] font-semibold ${
+                    isChecked ? 'line-through text-[var(--color-text-muted)]' : 'text-emerald-700'
+                  }`}
+                  title={costInfo.bhxPackHint}
+                >
+                  ~{formatVndCurrency(costInfo.usedCostVnd)}
+                </span>
+              )}
+            </div>
           )}
         </div>
 

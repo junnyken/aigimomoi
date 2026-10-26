@@ -128,3 +128,120 @@ export function useSavedRecipes() {
     toggleSave,
   };
 }
+
+// ============================================================================
+// BỘ SƯU TẬP MÓN ĐÃ LƯU (SAVED COLLECTIONS / FOLDERS — HỌC TỪ COOKPAD & WHISK)
+// ============================================================================
+
+export interface RecipeCollection {
+  id: string;
+  name: string;
+  icon: string;
+  slugs: string[];
+  isCustom?: boolean;
+}
+
+const COLLECTIONS_KEY = 'angimom_recipe_collections_v1';
+const COLLECTIONS_EVENT = 'angimom_recipe_collections_changed';
+
+const DEFAULT_COLLECTIONS: RecipeCollection[] = [
+  { id: 'be-thich', name: 'Món bé thích', icon: '👶', slugs: [] },
+  { id: 'nau-nhanh', name: 'Nấu nhanh 15 phút', icon: '⚡', slugs: [] },
+  { id: 'tiet-kiem', name: 'Mâm cơm tiết kiệm', icon: '💰', slugs: [] },
+  { id: 'cuoi-tuan', name: 'Cuối tuần đãi tiệc', icon: '🎉', slugs: [] },
+];
+
+function getLocalCollections(): RecipeCollection[] {
+  if (typeof window === 'undefined') return DEFAULT_COLLECTIONS;
+  try {
+    const raw = localStorage.getItem(COLLECTIONS_KEY);
+    if (!raw) return DEFAULT_COLLECTIONS;
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed) || parsed.length === 0) return DEFAULT_COLLECTIONS;
+    return parsed;
+  } catch {
+    return DEFAULT_COLLECTIONS;
+  }
+}
+
+function setLocalCollections(collections: RecipeCollection[]) {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(COLLECTIONS_KEY, JSON.stringify(collections));
+    window.dispatchEvent(new Event(COLLECTIONS_EVENT));
+  } catch {
+    // Ignore storage error
+  }
+}
+
+export function useRecipeCollections() {
+  const [collections, setCollections] = useState<RecipeCollection[]>(() =>
+    getLocalCollections()
+  );
+
+  useEffect(() => {
+    function onChange() {
+      setCollections(getLocalCollections());
+    }
+    window.addEventListener(COLLECTIONS_EVENT, onChange);
+    window.addEventListener('storage', onChange);
+    return () => {
+      window.removeEventListener(COLLECTIONS_EVENT, onChange);
+      window.removeEventListener('storage', onChange);
+    };
+  }, []);
+
+  const createCollection = useCallback(
+    (name: string, icon = '📁') => {
+      const trimmed = name.trim();
+      if (!trimmed) return null;
+      const id = `col-${Date.now().toString(36)}`;
+      const next: RecipeCollection[] = [
+        ...collections,
+        { id, name: trimmed, icon, slugs: [], isCustom: true },
+      ];
+      setCollections(next);
+      setLocalCollections(next);
+      return id;
+    },
+    [collections]
+  );
+
+  const deleteCollection = useCallback(
+    (id: string) => {
+      const next = collections.filter((c) => c.id !== id);
+      setCollections(next);
+      setLocalCollections(next);
+    },
+    [collections]
+  );
+
+  const toggleRecipeInCollection = useCallback(
+    (collectionId: string, slug: string) => {
+      const next = collections.map((col) => {
+        if (col.id !== collectionId) return col;
+        const exists = col.slugs.includes(slug);
+        return {
+          ...col,
+          slugs: exists ? col.slugs.filter((s) => s !== slug) : [...col.slugs, slug],
+        };
+      });
+      setCollections(next);
+      setLocalCollections(next);
+    },
+    [collections]
+  );
+
+  const getRecipeCollections = useCallback(
+    (slug: string) => collections.filter((c) => c.slugs.includes(slug)),
+    [collections]
+  );
+
+  return {
+    collections,
+    createCollection,
+    deleteCollection,
+    toggleRecipeInCollection,
+    getRecipeCollections,
+  };
+}

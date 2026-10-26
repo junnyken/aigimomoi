@@ -4,7 +4,8 @@
 // Hiển thị cộng đồng nấu thử thực tế, ảnh đĩa cơm gia đình và mẹo nêm nếm
 
 import { useState, useEffect } from 'react';
-import { Camera, Star, MessageSquare, CheckCircle2, X, Send, Sparkles } from 'lucide-react';
+import { Camera, Star, CheckCircle2, X, Send, Sparkles } from 'lucide-react';
+import { ImageUpload } from '@/components/ui/ImageUpload';
 
 interface FeedbackItem {
   id: number;
@@ -35,6 +36,7 @@ export function CookedItSection({ recipeId, recipeName }: CookedItSectionProps) 
   });
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedLightboxFeedback, setSelectedLightboxFeedback] = useState<FeedbackItem | null>(null);
 
   // Form state
   const [cookName, setCookName] = useState('');
@@ -144,17 +146,22 @@ export function CookedItSection({ recipeId, recipeName }: CookedItSectionProps) 
         </button>
       </div>
 
-      {/* Community Cooked Photos Grid (nếu có ảnh) */}
+      {/* Community Cooked Photos Grid (Cooksnap Gallery) */}
       {photosOnly.length > 0 && (
         <div className="mb-6">
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-[var(--color-text-muted)] mb-3">
-            📸 Ảnh thành phẩm từ người dùng
-          </h3>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
+              📸 Khoảnh khắc Bếp Nhà — Ảnh thành phẩm ({photosOnly.length})
+            </h3>
+            <span className="text-[11px] text-[var(--color-text-muted)]">Bấm vào ảnh để xem rõ hơn</span>
+          </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
             {photosOnly.map((fb) => (
-              <div
+              <button
+                type="button"
                 key={fb.id}
-                className="group relative aspect-square rounded-xl overflow-hidden border border-[var(--color-border-base)] bg-neutral-100 dark:bg-neutral-800"
+                onClick={() => setSelectedLightboxFeedback(fb)}
+                className="group relative aspect-square rounded-xl overflow-hidden border border-[var(--color-border-base)] bg-neutral-100 dark:bg-neutral-800 text-left focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-primary)]"
               >
                 <img
                   src={fb.photoUrl!}
@@ -162,14 +169,14 @@ export function CookedItSection({ recipeId, recipeName }: CookedItSectionProps) 
                   className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                   loading="lazy"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-2.5 text-white">
+                <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent opacity-90 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity flex flex-col justify-end p-2.5 text-white">
                   <p className="text-xs font-semibold truncate">{fb.cookName}</p>
                   <div className="flex items-center text-amber-300 text-[11px]">
                     <Star className="w-3 h-3 fill-amber-300 inline mr-0.5" />
                     {fb.rating} sao
                   </div>
                 </div>
-              </div>
+              </button>
             ))}
           </div>
         </div>
@@ -318,20 +325,19 @@ export function CookedItSection({ recipeId, recipeName }: CookedItSectionProps) 
                   </div>
                 </div>
 
-                {/* Link ảnh thành phẩm */}
+                {/* Tải ảnh thành phẩm thực tế (Cooksnap) */}
                 <div>
                   <label className="block text-xs font-semibold text-[var(--color-text-secondary)] mb-1">
-                    Link ảnh thành phẩm đĩa món ăn (tùy chọn)
+                    Ảnh đĩa cơm thành phẩm của bạn (tùy chọn)
                   </label>
-                  <input
-                    type="url"
-                    placeholder="https://... (ảnh đĩa cơm bạn vừa nấu)"
+                  <ImageUpload
                     value={photoUrl}
-                    onChange={(e) => setPhotoUrl(e.target.value)}
-                    className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--color-border-base)] bg-[var(--color-surface-white)] text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-primary)]"
+                    onChange={setPhotoUrl}
+                    subfolder="feedback"
+                    hint="Tải ảnh trực tiếp từ điện thoại/máy tính hoặc dán link ảnh (JPG, PNG, WebP)"
                   />
                   <p className="text-[11px] text-[var(--color-text-muted)] mt-1">
-                    Ảnh sẽ được Ban biên tập kiểm duyệt nhanh để giữ gìn đĩa cơm gia đình ấm cúng.
+                    Ảnh sẽ được Ban biên tập kiểm duyệt nhanh để giữ gìn không gian bếp gia đình ấm cúng.
                   </p>
                 </div>
 
@@ -374,6 +380,60 @@ export function CookedItSection({ recipeId, recipeName }: CookedItSectionProps) 
                 </div>
               </form>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Lightbox xem ảnh thành phẩm cộng đồng (Cooksnap Detail Modal) */}
+      {selectedLightboxFeedback && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs"
+          onClick={() => setSelectedLightboxFeedback(null)}
+        >
+          <div
+            className="bg-[var(--color-surface-white)] rounded-2xl max-w-xl w-full overflow-hidden shadow-2xl border border-[var(--color-border-base)]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="relative bg-black aspect-[4/3]">
+              <img
+                src={selectedLightboxFeedback.photoUrl!}
+                alt={`Thành phẩm món ${recipeName} của ${selectedLightboxFeedback.cookName}`}
+                className="w-full h-full object-contain"
+              />
+              <button
+                type="button"
+                onClick={() => setSelectedLightboxFeedback(null)}
+                className="absolute top-3 right-3 p-2 rounded-full bg-black/60 text-white hover:bg-black/80 transition-colors"
+                aria-label="Đóng ảnh"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="p-4 sm:p-5 space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-base text-[var(--color-text-primary)]">
+                    {selectedLightboxFeedback.cookName}
+                  </span>
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 text-xs font-semibold border border-amber-200">
+                    <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                    {selectedLightboxFeedback.rating}/5
+                  </span>
+                </div>
+                <span className="text-xs text-[var(--color-text-muted)]">
+                  {new Date(selectedLightboxFeedback.createdAt).toLocaleDateString('vi-VN')}
+                </span>
+              </div>
+              {selectedLightboxFeedback.notes ? (
+                <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed">
+                  “{selectedLightboxFeedback.notes}”
+                </p>
+              ) : (
+                <p className="text-xs text-[var(--color-text-muted)] italic">
+                  Đã nấu thử thành công món {recipeName}.
+                </p>
+              )}
+            </div>
           </div>
         </div>
       )}
