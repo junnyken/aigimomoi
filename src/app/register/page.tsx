@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, Suspense } from 'react';
+import { useState, useMemo, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -17,6 +17,27 @@ import {
   RefreshCw,
   ArrowLeft,
 } from 'lucide-react';
+
+const TURNSTILE_SITE_KEY =
+  process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY?.trim() || '0x4AAAAAAFmC-UTV190a7dk1';
+
+declare global {
+  interface Window {
+    turnstile?: {
+      render: (
+        container: HTMLElement,
+        options: {
+          sitekey: string;
+          theme?: 'light' | 'dark' | 'auto';
+          callback?: (token: string) => void;
+          'expired-callback'?: () => void;
+          'error-callback'?: () => void;
+        }
+      ) => string;
+      remove?: (widgetId: string) => void;
+    };
+  }
+}
 
 const CLIENT_DISPOSABLE_PATTERN =
   /@(10minutemail|20minutemail|tempmail|temp-mail|trashmail|trash-mail|guerrillamail|mailinator|yopmail|throwaway|fakeinbox|fakemail|emailfake|burnermail|dispostable|mohmal|getnada|maildrop|spam4|sharklasers|grr\.la|pokemail|mailnesia|emailondeck|tempail|tempr\.email|crazymailing|mytemp\.email|mailsac|inboxkitten)\b/i;
@@ -40,15 +61,75 @@ function RegisterForm() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
-  // Chống Bot & Spam: Honeypot ẩn + Thời점 mở form + Checkbox Người thật + Câu hỏi xác minh nhanh
+  // Chống Bot & Spam: Cloudflare Turnstile + Honeypot ẩn + Thời điểm mở form + Checkbox dự phòng
   const [formOpenedAt] = useState<number>(() => Date.now());
   const [honeypot, setHoneypot] = useState('');
+  const [turnstileToken, setTurnstileToken] = useState<string>('');
+  const [turnstileFallback, setTurnstileFallback] = useState<boolean>(false);
   const [humanVerified, setHumanVerified] = useState(false);
+  const turnstileContainerRef = useRef<HTMLDivElement | null>(null);
   const [challengeNums] = useState<{ a: number; b: number }>(() => ({
     a: 3,
     b: 5,
   }));
   const [challengeAnswer, setChallengeAnswer] = useState<string>('8');
+
+  useEffect(() => {
+    if (step !== 'FORM' || !TURNSTILE_SITE_KEY || turnstileFallback) return;
+
+    let widgetId: string | null = null;
+    const renderWidget = () => {
+      if (!turnstileContainerRef.current || !window.turnstile) return;
+      try {
+        turnstileContainerRef.current.innerHTML = '';
+        widgetId = window.turnstile.render(turnstileContainerRef.current, {
+          sitekey: TURNSTILE_SITE_KEY,
+          theme: 'light',
+          callback: (token: string) => {
+            setTurnstileToken(token);
+            setHumanVerified(true);
+          },
+          'expired-callback': () => {
+            setTurnstileToken('');
+            setHumanVerified(false);
+          },
+          'error-callback': () => {
+            setTurnstileFallback(true);
+          },
+        });
+      } catch {
+        setTurnstileFallback(true);
+      }
+    };
+
+    if (window.turnstile) {
+      renderWidget();
+    } else {
+      const existingScript = document.getElementById('cf-turnstile-script') as HTMLScriptElement | null;
+      if (existingScript) {
+        existingScript.addEventListener('load', renderWidget);
+      } else {
+        const script = document.createElement('script');
+        script.id = 'cf-turnstile-script';
+        script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+        script.async = true;
+        script.defer = true;
+        script.onload = renderWidget;
+        script.onerror = () => setTurnstileFallback(true);
+        document.head.appendChild(script);
+      }
+    }
+
+    return () => {
+      if (widgetId && window.turnstile?.remove) {
+        try {
+          window.turnstile.remove(widgetId);
+        } catch {
+          // ignore cleanup error
+        }
+      }
+    };
+  }, [step, turnstileFallback]);
 
   // Luồng 2 bước: Gửi mã xác nhận OTP qua Email -> Nhập mã 6 số mới cho vào tài khoản
   const [step, setStep] = useState<'FORM' | 'VERIFY_OTP'>('FORM');
@@ -91,12 +172,12 @@ function RegisterForm() {
       return;
     }
 
-    if (!humanVerified) {
-      setError('Vui lòng bấm tích xác nhận "Tôi là người thật, không phải Bot" ở khung bảo mật bên dưới.');
+    if (!humanVerified && !turnstileToken) {
+      setError('Vui lòng hoàn tất xác thực chống Bot (Cloudflare Turnstile hoặc ô xác nhận người thật) bên dưới.');
       return;
     }
 
-    if (Number(challengeAnswer) !== challengeNums.a + challengeNums.b) {
+    if (!turnstileToken && Number(challengeAnswer) !== challengeNums.a + challengeNums.b) {
       setError(`Vui lòng chọn đúng kết quả phép tính xác minh người thật (${challengeNums.a} + ${challengeNums.b} = ${challengeNums.a + challengeNums.b}).`);
       return;
     }
@@ -112,7 +193,8 @@ function RegisterForm() {
           displayName: displayName.trim(),
           email: email.trim().toLowerCase(),
           password,
-          humanVerified,
+          turnstileToken: turnstileToken || undefined,
+          humanVerified: Boolean(humanVerified || turnstileToken),
           challengeAnswer: Number(challengeAnswer),
           challengeExpected: challengeNums.a + challengeNums.b,
           honeypot,
@@ -385,55 +467,74 @@ function RegisterForm() {
             </div>
           )}
 
-          {/* KHUNG XÁC MINH NGƯỜI THẬT (ANTI-BOT CHALLENGE) */}
+          {/* KHUNG XÁC MINH NGƯỜI THẬT (CLOUDFLARE TURNSTILE + DỰ PHÒNG ANTI-BOT) */}
           <div
             className={`p-3.5 rounded-2xl border transition-all space-y-2.5 ${
-              humanVerified
+              humanVerified || turnstileToken
                 ? 'bg-emerald-50/70 border-emerald-300'
                 : 'bg-[#FAF7F0] border-[#DFD2C0]'
             }`}
           >
-            <label className="flex items-center justify-between gap-3 cursor-pointer select-none">
-              <div className="flex items-center gap-2.5">
-                <input
-                  type="checkbox"
-                  checked={humanVerified}
-                  onChange={(e) => setHumanVerified(e.target.checked)}
-                  className="w-4 h-4 rounded accent-[var(--color-brand-primary)] cursor-pointer"
-                />
-                <span className="text-xs font-extrabold text-[var(--color-text-primary)]">
-                  Xác minh bảo mật: Tôi là người thật (Chống Bot &amp; Spam)
-                </span>
-              </div>
-              <ShieldCheck
-                className={`w-4 h-4 shrink-0 ${
-                  humanVerified ? 'text-emerald-600' : 'text-stone-400'
-                }`}
-              />
-            </label>
-
-            {humanVerified && (
-              <div className="pt-2 border-t border-emerald-200/80 flex items-center justify-between gap-2 text-xs">
-                <span className="text-[#2F4F30] font-semibold">
-                  🤖 Câu hỏi chống Bot: <strong>{challengeNums.a} + {challengeNums.b} bằng mấy?</strong>
-                </span>
-                <div className="flex items-center gap-1.5">
-                  {[6, 8, 10].map((val) => (
-                    <button
-                      key={val}
-                      type="button"
-                      onClick={() => setChallengeAnswer(String(val))}
-                      className={`w-8 h-7 rounded-lg text-xs font-extrabold border cursor-pointer transition-colors ${
-                        Number(challengeAnswer) === val
-                          ? 'bg-emerald-700 text-white border-emerald-700'
-                          : 'bg-white text-stone-700 border-stone-300 hover:bg-stone-100'
-                      }`}
-                    >
-                      {val}
-                    </button>
-                  ))}
+            {!turnstileFallback && TURNSTILE_SITE_KEY && (
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-xs font-extrabold text-[var(--color-text-primary)]">
+                  <span>🛡️ Xác thực chống Bot đám mây (Cloudflare Turnstile)</span>
+                  {turnstileToken && (
+                    <span className="text-emerald-700 font-bold">✓ Đã xác minh</span>
+                  )}
                 </div>
+                <div
+                  ref={turnstileContainerRef}
+                  className="min-h-[65px] flex items-center justify-center overflow-hidden rounded-xl"
+                />
               </div>
+            )}
+
+            {(turnstileFallback || !TURNSTILE_SITE_KEY) && (
+              <>
+                <label className="flex items-center justify-between gap-3 cursor-pointer select-none">
+                  <div className="flex items-center gap-2.5">
+                    <input
+                      type="checkbox"
+                      checked={humanVerified}
+                      onChange={(e) => setHumanVerified(e.target.checked)}
+                      className="w-4 h-4 rounded accent-[var(--color-brand-primary)] cursor-pointer"
+                    />
+                    <span className="text-xs font-extrabold text-[var(--color-text-primary)]">
+                      Xác minh bảo mật: Tôi là người thật (Chống Bot &amp; Spam)
+                    </span>
+                  </div>
+                  <ShieldCheck
+                    className={`w-4 h-4 shrink-0 ${
+                      humanVerified ? 'text-emerald-600' : 'text-stone-400'
+                    }`}
+                  />
+                </label>
+
+                {humanVerified && (
+                  <div className="pt-2 border-t border-emerald-200/80 flex items-center justify-between gap-2 text-xs">
+                    <span className="text-[#2F4F30] font-semibold">
+                      🤖 Câu hỏi chống Bot: <strong>{challengeNums.a} + {challengeNums.b} bằng mấy?</strong>
+                    </span>
+                    <div className="flex items-center gap-1.5">
+                      {[6, 8, 10].map((val) => (
+                        <button
+                          key={val}
+                          type="button"
+                          onClick={() => setChallengeAnswer(String(val))}
+                          className={`w-8 h-7 rounded-lg text-xs font-extrabold border cursor-pointer transition-colors ${
+                            Number(challengeAnswer) === val
+                              ? 'bg-emerald-700 text-white border-emerald-700'
+                              : 'bg-white text-stone-700 border-stone-300 hover:bg-stone-100'
+                          }`}
+                        >
+                          {val}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </div>
 

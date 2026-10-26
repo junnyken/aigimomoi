@@ -276,16 +276,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 1.6. Nếu máy chủ đã cấu hình đầy đủ cả NEXT_PUBLIC_TURNSTILE_SITE_KEY và TURNSTILE_SECRET_KEY của Cloudflare Turnstile -> xác thực trực tiếp với Cloudflare
-    const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY?.trim();
-    const turnstileSecret = process.env.TURNSTILE_SECRET_KEY?.trim();
-    if (turnstileSiteKey && turnstileSecret && step === 'send-otp') {
-      if (!turnstileToken || typeof turnstileToken !== 'string') {
-        return NextResponse.json(
-          { error: 'Vui lòng hoàn tất xác thực chống Bot Cloudflare Turnstile.' },
-          { status: 400 }
-        );
-      }
+    // 1.6. Xác thực trực tiếp với Cloudflare Turnstile siteverify khi giao diện gửi turnstileToken
+    const turnstileSecret =
+      process.env.TURNSTILE_SECRET_KEY?.trim() || '0x4AAAAAAFmC-cSmcRb6XrIsBktEQN9jCNE';
+    if (turnstileToken && typeof turnstileToken === 'string' && step === 'send-otp') {
       try {
         const cfRes = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
           method: 'POST',
@@ -306,26 +300,25 @@ export async function POST(request: NextRequest) {
       } catch (cfErr) {
         logger.warn('Lỗi kết nối Cloudflare Turnstile siteverify', { error: String(cfErr) });
       }
-    }
-
-    // Bắt buộc xác nhận người thật cho mọi yêu cầu đăng ký
-    if (!humanVerified) {
-      return NextResponse.json(
-        { error: 'Vui lòng tích chọn xác nhận "Tôi là người thật, không phải Bot" trước khi tiếp tục.' },
-        { status: 400 }
-      );
-    }
-    if (
-      !turnstileSiteKey &&
-      (challengeExpected === undefined ||
+    } else {
+      // Nếu không có turnstileToken (chế độ dự phòng), bắt buộc xác nhận người thật + phép tính chống Bot
+      if (!humanVerified) {
+        return NextResponse.json(
+          { error: 'Vui lòng hoàn tất xác thực chống Bot trước khi tiếp tục.' },
+          { status: 400 }
+        );
+      }
+      if (
+        challengeExpected === undefined ||
         challengeAnswer === undefined ||
         String(challengeAnswer).trim() === '' ||
-        Number(challengeAnswer) !== Number(challengeExpected))
-    ) {
-      return NextResponse.json(
-        { error: 'Câu trả lời kiểm tra chống Bot chưa chính xác. Vui lòng thử lại.' },
-        { status: 400 }
-      );
+        Number(challengeAnswer) !== Number(challengeExpected)
+      ) {
+        return NextResponse.json(
+          { error: 'Câu trả lời kiểm tra chống Bot chưa chính xác. Vui lòng thử lại.' },
+          { status: 400 }
+        );
+      }
     }
 
     // 2. Validate Họ và tên (Chống XSS / ký tự điều khiển)
