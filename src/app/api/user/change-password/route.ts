@@ -2,7 +2,14 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { users } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
-import { getSessionUser, setSessionCookie } from '@/lib/auth/session';
+import {
+  getSessionUser,
+  revokeUserSessions,
+  signToken,
+  SESSION_COOKIE_NAME,
+  SESSION_DURATION_MS,
+} from '@/lib/auth/session';
+import { checkRateLimitShared } from '@/lib/auth/rateLimit';
 import { verifyPassword, hashPassword } from '@/lib/auth/password';
 import { isCrossSiteRequest } from '@/lib/http/sameOrigin';
 
@@ -15,6 +22,15 @@ export async function POST(request: Request) {
     return NextResponse.json(
       { error: 'Vui lòng đăng nhập để đổi mật khẩu' },
       { status: 401 }
+    );
+  }
+
+  // Chống dò mật khẩu hiện tại khi phiên bị đánh cắp
+  const rate = await checkRateLimitShared('user-change-pw', String(sessionUser.id), 5, 15 * 60_000);
+  if (!rate.allowed) {
+    return NextResponse.json(
+      { error: 'Bạn đã thử đổi mật khẩu quá nhiều lần. Vui lòng thử lại sau ít phút.' },
+      { status: 429, headers: { 'Retry-After': String(rate.retryAfterSeconds) } }
     );
   }
 
@@ -102,10 +118,28 @@ export async function POST(request: Request) {
       })
       .where(eq(users.id, user.id));
 
-    return NextResponse.json({
-      ok: true,
-      message: 'Đổi mật khẩu thành công! Hãy dùng mật khẩu mới trong các lần đăng nhập tiếp theo.',
+    // Đăng xuất mọi thiết bị khác, giữ phiên ở thiết bị đang thao tác
+    const newSessionVersion = await revokeUserSessions(user.id);
+    const token = await signToken({
+      id: sessionUser.id,
+      email: sessionUser.email,
+      displayName: sessionUser.displayName,
+      role: sessionUser.role,
+      sv: newSessionVersion,
     });
+
+    const response = NextResponse.json({
+      ok: true,
+      message: 'Đổi mật khẩu thành công! Các thiết bị khác đã được đăng xuất.',
+    });
+    response.cookies.set(SESSION_COOKIE_NAME, token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: Math.floor(SESSION_DURATION_MS / 1000),
+    });
+    return response;
   } catch (error) {
     console.error('[Change Password Error]', error);
     return NextResponse.json(

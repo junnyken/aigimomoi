@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { users, creatorProfiles } from '@/lib/db/schema';
-import { getSessionUser } from '@/lib/auth/session';
+import { getSessionUser, revokeUserSessions } from '@/lib/auth/session';
 import { hashPassword } from '@/lib/auth/password';
 import { isSameOrigin } from '@/lib/http/sameOrigin';
-import { eq } from 'drizzle-orm';
+import { and, eq, ne, sql } from 'drizzle-orm';
 import { logger } from '@/lib/logger';
 
 interface RouteContext {
@@ -12,6 +12,15 @@ interface RouteContext {
 }
 
 const VALID_ROLES = ['ADMIN', 'EDITOR', 'COOK'] as const;
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+async function countOtherAdmins(excludeUserId: number): Promise<number> {
+  const [row] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(users)
+    .where(and(eq(users.role, 'ADMIN'), ne(users.id, excludeUserId)));
+  return row?.count ?? 0;
+}
 
 export async function PATCH(request: NextRequest, context: RouteContext) {
   try {
@@ -41,36 +50,96 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     const body = await request.json();
     const { displayName, email, role, newPassword, identityVerified, isProfessional } = body;
 
+    const isAdmin = currentUser.role === 'ADMIN';
+
+    // EDITOR chỉ được thao tác trên tài khoản thành viên thường (COOK)
+    if (!isAdmin && targetUser.role !== 'COOK') {
+      return NextResponse.json(
+        { error: 'Biên tập viên chỉ được chỉnh sửa tài khoản thành viên thường (COOK).' },
+        { status: 403 }
+      );
+    }
+
     const updateValues: Partial<typeof users.$inferInsert> = {
       updatedAt: new Date(),
     };
+    // Đổi mật khẩu / email / vai trò → vô hiệu hóa mọi phiên đang có của tài khoản đó
+    let mustRevokeSessions = false;
 
     if (typeof displayName === 'string' && displayName.trim().length >= 2) {
       updateValues.displayName = displayName.replace(/[<>]/g, '').trim().slice(0, 50);
     }
 
-    if (typeof email === 'string' && email.includes('@')) {
-      updateValues.email = email.trim().toLowerCase();
-    }
-
-    if (typeof role === 'string' && VALID_ROLES.includes(role as (typeof VALID_ROLES)[number])) {
-      if (currentUser.role !== 'ADMIN' && (role === 'ADMIN' || targetUser.role === 'ADMIN')) {
+    if (typeof email === 'string' && email.trim().toLowerCase() !== targetUser.email) {
+      if (!isAdmin) {
         return NextResponse.json(
-          { error: 'Chỉ ADMIN mới có quyền thay đổi vai trò Quản trị viên.' },
+          { error: 'Chỉ Quản trị viên (ADMIN) mới được đổi email đăng nhập của tài khoản.' },
           { status: 403 }
         );
       }
+      const cleanEmail = email.trim().toLowerCase();
+      if (!EMAIL_REGEX.test(cleanEmail) || cleanEmail.length > 255) {
+        return NextResponse.json({ error: 'Địa chỉ email không đúng định dạng.' }, { status: 400 });
+      }
+      const [duplicate] = await db
+        .select({ id: users.id })
+        .from(users)
+        .where(and(eq(users.email, cleanEmail), ne(users.id, targetId)))
+        .limit(1);
+      if (duplicate) {
+        return NextResponse.json(
+          { error: 'Email này đã được tài khoản khác sử dụng.' },
+          { status: 409 }
+        );
+      }
+      updateValues.email = cleanEmail;
+      mustRevokeSessions = true;
+    }
+
+    if (
+      typeof role === 'string' &&
+      VALID_ROLES.includes(role as (typeof VALID_ROLES)[number]) &&
+      role !== targetUser.role
+    ) {
+      if (!isAdmin) {
+        return NextResponse.json(
+          { error: 'Chỉ Quản trị viên (ADMIN) mới được thay đổi vai trò tài khoản.' },
+          { status: 403 }
+        );
+      }
+      if (targetUser.role === 'ADMIN') {
+        if (targetId === currentUser.id) {
+          return NextResponse.json(
+            { error: 'Bạn không thể tự hạ quyền Quản trị viên của chính mình.' },
+            { status: 400 }
+          );
+        }
+        if ((await countOtherAdmins(targetId)) === 0) {
+          return NextResponse.json(
+            { error: 'Không thể hạ quyền Quản trị viên cuối cùng của hệ thống.' },
+            { status: 400 }
+          );
+        }
+      }
       updateValues.role = role as (typeof VALID_ROLES)[number];
+      mustRevokeSessions = true;
     }
 
     if (typeof newPassword === 'string' && newPassword.length > 0) {
-      if (newPassword.length < 8) {
+      if (!isAdmin) {
         return NextResponse.json(
-          { error: 'Mật khẩu mới phải có tối thiểu 8 ký tự.' },
+          { error: 'Chỉ Quản trị viên (ADMIN) mới được đặt lại mật khẩu cho tài khoản khác.' },
+          { status: 403 }
+        );
+      }
+      if (newPassword.length < 8 || newPassword.length > 100) {
+        return NextResponse.json(
+          { error: 'Mật khẩu mới phải từ 8 đến 100 ký tự.' },
           { status: 400 }
         );
       }
       updateValues.passwordHash = await hashPassword(newPassword);
+      mustRevokeSessions = true;
     }
 
     const [updated] = await db
@@ -85,6 +154,10 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
         createdAt: users.createdAt,
         updatedAt: users.updatedAt,
       });
+
+    if (mustRevokeSessions) {
+      await revokeUserSessions(targetId);
+    }
 
     // Nếu có cập nhật trạng thái Đầu bếp xác minh (Creator Profile)
     let creatorInfo = null;
@@ -191,6 +264,21 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
     if (targetId === currentUser.id) {
       return NextResponse.json(
         { error: 'Bạn không thể tự xóa tài khoản Quản trị viên đang đăng nhập của chính mình.' },
+        { status: 400 }
+      );
+    }
+
+    const [targetUser] = await db
+      .select({ id: users.id, role: users.role })
+      .from(users)
+      .where(eq(users.id, targetId))
+      .limit(1);
+    if (!targetUser) {
+      return NextResponse.json({ error: 'Không tìm thấy tài khoản.' }, { status: 404 });
+    }
+    if (targetUser.role === 'ADMIN' && (await countOtherAdmins(targetId)) === 0) {
+      return NextResponse.json(
+        { error: 'Không thể xóa Quản trị viên cuối cùng của hệ thống.' },
         { status: 400 }
       );
     }

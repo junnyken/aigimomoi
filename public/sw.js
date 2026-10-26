@@ -40,6 +40,10 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(event.request.url);
 
+  // Bỏ qua request khác origin (ảnh Unsplash, Turnstile...): fetch() trong SW bị CSP connect-src chặn,
+  // và response khác origin vốn không được cache, nên để trình duyệt tự tải
+  if (url.origin !== self.location.origin) return;
+
   // Bỏ qua các API route, dev socket, RSC flight payloads và các trang cá nhân/quản trị cần xác thực
   const PRIVATE_PREFIXES = [
     '/api/',

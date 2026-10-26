@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { users } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
-import { verifyPassword, hashPassword } from '@/lib/auth/password';
+import { verifyPassword } from '@/lib/auth/password';
 import {
   setSessionCookie,
   signToken,
@@ -11,14 +11,9 @@ import {
   AuthConfigurationError,
   getAuthSecret,
 } from '@/lib/auth/session';
-import { checkRateLimit, getClientIp } from '@/lib/auth/rateLimit';
+import { checkRateLimitShared, getClientIp } from '@/lib/auth/rateLimit';
 import { isCrossSiteRequest } from '@/lib/http/sameOrigin';
 import { logger } from '@/lib/logger';
-
-const OWNER_ADMIN_EMAILS = new Set([
-  'admin@angimom.vn',
-  'thientrieu753@gmail.com',
-]);
 
 export async function POST(request: NextRequest) {
   try {
@@ -31,7 +26,7 @@ export async function POST(request: NextRequest) {
 
     getAuthSecret();
 
-    const rate = checkRateLimit('auth-admin-login', getClientIp(request), 15, 60_000);
+    const rate = await checkRateLimitShared('auth-admin-login', getClientIp(request), 10, 60_000);
     if (!rate.allowed) {
       return NextResponse.json(
         { error: 'Quá nhiều lần thử đăng nhập Quản trị. Vui lòng thử lại sau ít phút.' },
@@ -51,34 +46,20 @@ export async function POST(request: NextRequest) {
 
     const cleanEmail = String(email).trim().toLowerCase();
 
-    let [user] = await db
+    // Giới hạn theo tài khoản (chặn dò mật khẩu phân tán qua nhiều IP)
+    const accountRate = await checkRateLimitShared('auth-admin-login-account', cleanEmail, 10, 15 * 60_000);
+    if (!accountRate.allowed) {
+      return NextResponse.json(
+        { error: 'Tài khoản này đang bị tạm khóa đăng nhập do thử sai nhiều lần. Vui lòng thử lại sau ít phút.' },
+        { status: 429, headers: { 'Retry-After': String(accountRate.retryAfterSeconds) } }
+      );
+    }
+
+    const [user] = await db
       .select()
       .from(users)
       .where(eq(users.email, cleanEmail))
       .limit(1);
-
-    // Khởi tạo tự động tài khoản Quản trị chủ sở hữu nếu DB chưa có
-    if (
-      !user &&
-      OWNER_ADMIN_EMAILS.has(cleanEmail) &&
-      (password.trim() === 'Admin@123456' ||
-        (process.env.SEED_ADMIN_PASSWORD && password.trim() === process.env.SEED_ADMIN_PASSWORD))
-    ) {
-      const passwordHash = await hashPassword(password.trim());
-      const [createdAdmin] = await db
-        .insert(users)
-        .values({
-          email: cleanEmail,
-          displayName:
-            cleanEmail === 'thientrieu753@gmail.com'
-              ? 'Chủ sở hữu & Quản trị viên'
-              : 'Quản trị viên Ăn Gì Mom',
-          passwordHash,
-          role: 'ADMIN',
-        })
-        .returning();
-      user = createdAdmin;
-    }
 
     if (!user || !user.passwordHash) {
       return NextResponse.json(
@@ -92,33 +73,11 @@ export async function POST(request: NextRequest) {
       isValid = await verifyPassword(password.trim(), user.passwordHash);
     }
 
-    // Cho phép tài khoản Quản trị gốc dùng mật khẩu Master Admin@123456 hoặc SEED_ADMIN_PASSWORD
-    if (
-      !isValid &&
-      OWNER_ADMIN_EMAILS.has(cleanEmail) &&
-      (password.trim() === 'Admin@123456' ||
-        (process.env.SEED_ADMIN_PASSWORD && password.trim() === process.env.SEED_ADMIN_PASSWORD))
-    ) {
-      isValid = true;
-    }
-
     if (!isValid) {
       return NextResponse.json(
         { error: 'Thông tin tài khoản Quản trị hoặc mật khẩu không chính xác.' },
         { status: 401 }
       );
-    }
-
-    // Nếu là email chủ sở hữu hệ thống (thientrieu753@gmail.com) nhưng đang ở quyền COOK thì tự động nâng cấp lên ADMIN
-    if (OWNER_ADMIN_EMAILS.has(cleanEmail) && user.role !== 'ADMIN') {
-      const [promoted] = await db
-        .update(users)
-        .set({ role: 'ADMIN', updatedAt: new Date() })
-        .where(eq(users.id, user.id))
-        .returning();
-      if (promoted) {
-        user = promoted;
-      }
     }
 
     // CHẶN TUYỆT ĐỐI TÀI KHOẢN THƯỜNG (COOK) ĐĂNG NHẬP VÀO CỔNG ADMIN
@@ -137,6 +96,7 @@ export async function POST(request: NextRequest) {
       email: user.email,
       displayName: user.displayName,
       role: user.role,
+      sv: user.sessionVersion,
     });
 
     try {
@@ -145,6 +105,7 @@ export async function POST(request: NextRequest) {
         email: user.email,
         displayName: user.displayName,
         role: user.role,
+        sv: user.sessionVersion,
       });
     } catch {
       // Ignore if outside request context

@@ -183,18 +183,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Địa chỉ email không đúng định dạng.' }, { status: 400 });
     }
 
-    if (!password || typeof password !== 'string' || password.length < 8) {
+    if (!password || typeof password !== 'string' || password.length < 8 || password.length > 100) {
       return NextResponse.json(
-        { error: 'Mật khẩu phải có độ dài tối thiểu 8 ký tự.' },
+        { error: 'Mật khẩu phải từ 8 đến 100 ký tự.' },
         { status: 400 }
       );
     }
 
     const targetRole: (typeof VALID_ROLES)[number] = VALID_ROLES.includes(role) ? role : 'COOK';
-    // Nếu người đang thao tác chỉ là EDITOR, không cho tạo tài khoản quyền ADMIN
-    if (currentUser.role !== 'ADMIN' && targetRole === 'ADMIN') {
+    // EDITOR chỉ được tạo tài khoản thành viên thường; tài khoản quản trị (ADMIN/EDITOR) do ADMIN cấp
+    if (currentUser.role !== 'ADMIN' && targetRole !== 'COOK') {
       return NextResponse.json(
-        { error: 'Chỉ Quản trị viên cao nhất (ADMIN) mới được tạo tài khoản quyền ADMIN.' },
+        { error: 'Chỉ Quản trị viên (ADMIN) mới được tạo tài khoản quyền ADMIN hoặc EDITOR.' },
         { status: 403 }
       );
     }

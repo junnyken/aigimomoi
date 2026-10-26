@@ -61,21 +61,22 @@ function RegisterForm() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
-  // Chống Bot & Spam: Cloudflare Turnstile + Honeypot ẩn + Thời điểm mở form + Checkbox dự phòng
+  // Chống Bot & Spam: Cloudflare Turnstile (máy chủ bắt buộc xác minh) + Honeypot ẩn + Thời điểm mở form
   const [formOpenedAt] = useState<number>(() => Date.now());
   const [honeypot, setHoneypot] = useState('');
   const [turnstileToken, setTurnstileToken] = useState<string>('');
-  const [turnstileFallback, setTurnstileFallback] = useState<boolean>(false);
-  const [humanVerified, setHumanVerified] = useState(false);
+  const [turnstileFailed, setTurnstileFailed] = useState<boolean>(false);
   const turnstileContainerRef = useRef<HTMLDivElement | null>(null);
-  const [challengeNums] = useState<{ a: number; b: number }>(() => ({
-    a: 3,
-    b: 5,
-  }));
-  const [challengeAnswer, setChallengeAnswer] = useState<string>('8');
+
+  // Luồng 2 bước: Gửi mã xác nhận OTP qua Email -> Nhập mã 6 số mới cho vào tài khoản
+  const [step, setStep] = useState<'FORM' | 'VERIFY_OTP'>('FORM');
+  const [otpToken, setOtpToken] = useState<string>('');
+  const [otpCode, setOtpCode] = useState<string>('');
+  const [emailMasked, setEmailMasked] = useState<string>('');
+  const [demoOtpCode, setDemoOtpCode] = useState<string | null>(null);
 
   useEffect(() => {
-    if (step !== 'FORM' || !TURNSTILE_SITE_KEY || turnstileFallback) return;
+    if (step !== 'FORM' || !TURNSTILE_SITE_KEY || turnstileFailed) return;
 
     let widgetId: string | null = null;
     const renderWidget = () => {
@@ -87,18 +88,16 @@ function RegisterForm() {
           theme: 'light',
           callback: (token: string) => {
             setTurnstileToken(token);
-            setHumanVerified(true);
           },
           'expired-callback': () => {
             setTurnstileToken('');
-            setHumanVerified(false);
           },
           'error-callback': () => {
-            setTurnstileFallback(true);
+            setTurnstileFailed(true);
           },
         });
       } catch {
-        setTurnstileFallback(true);
+        setTurnstileFailed(true);
       }
     };
 
@@ -115,7 +114,7 @@ function RegisterForm() {
         script.async = true;
         script.defer = true;
         script.onload = renderWidget;
-        script.onerror = () => setTurnstileFallback(true);
+        script.onerror = () => setTurnstileFailed(true);
         document.head.appendChild(script);
       }
     }
@@ -129,14 +128,7 @@ function RegisterForm() {
         }
       }
     };
-  }, [step, turnstileFallback]);
-
-  // Luồng 2 bước: Gửi mã xác nhận OTP qua Email -> Nhập mã 6 số mới cho vào tài khoản
-  const [step, setStep] = useState<'FORM' | 'VERIFY_OTP'>('FORM');
-  const [otpToken, setOtpToken] = useState<string>('');
-  const [otpCode, setOtpCode] = useState<string>('');
-  const [emailMasked, setEmailMasked] = useState<string>('');
-  const [demoOtpCode, setDemoOtpCode] = useState<string | null>(null);
+  }, [step, turnstileFailed]);
 
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -172,13 +164,12 @@ function RegisterForm() {
       return;
     }
 
-    if (!humanVerified && !turnstileToken) {
-      setError('Vui lòng hoàn tất xác thực chống Bot (Cloudflare Turnstile hoặc ô xác nhận người thật) bên dưới.');
-      return;
-    }
-
-    if (!turnstileToken && Number(challengeAnswer) !== challengeNums.a + challengeNums.b) {
-      setError(`Vui lòng chọn đúng kết quả phép tính xác minh người thật (${challengeNums.a} + ${challengeNums.b} = ${challengeNums.a + challengeNums.b}).`);
+    if (TURNSTILE_SITE_KEY && !turnstileToken) {
+      setError(
+        turnstileFailed
+          ? 'Không tải được bước xác minh chống Bot. Vui lòng tải lại trang hoặc tắt trình chặn quảng cáo rồi thử lại.'
+          : 'Vui lòng hoàn tất xác minh chống Bot (Cloudflare Turnstile) bên dưới.'
+      );
       return;
     }
 
@@ -194,9 +185,6 @@ function RegisterForm() {
           email: email.trim().toLowerCase(),
           password,
           turnstileToken: turnstileToken || undefined,
-          humanVerified: Boolean(humanVerified || turnstileToken),
-          challengeAnswer: Number(challengeAnswer),
-          challengeExpected: challengeNums.a + challengeNums.b,
           honeypot,
           formElapsedMs: Date.now() - formOpenedAt,
         }),
@@ -248,9 +236,6 @@ function RegisterForm() {
           password,
           otpCode: otpCode.trim(),
           otpToken,
-          humanVerified: true,
-          challengeAnswer: challengeNums.a + challengeNums.b,
-          challengeExpected: challengeNums.a + challengeNums.b,
           honeypot,
           formElapsedMs: Date.now() - formOpenedAt,
         }),
@@ -467,15 +452,16 @@ function RegisterForm() {
             </div>
           )}
 
-          {/* KHUNG XÁC MINH NGƯỜI THẬT (CLOUDFLARE TURNSTILE + DỰ PHÒNG ANTI-BOT) */}
+          {/* KHUNG XÁC MINH NGƯỜI THẬT (CLOUDFLARE TURNSTILE — máy chủ bắt buộc xác minh) */}
+          {TURNSTILE_SITE_KEY && (
           <div
             className={`p-3.5 rounded-2xl border transition-all space-y-2.5 ${
-              humanVerified || turnstileToken
+              turnstileToken
                 ? 'bg-emerald-50/70 border-emerald-300'
                 : 'bg-[#FAF7F0] border-[#DFD2C0]'
             }`}
           >
-            {!turnstileFallback && TURNSTILE_SITE_KEY && (
+            {!turnstileFailed && (
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between text-xs font-extrabold text-[var(--color-text-primary)]">
                   <span>🛡️ Xác thực chống Bot đám mây (Cloudflare Turnstile)</span>
@@ -490,53 +476,17 @@ function RegisterForm() {
               </div>
             )}
 
-            {(turnstileFallback || !TURNSTILE_SITE_KEY) && (
-              <>
-                <label className="flex items-center justify-between gap-3 cursor-pointer select-none">
-                  <div className="flex items-center gap-2.5">
-                    <input
-                      type="checkbox"
-                      checked={humanVerified}
-                      onChange={(e) => setHumanVerified(e.target.checked)}
-                      className="w-4 h-4 rounded accent-[var(--color-brand-primary)] cursor-pointer"
-                    />
-                    <span className="text-xs font-extrabold text-[var(--color-text-primary)]">
-                      Xác minh bảo mật: Tôi là người thật (Chống Bot &amp; Spam)
-                    </span>
-                  </div>
-                  <ShieldCheck
-                    className={`w-4 h-4 shrink-0 ${
-                      humanVerified ? 'text-emerald-600' : 'text-stone-400'
-                    }`}
-                  />
-                </label>
-
-                {humanVerified && (
-                  <div className="pt-2 border-t border-emerald-200/80 flex items-center justify-between gap-2 text-xs">
-                    <span className="text-[#2F4F30] font-semibold">
-                      🤖 Câu hỏi chống Bot: <strong>{challengeNums.a} + {challengeNums.b} bằng mấy?</strong>
-                    </span>
-                    <div className="flex items-center gap-1.5">
-                      {[6, 8, 10].map((val) => (
-                        <button
-                          key={val}
-                          type="button"
-                          onClick={() => setChallengeAnswer(String(val))}
-                          className={`w-8 h-7 rounded-lg text-xs font-extrabold border cursor-pointer transition-colors ${
-                            Number(challengeAnswer) === val
-                              ? 'bg-emerald-700 text-white border-emerald-700'
-                              : 'bg-white text-stone-700 border-stone-300 hover:bg-stone-100'
-                          }`}
-                        >
-                          {val}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </>
+            {turnstileFailed && (
+              <div className="flex items-start gap-2 text-xs text-amber-900">
+                <AlertCircle className="w-4 h-4 shrink-0 text-amber-600 mt-0.5" />
+                <span>
+                  Không tải được bước xác minh chống Bot. Vui lòng tải lại trang hoặc tắt trình chặn quảng cáo
+                  rồi thử lại.
+                </span>
+              </div>
             )}
           </div>
+          )}
 
           <p className="text-[11px] text-[var(--color-text-muted)] leading-relaxed">
             Bằng việc bấm tiếp tục, bạn đồng ý với{' '}

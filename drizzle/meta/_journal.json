@@ -99,6 +99,13 @@
       "when": 1792505400000,
       "tag": "0013_dipping_sauce_meal_role",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1792505500000,
+      "tag": "0014_session_version_rate_limits",
+      "breakpoints": true
     }
   ]
 }

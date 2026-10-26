@@ -277,7 +277,7 @@ async function runAllTests() {
     const editorToken = await signToken({ id: 20, email: 'editor@test.local', displayName: 'Editor In Chief', role: 'EDITOR' });
     const adminToken = await signToken({ id: 30, email: 'admin@test.local', displayName: 'System Admin', role: 'ADMIN' });
 
-    // 6.1: Proxy — Anonymous request to /admin -> Redirect to /login
+    // 6.1: Proxy — Anonymous request to /admin -> Redirect to cổng /admin-login
     const anonReq = new NextRequest('http://localhost:3000/admin/dashboard');
     const anonRes = await proxy(anonReq);
     assert(
@@ -285,8 +285,8 @@ async function runAllTests() {
       'Proxy redirect người dùng chưa đăng nhập khi truy cập /admin/*'
     );
     assert(
-      Boolean(anonRes.headers.get('location')?.includes('/login')),
-      'Redirect location trỏ về /login'
+      new URL(anonRes.headers.get('location') || 'http://x/').pathname === '/admin-login',
+      'Redirect location trỏ về cổng /admin-login'
     );
 
     // 6.2: Proxy — COOK access /admin -> 403 Forbidden
@@ -295,8 +295,9 @@ async function runAllTests() {
     });
     const cookAdminRes = await proxy(cookAdminReq);
     assert(
-      cookAdminRes.status === 403,
-      'Proxy từ chối (403 Forbidden) khi COOK truy cập tuyến đường /admin/*'
+      (cookAdminRes.status === 307 || cookAdminRes.status === 302) &&
+        Boolean(cookAdminRes.headers.get('location')?.includes('reason=cook_forbidden')),
+      'Proxy chặn COOK truy cập /admin/* (chuyển về /admin-login?reason=cook_forbidden)'
     );
 
     // 6.3: Proxy — COOK access /editor -> 403 Forbidden
@@ -305,8 +306,9 @@ async function runAllTests() {
     });
     const cookEditorRes = await proxy(cookEditorReq);
     assert(
-      cookEditorRes.status === 403,
-      'Proxy từ chối (403 Forbidden) khi COOK truy cập tuyến đường /editor/*'
+      (cookEditorRes.status === 307 || cookEditorRes.status === 302) &&
+        Boolean(cookEditorRes.headers.get('location')?.includes('reason=cook_forbidden')),
+      'Proxy chặn COOK truy cập /editor/* (chuyển về /admin-login?reason=cook_forbidden)'
     );
 
     // 6.4: Proxy — EDITOR access /editor -> 200 OK (NextResponse.next)

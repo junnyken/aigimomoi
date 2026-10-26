@@ -24,6 +24,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.prod
+      args:
+        NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${NEXT_PUBLIC_TURNSTILE_SITE_KEY:-}
     container_name: angimom_prod_app
     restart: unless-stopped
     depends_on:
@@ -35,6 +37,10 @@ services:
       APP_URL: ${APP_URL:-https://${DOMAIN_NAME:-localhost}}
       DATABASE_URL: "postgres://${POSTGRES_USER:-angimom}:${POSTGRES_PASSWORD:?Loi: Bien POSTGRES_PASSWORD la bat buoc cho Production}@postgres:5432/${POSTGRES_DB:-angimom_prod}"
       AUTH_SECRET: "${AUTH_SECRET:?Loi: Bien AUTH_SECRET la bat buoc cho Production}"
+      # Chống Bot trang Đăng ký (thiếu → production chặn đăng ký)
+      TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY}
+      # Tạo/đặt lại mật khẩu tài khoản Quản trị khởi tạo khi khởi động (để trống = không tạo)
+      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD}
       # Cloudflare R2 Object Storage
       CLOUDFLARE_R2_ACCOUNT_ID: ${CLOUDFLARE_R2_ACCOUNT_ID}
       CLOUDFLARE_R2_ACCESS_KEY_ID: ${CLOUDFLARE_R2_ACCESS_KEY_ID}

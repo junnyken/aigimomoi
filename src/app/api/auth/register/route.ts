@@ -5,7 +5,7 @@ import { users } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { hashPassword } from '@/lib/auth/password';
 import { setSessionCookie, signToken, SESSION_COOKIE_NAME, SESSION_DURATION_MS, AuthConfigurationError, getAuthSecret } from '@/lib/auth/session';
-import { checkRateLimit, getClientIp } from '@/lib/auth/rateLimit';
+import { checkRateLimitShared, getClientIp } from '@/lib/auth/rateLimit';
 import { isCrossSiteRequest } from '@/lib/http/sameOrigin';
 import { sendWelcomeEmail, sendVerificationOtpEmail } from '@/lib/email/mailer';
 import { logger } from '@/lib/logger';
@@ -158,6 +158,60 @@ export function isDisposableOrSpamEmail(email: string): boolean {
 }
 
 const OTP_TTL_MS = 10 * 60 * 1000; // 10 phút
+const OTP_MAX_VERIFY_ATTEMPTS = 5; // số lần nhập mã tối đa cho mỗi email trong 10 phút
+const OTP_MAX_SENDS = 3; // số lần gửi mã tối đa cho mỗi email trong 10 phút
+
+type TurnstileCheck = { ok: true } | { ok: false; status: number; error: string };
+
+/**
+ * Xác minh Cloudflare Turnstile ở máy chủ. Fail-closed: thiếu token, Cloudflare lỗi hoặc
+ * production chưa cấu hình TURNSTILE_SECRET_KEY đều bị từ chối.
+ * Chỉ môi trường dev/test chưa cấu hình khóa mới được bỏ qua bước này.
+ */
+async function verifyTurnstile(token: unknown, ip: string): Promise<TurnstileCheck> {
+  const secret = process.env.TURNSTILE_SECRET_KEY?.trim();
+  if (!secret) {
+    if (process.env.NODE_ENV === 'production') {
+      logger.error('Thiếu TURNSTILE_SECRET_KEY trong production — chặn đăng ký');
+      return {
+        ok: false,
+        status: 503,
+        error: 'Hệ thống xác minh chống Bot đang được bảo trì. Vui lòng thử lại sau.',
+      };
+    }
+    return { ok: true };
+  }
+
+  if (typeof token !== 'string' || token.length === 0 || token.length > 2048) {
+    return { ok: false, status: 400, error: 'Vui lòng hoàn tất xác minh chống Bot (Cloudflare Turnstile).' };
+  }
+
+  try {
+    const cfRes = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ secret, response: token, remoteip: ip }),
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!cfRes.ok) throw new Error(`HTTP ${cfRes.status}`);
+    const cfData = (await cfRes.json()) as { success?: boolean };
+    if (!cfData.success) {
+      return {
+        ok: false,
+        status: 400,
+        error: 'Xác thực Cloudflare Turnstile không hợp lệ hoặc đã hết hạn. Vui lòng thử lại.',
+      };
+    }
+    return { ok: true };
+  } catch (cfErr) {
+    logger.warn('Lỗi kết nối Cloudflare Turnstile siteverify — từ chối (fail-closed)', { error: String(cfErr) });
+    return {
+      ok: false,
+      status: 503,
+      error: 'Chưa xác minh được chống Bot do lỗi kết nối. Vui lòng thử lại sau giây lát.',
+    };
+  }
+}
 
 function createSignedOtpToken(email: string, displayName: string, otpCode: string, expiresAt: number): string {
   const secret = getAuthSecret();
@@ -236,7 +290,7 @@ export async function POST(request: NextRequest) {
     // 1. Kiểm tra cấu hình xác thực trước khi xử lý (fail-closed)
     getAuthSecret();
 
-    const rate = checkRateLimit('auth-register', getClientIp(request), 15, 60_000);
+    const rate = await checkRateLimitShared('auth-register', getClientIp(request), 15, 60_000);
     if (!rate.allowed) {
       return NextResponse.json(
         { error: 'Quá nhiều yêu cầu đăng ký. Vui lòng thử lại sau ít phút.' },
@@ -253,9 +307,6 @@ export async function POST(request: NextRequest) {
       otpCode,
       otpToken,
       turnstileToken,
-      humanVerified,
-      challengeAnswer,
-      challengeExpected,
       honeypot,
       formElapsedMs,
     } = body;
@@ -274,51 +325,6 @@ export async function POST(request: NextRequest) {
         { error: 'Thao tác quá nhanh bất thường. Vui lòng xác nhận bạn là người thật.' },
         { status: 400 }
       );
-    }
-
-    // 1.6. Xác thực trực tiếp với Cloudflare Turnstile siteverify khi giao diện gửi turnstileToken
-    const turnstileSecret =
-      process.env.TURNSTILE_SECRET_KEY?.trim() || '0x4AAAAAAFmC-cSmcRb6XrIsBktEQN9jCNE';
-    if (turnstileToken && typeof turnstileToken === 'string' && step === 'send-otp') {
-      try {
-        const cfRes = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            secret: turnstileSecret,
-            response: turnstileToken,
-            remoteip: getClientIp(request),
-          }),
-        });
-        const cfData = (await cfRes.json()) as { success?: boolean };
-        if (!cfData.success) {
-          return NextResponse.json(
-            { error: 'Xác thực Cloudflare Turnstile không hợp lệ hoặc đã hết hạn. Vui lòng thử lại.' },
-            { status: 400 }
-          );
-        }
-      } catch (cfErr) {
-        logger.warn('Lỗi kết nối Cloudflare Turnstile siteverify', { error: String(cfErr) });
-      }
-    } else {
-      // Nếu không có turnstileToken (chế độ dự phòng), bắt buộc xác nhận người thật + phép tính chống Bot
-      if (!humanVerified) {
-        return NextResponse.json(
-          { error: 'Vui lòng hoàn tất xác thực chống Bot trước khi tiếp tục.' },
-          { status: 400 }
-        );
-      }
-      if (
-        challengeExpected === undefined ||
-        challengeAnswer === undefined ||
-        String(challengeAnswer).trim() === '' ||
-        Number(challengeAnswer) !== Number(challengeExpected)
-      ) {
-        return NextResponse.json(
-          { error: 'Câu trả lời kiểm tra chống Bot chưa chính xác. Vui lòng thử lại.' },
-          { status: 400 }
-        );
-      }
     }
 
     // 2. Validate Họ và tên (Chống XSS / ký tự điều khiển)
@@ -399,11 +405,34 @@ export async function POST(request: NextRequest) {
     // BƯỚC 1: GỬI MÃ XÁC NHẬN OTP 6 SỐ QUA EMAIL (CHƯA CHO VÀO TÀI KHOẢN)
     // =========================================================================
     if (step === 'send-otp') {
-      const generatedOtp = String(crypto.randomInt(100000, 999999));
+      const turnstile = await verifyTurnstile(turnstileToken, getClientIp(request));
+      if (!turnstile.ok) {
+        return NextResponse.json({ error: turnstile.error }, { status: turnstile.status });
+      }
+
+      const sendRate = await checkRateLimitShared('auth-register-otp-send', cleanEmail, OTP_MAX_SENDS, OTP_TTL_MS);
+      if (!sendRate.allowed) {
+        return NextResponse.json(
+          { error: 'Bạn đã yêu cầu gửi mã quá nhiều lần cho email này. Vui lòng thử lại sau ít phút.' },
+          { status: 429, headers: { 'Retry-After': String(sendRate.retryAfterSeconds) } }
+        );
+      }
+
+      const generatedOtp = String(crypto.randomInt(100000, 1000000));
       const expiresAt = Date.now() + OTP_TTL_MS;
       const signedOtpToken = createSignedOtpToken(cleanEmail, cleanName, generatedOtp, expiresAt);
 
       const mailRes = await sendVerificationOtpEmail(cleanEmail, cleanName, generatedOtp);
+      const isProduction = process.env.NODE_ENV === 'production';
+
+      // Production: mã OTP chỉ được đi qua email. Gửi thất bại → báo lỗi, KHÔNG trả mã về trình duyệt.
+      if (isProduction && (mailRes.isMock || !mailRes.success)) {
+        logger.error('Không gửi được email OTP đăng ký', { email: maskEmail(cleanEmail) });
+        return NextResponse.json(
+          { error: 'Không gửi được email xác nhận lúc này. Vui lòng thử lại sau ít phút.' },
+          { status: 503 }
+        );
+      }
 
       return NextResponse.json(
         {
@@ -413,8 +442,8 @@ export async function POST(request: NextRequest) {
           emailMasked: maskEmail(cleanEmail),
           expiresInSeconds: 600,
           smtpConfigured: !mailRes.isMock,
-          // Khi máy chủ chưa gắn biến môi trường SMTP thực tế, hiển thị mã OTP dev/demo để quản trị viên vẫn kiểm thử trọn luồng
-          demoOtpCode: mailRes.isMock ? generatedOtp : undefined,
+          // Chỉ dev/test chưa gắn SMTP mới hiển thị mã để kiểm thử trọn luồng
+          demoOtpCode: !isProduction && mailRes.isMock ? generatedOtp : undefined,
         },
         { status: 200 }
       );
@@ -427,6 +456,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'Vui lòng nhập đầy đủ mã xác nhận 6 số đã gửi qua email của bạn.' },
         { status: 400 }
+      );
+    }
+
+    const verifyRate = await checkRateLimitShared(
+      'auth-register-otp-verify',
+      cleanEmail,
+      OTP_MAX_VERIFY_ATTEMPTS,
+      OTP_TTL_MS
+    );
+    if (!verifyRate.allowed) {
+      return NextResponse.json(
+        { error: 'Bạn đã nhập sai mã quá nhiều lần. Vui lòng đợi ít phút rồi bấm gửi lại mã mới.' },
+        { status: 429, headers: { 'Retry-After': String(verifyRate.retryAfterSeconds) } }
       );
     }
 
@@ -458,6 +500,7 @@ export async function POST(request: NextRequest) {
       email: newUser.email,
       displayName: newUser.displayName,
       role: newUser.role,
+      sv: newUser.sessionVersion,
     });
 
     try {
@@ -466,6 +509,7 @@ export async function POST(request: NextRequest) {
         email: newUser.email,
         displayName: newUser.displayName,
         role: newUser.role,
+        sv: newUser.sessionVersion,
       });
     } catch {
       // In case outside request scope

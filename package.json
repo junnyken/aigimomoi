@@ -10,6 +10,7 @@
     "lint:scoped": "eslint playwright.config.ts e2e src/app/api/auth/login/route.ts src/app/api/health/route.ts 'src/app/cong-thuc/[slug]/page.tsx' 'src/app/cong-thuc/[slug]/nau/page.tsx' src/app/meal/page.tsx src/components/cooking src/components/meal/MealSlotCard.tsx src/components/meal/MealSummaryBar.tsx src/components/meal/MealView.tsx src/components/meal/SwapDishModal.tsx src/components/recipe/RecipeCard.tsx src/components/recipe/StartCookingButton.tsx src/components/recipe/VerificationBadges.tsx src/components/shopping src/lib/auth/session.ts src/lib/logger.ts src/lib/meal/flowUrls.ts src/lib/meal/mealQueries.ts src/lib/recipes/aggregation.ts src/lib/recipes/labels.ts src/lib/recipes/publicQueries.ts src/lib/recipes/searchQueries.ts src/lib/recipes/scaling.ts src/lib/shopping src/scripts/test_auth_hardening.ts src/scripts/test_core_mvp_flows.ts src/scripts/test_data_honesty.ts",
     "test:auth": "tsx src/scripts/test_auth_hardening.ts",
     "test:register": "tsx src/scripts/test_registration_flow.ts",
+    "test:admin": "tsx src/scripts/test_admin_security.ts",
     "test:profile": "tsx src/scripts/test_profile_and_reset_flow.ts",
     "test:creator": "tsx src/scripts/test_creator_marketplace.ts",
     "test:gating": "tsx src/scripts/test_content_gating.ts",

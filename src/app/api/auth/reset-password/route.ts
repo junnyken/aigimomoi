@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { users } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
-import { isAuthConfigurationValid } from '@/lib/auth/session';
+import { isAuthConfigurationValid, revokeUserSessions } from '@/lib/auth/session';
+import { checkRateLimitShared, getClientIp } from '@/lib/auth/rateLimit';
 import { extractResetTokenUserId, verifyResetToken } from '@/lib/auth/resetToken';
 import { hashPassword } from '@/lib/auth/password';
 
@@ -11,6 +12,14 @@ export async function POST(request: Request) {
     return NextResponse.json(
       { error: 'Hệ thống xác thực chưa được cấu hình sẵn sàng' },
       { status: 503 }
+    );
+  }
+
+  const rate = await checkRateLimitShared('auth-reset-pw', getClientIp(request), 10, 60_000);
+  if (!rate.allowed) {
+    return NextResponse.json(
+      { error: 'Quá nhiều yêu cầu đặt lại mật khẩu. Vui lòng thử lại sau ít phút.' },
+      { status: 429, headers: { 'Retry-After': String(rate.retryAfterSeconds) } }
     );
   }
 
@@ -101,6 +110,9 @@ export async function POST(request: Request) {
         updatedAt: new Date(),
       })
       .where(eq(users.id, user.id));
+
+    // Mật khẩu đã đổi → đăng xuất mọi phiên cũ (kể cả phiên của kẻ đã chiếm tài khoản)
+    await revokeUserSessions(user.id);
 
     return NextResponse.json({
       ok: true,

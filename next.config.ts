@@ -1,5 +1,26 @@
 import type { NextConfig } from "next";
 
+const isDev = process.env.NODE_ENV !== "production";
+
+// CSP: chỉ cho phép script/khung từ chính site + Cloudflare Turnstile.
+// 'unsafe-inline' cho script vẫn cần vì Next chèn script khởi tạo inline (chưa dùng nonce).
+const contentSecurityPolicy = [
+  "default-src 'self'",
+  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""} https://challenges.cloudflare.com`,
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: blob: https:",
+  "font-src 'self' data:",
+  `connect-src 'self' https://challenges.cloudflare.com${isDev ? " ws: wss:" : ""}`,
+  "frame-src https://challenges.cloudflare.com",
+  "worker-src 'self' blob:",
+  "media-src 'self' blob:",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "frame-ancestors 'self'",
+  ...(isDev ? [] : ["upgrade-insecure-requests"]),
+].join("; ");
+
 const nextConfig: NextConfig = {
   output: "standalone",
   images: {
@@ -22,7 +43,11 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: '**',
+        hostname: 'images.pexels.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'cdn.pixabay.com',
       },
     ],
   },
@@ -58,6 +83,7 @@ const nextConfig: NextConfig = {
       {
         source: '/(.*)',
         headers: [
+          { key: 'Content-Security-Policy', value: contentSecurityPolicy },
           { key: 'X-Content-Type-Options', value: 'nosniff' },
           { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
           { key: 'X-DNS-Prefetch-Control', value: 'on' },

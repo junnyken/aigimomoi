@@ -122,7 +122,7 @@ export async function PATCH(request: Request) {
       role: sessionUser.role,
     };
 
-    const token = await signToken(updatedPayload);
+    const token = await signToken({ ...updatedPayload, sv: sessionUser.sv });
     const response = NextResponse.json({
       ok: true,
       message: 'Cập nhật thông tin thành công',
@@ -138,7 +138,7 @@ export async function PATCH(request: Request) {
     });
 
     try {
-      await setSessionCookie(updatedPayload);
+      await setSessionCookie({ ...updatedPayload, sv: sessionUser.sv });
     } catch {}
 
     return response;

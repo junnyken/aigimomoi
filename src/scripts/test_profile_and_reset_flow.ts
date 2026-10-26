@@ -141,12 +141,32 @@ async function runProfileAndResetTests() {
   assert.equal(resUnauthProfile.status, 401, 'Không có session cookie phải trả về 401');
   console.log('✓ Profile API: Chặn truy cập chưa xác thực (HTTP 401)');
 
-  // 7b. Tạo session token cho người dùng
-  const sessionToken = await signToken({
+  // 7a. Token ký trước khi đặt lại mật khẩu đã bị thu hồi (session_version tăng sau reset)
+  const staleToken = await signToken({
     id: createdUser.id,
     email: createdUser.email,
     displayName: createdUser.displayName,
     role: createdUser.role,
+    sv: createdUser.sessionVersion,
+  });
+  const resStale = await updateProfileHandler(
+    new Request('http://localhost:3000/api/user/profile', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Cookie: `${SESSION_COOKIE_NAME}=${staleToken}` },
+      body: JSON.stringify({ displayName: 'Kẻ Chiếm Phiên' }),
+    })
+  );
+  assert.equal(resStale.status, 401, 'Phiên cũ trước khi đặt lại mật khẩu phải bị từ chối');
+  console.log('✓ Revocation: Phiên cũ bị vô hiệu hóa sau khi đặt lại mật khẩu');
+
+  // 7b. Tạo session token cho người dùng theo session_version hiện tại
+  const [freshUser] = await db.select().from(users).where(eq(users.id, createdUser.id)).limit(1);
+  const sessionToken = await signToken({
+    id: freshUser.id,
+    email: freshUser.email,
+    displayName: freshUser.displayName,
+    role: freshUser.role,
+    sv: freshUser.sessionVersion,
   });
 
   // Giả lập request kèm cookie phiên
@@ -233,6 +253,27 @@ async function runProfileAndResetTests() {
   const isMatchFinal = await verifyPassword(finalPassword, userFinal.passwordHash!);
   assert.equal(isMatchFinal, true, 'Mật khẩu mới đã được cập nhật chính xác');
   console.log('✓ Change Password: Đổi mật khẩu thành công trong trang hồ sơ');
+
+  // 8d. Phiên cũ bị thu hồi; cookie mới trả về trong response vẫn dùng được
+  const resOldSession = await updateProfileHandler(
+    new Request('http://localhost:3000/api/user/profile', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Cookie: `${SESSION_COOKIE_NAME}=${sessionToken}` },
+      body: JSON.stringify({ displayName: 'Phiên Cũ' }),
+    })
+  );
+  assert.equal(resOldSession.status, 401, 'Phiên cũ phải bị thu hồi sau khi đổi mật khẩu');
+  const newCookie = resSuccessChange.headers.get('set-cookie') || '';
+  const newToken = newCookie.match(new RegExp(`${SESSION_COOKIE_NAME}=([^;]+)`))?.[1] || '';
+  const resNewSession = await updateProfileHandler(
+    new Request('http://localhost:3000/api/user/profile', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Cookie: `${SESSION_COOKIE_NAME}=${newToken}` },
+      body: JSON.stringify({ displayName: 'Phiên Mới' }),
+    })
+  );
+  assert.equal(resNewSession.status, 200, 'Thiết bị đang đổi mật khẩu vẫn giữ đăng nhập');
+  console.log('✓ Revocation: Đổi mật khẩu đăng xuất thiết bị khác, giữ thiết bị hiện tại');
 
   // 9. Dọn dẹp dữ liệu kiểm thử
   await db.delete(users).where(eq(users.id, createdUser.id));

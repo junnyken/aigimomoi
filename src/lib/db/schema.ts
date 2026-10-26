@@ -103,8 +103,17 @@ export const users = pgTable('users', {
   passwordHash: text('password_hash'),
   avatarUrl: text('avatar_url'),
   role: userRoleEnum('role').notNull().default('COOK'),
+  // Tăng khi đổi mật khẩu / vai trò / email → vô hiệu hóa mọi phiên cũ
+  sessionVersion: integer('session_version').notNull().default(0),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+// Bộ đếm giới hạn tần suất (rate limit) dùng chung giữa các instance
+export const rateLimitBuckets = pgTable('rate_limit_buckets', {
+  key: text('key').primaryKey(),
+  count: integer('count').notNull().default(0),
+  resetAt: timestamp('reset_at', { withTimezone: true }).notNull(),
 });
 
 // Dishes (Khái niệm món ăn tổng quát, VD: "Thịt kho tàu")

@@ -3,7 +3,7 @@ import { db } from '@/lib/db';
 import { users } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { isAuthConfigurationValid } from '@/lib/auth/session';
-import { checkRateLimit, getClientIp } from '@/lib/auth/rateLimit';
+import { checkRateLimitShared, getClientIp } from '@/lib/auth/rateLimit';
 import { createResetToken } from '@/lib/auth/resetToken';
 import { sendPasswordResetEmail } from '@/lib/email/mailer';
 
@@ -45,7 +45,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const rate = checkRateLimit('auth-forgot-pw', getClientIp(request), 10, 60_000);
+  const rate = await checkRateLimitShared('auth-forgot-pw', getClientIp(request), 10, 60_000);
   if (!rate.allowed) {
     return NextResponse.json(
       { error: 'Quá nhiều yêu cầu đặt lại mật khẩu. Vui lòng thử lại sau ít phút.' },
@@ -80,6 +80,16 @@ export async function POST(request: Request) {
   }
 
   const normalizedEmail = email.trim().toLowerCase();
+
+  // Tối đa 3 email đặt lại / 15 phút cho mỗi địa chỉ: chống dội thư vào hộp mail nạn nhân.
+  // Vẫn trả thông điệp chung để không lộ email nào tồn tại.
+  const emailRate = await checkRateLimitShared('auth-forgot-pw-email', normalizedEmail, 3, 15 * 60_000);
+  if (!emailRate.allowed) {
+    return NextResponse.json({
+      ok: true,
+      message: 'Nếu email tồn tại trong hệ thống, hướng dẫn đặt lại mật khẩu đã được gửi đến hòm thư của bạn.',
+    });
+  }
 
   try {
     // Tìm người dùng trong DB
