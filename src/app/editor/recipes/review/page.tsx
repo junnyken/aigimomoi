@@ -354,6 +354,7 @@ export default function ReviewQueuePage() {
                 {safetyReport && (
                   <FoodSafetyScorecard
                     report={safetyReport}
+                    recipePayload={detail}
                     mode="admin"
                     onApplyRejectionReason={(reason) => {
                       setMode('reject');

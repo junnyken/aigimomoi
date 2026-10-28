@@ -612,7 +612,7 @@ function EditRecipeContent() {
           </div>
         )}
 
-        {/* Hồ sơ Kiểm định An toàn Thực phẩm & Độc tố tự động */}
+        {/* Hồ sơ Kiểm định An toàn Thực phẩm & Độc tố tự động (Nội bộ dành riêng cho Người kiểm duyệt) */}
         <FoodSafetyScorecard
           report={auditRecipeSafetyAndQuality({
             name,
@@ -628,6 +628,20 @@ function EditRecipeContent() {
             })),
             steps: stepRows,
           })}
+          recipePayload={{
+            name,
+            shortDescription,
+            baseServings,
+            prepTimeMinutes,
+            cookTimeMinutes,
+            ingredients: ingredientRows.map((row) => ({
+              name: availableIngredients.find((i) => i.id === row.ingredientId)?.name || '',
+              amount: row.amount,
+              unit: row.unit,
+              preparation: row.preparation,
+            })),
+            steps: stepRows,
+          }}
           mode="admin"
           onInjectSafetyTip={
             !isReadOnly

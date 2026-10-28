@@ -22,8 +22,6 @@ import {
 import { ImageUpload } from '@/components/ui/ImageUpload';
 import { AiDraftModal } from '@/components/editor/AiDraftModal';
 import type { AiRecipeDraftPayload } from '@/lib/ai/recipeDraftGenerator';
-import { auditRecipeSafetyAndQuality } from '@/lib/safety/foodSafetyAuditor';
-import { FoodSafetyScorecard } from '@/components/safety/FoodSafetyScorecard';
 
 interface IngredientOption {
   id: number;
@@ -751,33 +749,6 @@ export default function ContributorNewRecipePage() {
             })}
           </div>
         </section>
-
-        {/* Bảng Kiểm định An toàn Thực phẩm & Tương kỵ Trực tiếp */}
-        <FoodSafetyScorecard
-          report={auditRecipeSafetyAndQuality({
-            name,
-            shortDescription,
-            baseServings,
-            prepTimeMinutes,
-            cookTimeMinutes,
-            ingredients: ingredientRows.map((row) => ({
-              name: availableIngredients.find((i) => i.id === row.ingredientId)?.name || '',
-              amount: row.amount,
-              unit: row.unit,
-              preparation: row.preparation,
-            })),
-            steps: stepRows,
-          })}
-          mode="contributor"
-          onInjectSafetyTip={(tip) => {
-            setStepRows((prev) => {
-              if (prev.length === 0) return prev;
-              const first = prev[0];
-              const mergedTip = first.tipText ? `${first.tipText} | ${tip}` : tip;
-              return [{ ...first, tipText: mergedTip }, ...prev.slice(1)];
-            });
-          }}
-        />
 
         {/* Submit Actions */}
         <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#EADBC8]">

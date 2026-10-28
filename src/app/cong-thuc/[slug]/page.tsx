@@ -33,7 +33,6 @@ import { getUserRecipeEntitlements } from '@/lib/gating/queries';
 import { canAccessRecipe, filterRecipeForViewer } from '@/lib/gating/entitlements';
 import { GatedRecipeBanner } from '@/components/recipe/GatedRecipeBanner';
 import { formatPriceVND } from '@/lib/gating/pricing';
-import { auditRecipeSafetyAndQuality } from '@/lib/safety/foodSafetyAuditor';
 
 interface PageParams {
   params: Promise<{ slug: string }>;
@@ -417,8 +416,6 @@ function FullRecipeBody({ recipe }: { recipe: PublicRecipe }) {
             region={recipe.region}
           />
 
-          <PublicFoodSafetyNoticeCard recipe={recipe} />
-
           <StepList steps={recipe.steps} recipeName={recipe.name} />
 
           <RegionalVariants
@@ -620,69 +617,6 @@ function FreshnessAndStorageGuideCard({ recipe }: { recipe: PublicRecipe }) {
           <strong className="text-emerald-900">🔥 Giữ dưỡng chất:</strong> {guide.nutritionRetentionTip}
         </div>
       </div>
-    </section>
-  );
-}
-
-function PublicFoodSafetyNoticeCard({ recipe }: { recipe: PublicRecipe }) {
-  const report = auditRecipeSafetyAndQuality({
-    name: recipe.name,
-    shortDescription: recipe.shortDescription,
-    baseServings: recipe.baseServings,
-    prepTimeMinutes: recipe.prepTimeMinutes,
-    cookTimeMinutes: recipe.cookTimeMinutes,
-    ingredients: recipe.ingredients.map((i) => ({
-      name: i.name,
-      amount: i.amount,
-      unit: i.unit,
-      preparation: i.preparation,
-    })),
-    steps: recipe.steps,
-  });
-
-  return (
-    <section
-      aria-label="Chứng nhận Kiểm định An toàn Thực phẩm & Lưu ý Sức khỏe"
-      className="p-4 sm:p-5 rounded-2xl bg-emerald-50/50 border border-emerald-200/80 space-y-3"
-    >
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="inline-flex items-center gap-2 text-xs sm:text-sm font-bold text-emerald-900">
-          <ShieldCheck className="w-4 h-4 text-emerald-700 shrink-0" />
-          <span>Kiểm định An toàn Thực phẩm &amp; Tương hợp Nguyên liệu</span>
-        </div>
-        <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-700 text-white">
-          An toàn {report.safetyScore}/100
-        </span>
-      </div>
-
-      <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
-        Công thức đã qua hệ thống sàng lọc độc tố tự nhiên, kiểm tra ma trận tương kỵ thực phẩm Việt Nam và định lượng gia vị an toàn cho khẩu phần {recipe.baseServings} người.
-      </p>
-
-      {report.allergens.length > 0 && (
-        <div className="flex flex-wrap items-center gap-1.5 pt-1">
-          <span className="text-[11px] font-bold text-amber-900">⚠️ Lưu ý cơ địa dị ứng:</span>
-          {report.allergens.map((al) => (
-            <span
-              key={al.key}
-              title={al.note}
-              className="px-2 py-0.5 rounded-full bg-white border border-amber-300 text-[11px] font-semibold text-amber-900"
-            >
-              {al.label}
-            </span>
-          ))}
-        </div>
-      )}
-
-      {report.recommendedSafetyTips.length > 0 && (
-        <div className="p-2.5 rounded-xl bg-white border border-emerald-200 text-xs text-emerald-950 space-y-1">
-          {report.recommendedSafetyTips.map((tip, idx) => (
-            <p key={idx} className="leading-relaxed">
-              🛡️ {tip}
-            </p>
-          ))}
-        </div>
-      )}
     </section>
   );
 }
