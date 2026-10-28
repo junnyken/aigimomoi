@@ -7,11 +7,14 @@ import {
   CURATED_RECIPE_SOURCES,
   runDailyCuratedHarvest,
   getRecentHarvestedRecipes,
+  repairExistingHarvestedRecipes,
+  getDefaultHarvestPublishMode,
+  setDefaultHarvestPublishMode,
   type HarvestPublishMode,
 } from '@/lib/ai/dailyHarvester';
 import { logger } from '@/lib/logger';
 
-// GET /api/editor/daily-harvest — Lấy danh sách 12 nguồn uy tín & lịch sử thu thập gần nhất
+// GET /api/editor/daily-harvest — Lấy danh sách 10 nguồn uy tín, chế độ mặc định & lịch sử thu thập gần nhất
 export async function GET() {
   try {
     const user = await getSessionUser();
@@ -22,10 +25,16 @@ export async function GET() {
       );
     }
 
+    const repaired = await repairExistingHarvestedRecipes();
+    if (repaired > 0) {
+      revalidateTag(PUBLIC_RECIPES_TAG, { expire: 0 });
+    }
+
     const recentHarvested = await getRecentHarvestedRecipes(10);
 
     return NextResponse.json({
       success: true,
+      defaultPublishMode: getDefaultHarvestPublishMode(),
       sources: CURATED_RECIPE_SOURCES.map((s) => ({
         id: s.id,
         name: s.name,
@@ -41,10 +50,11 @@ export async function GET() {
         dailyRunTimeVn: '06:00 sáng (GMT+7)',
         defaultDailyCount: 3,
         qualityGateRules: [
-          'Chốt 1: Tối thiểu 3 nguyên liệu có định lượng cụ thể (> 0) & đơn vị chuẩn bếp Việt',
+          'Chốt 1: Tối thiểu 3 nguyên liệu thực tế có định lượng cụ thể (> 0), cấm tên giả định',
           'Chốt 2: Tối thiểu 2 bước thực hiện chi tiết (≥ 15 ký tự) chia theo Sơ chế / Chế biến / Hoàn thành',
-          'Chốt 3: Tỷ lệ khớp Từ điển Thực phẩm Chuẩn Việt Nam (Viện Dinh Dưỡng & Bách Hóa Xanh) ≥ 70%',
-          'Chốt 4: Tự động tính Calo FCT & Dự toán chi phí đi chợ hợp lệ (8.000đ – 600.000đ)',
+          'Chốt 3: Tỷ lệ khớp Từ điển Thực phẩm Chuẩn Việt Nam (Viện Dinh Dưỡng & Bách Hóa Xanh) ≥ 75%',
+          'Chốt 4: Tự động tính Calo FCT hợp lệ (Món chính ≥ 95 kcal/phần) & Dự toán chi phí (12.000đ – 600.000đ)',
+          'Chốt 5: Bắt ảnh đa tầng (og:image / twitter:image / JSON-LD image) + Tự gắn ảnh minh họa chuẩn nhóm món',
         ],
       },
     });
@@ -57,7 +67,7 @@ export async function GET() {
   }
 }
 
-// POST /api/editor/daily-harvest — Kích hoạt thu thập & chuẩn hóa món ăn ngay lập tức (hoặc qua Cron)
+// POST /api/editor/daily-harvest — Kích hoạt thu thập & chuẩn hóa món ăn ngay lập tức (hoặc lưu chế độ duyệt mặc định)
 export async function POST(request: NextRequest) {
   try {
     const cronSecret = process.env.CRON_SECRET;
@@ -82,6 +92,21 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json().catch(() => ({}));
+    const publishMode: HarvestPublishMode =
+      body.publishMode === 'REVIEW_QUEUE'
+        ? 'REVIEW_QUEUE'
+        : body.publishMode === 'AUTO_PUBLISH_REAL_PHOTO_ONLY'
+        ? 'AUTO_PUBLISH_REAL_PHOTO_ONLY'
+        : 'AUTO_PUBLISH_IF_QUALIFIED';
+
+    if (body.action === 'SET_DEFAULT_MODE') {
+      setDefaultHarvestPublishMode(publishMode);
+      return NextResponse.json({
+        success: true,
+        defaultPublishMode: getDefaultHarvestPublishMode(),
+      });
+    }
+
     const sourceIds = Array.isArray(body.sourceIds)
       ? body.sourceIds.map((id: unknown) => String(id || '').trim()).filter(Boolean)
       : undefined;
@@ -89,10 +114,6 @@ export async function POST(request: NextRequest) {
       ? body.customUrls.map((u: unknown) => String(u || '').trim()).filter(Boolean)
       : undefined;
     const maxItems = Math.min(6, Math.max(1, Number(body.maxItems) || 3));
-    const publishMode: HarvestPublishMode =
-      body.publishMode === 'REVIEW_QUEUE'
-        ? 'REVIEW_QUEUE'
-        : 'AUTO_PUBLISH_IF_QUALIFIED';
 
     const result = await runDailyCuratedHarvest({
       sourceIds,

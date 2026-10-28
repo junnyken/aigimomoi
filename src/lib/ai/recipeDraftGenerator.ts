@@ -54,6 +54,7 @@ export interface AiRecipeDraftPayload {
   isEditorialReviewed: false;
   isNutritionVerified: false;
   heroImage?: string;
+  hasExtractedRealPhoto?: boolean;
   sourceUrl?: string;
   ingredients: AiRecipeIngredientDraft[];
   steps: AiRecipeStepDraft[];
@@ -63,6 +64,57 @@ export interface AiRecipeDraftResult {
   draft: AiRecipeDraftPayload;
   provider: string;
   isFallback: boolean;
+}
+
+/**
+ * Tự động chọn ảnh minh họa món ăn chất lượng cao tương ứng theo nhóm món (Kho, Canh, Xào, Cá, Gà, Salad...)
+ * khi nguồn không cung cấp URL ảnh trực tiếp hoặc trang gốc chặn nhúng ảnh.
+ */
+export function resolveSmartDishIllustration(
+  dishName: string,
+  role: 'MAIN' | 'SOUP' | 'SIDE' | 'ONE_DISH_MEAL' = 'MAIN'
+): string {
+  const lower = (dishName || '').toLowerCase();
+
+  if (lower.includes('cá hồi')) {
+    return 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?auto=format&fit=crop&w=800&q=80';
+  }
+  if (lower.includes('canh chua')) {
+    return 'https://images.unsplash.com/photo-1512058564366-18510be2db19?auto=format&fit=crop&w=800&q=80';
+  }
+  if (role === 'SOUP' || lower.startsWith('canh') || lower.startsWith('súp')) {
+    return 'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=800&q=80';
+  }
+  if (
+    lower.includes('cá ') ||
+    lower.includes('tôm') ||
+    lower.includes('mực') ||
+    lower.includes('nghêu') ||
+    lower.includes('hải sản')
+  ) {
+    return 'https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?auto=format&fit=crop&w=800&q=80';
+  }
+  if (lower.includes('gà') || lower.includes('ức gà') || lower.includes('cánh gà')) {
+    return 'https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?auto=format&fit=crop&w=800&q=80';
+  }
+  if (
+    role === 'SIDE' ||
+    lower.includes('rau') ||
+    lower.includes('xào') ||
+    lower.includes('luộc') ||
+    lower.includes('salad') ||
+    lower.includes('gỏi') ||
+    lower.includes('dưa leo') ||
+    lower.includes('đậu bắp') ||
+    lower.includes('bông thiên lý')
+  ) {
+    return 'https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=800&q=80';
+  }
+  if (lower.includes('đậu hũ') || lower.includes('đậu phụ') || lower.includes('trứng') || lower.includes('nấm')) {
+    return 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80';
+  }
+  // Mặc định cho các món Thịt kho / Sườn rim / Bò lúc lắc / Cơm nhà đậm đà
+  return 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=80';
 }
 
 function slugify(text: string): string {
@@ -173,13 +225,15 @@ export async function fetchExternalRecipeContent(url: string): Promise<{
       .replace(/\s+/g, ' ')
       .trim();
 
-    // 2. Trích xuất ảnh đại diện og:image
+    // 2. Trích xuất ảnh đại diện đa tầng (og:image -> twitter:image -> JSON-LD image -> article img)
     const ogImageMatch =
-      html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i) ||
-      html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i);
-    const extractedImage = ogImageMatch?.[1]?.trim();
+      html.match(/<meta[^>]+property=["']og:image(?::secure_url)?["'][^>]+content=["']([^"']+)["']/i) ||
+      html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image(?::secure_url)?["']/i) ||
+      html.match(/<meta[^>]+name=["']twitter:image(?::src)?["'][^>]+content=["']([^"']+)["']/i) ||
+      html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+name=["']twitter:image(?::src)?["']/i);
+    let extractedImage = ogImageMatch?.[1]?.trim();
 
-    // 3. Ưu tiên tìm JSON-LD Schema.org Recipe nếu trang web có nhúng
+    // 3. Ưu tiên tìm JSON-LD Schema.org Recipe nếu trang web có nhúng (kiêm bóc tách ảnh chuẩn trong JSON-LD)
     let jsonLdSummary = '';
     const jsonLdMatches = html.matchAll(/<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi);
     for (const match of jsonLdMatches) {
@@ -187,9 +241,57 @@ export async function fetchExternalRecipeContent(url: string): Promise<{
         const jsonText = match[1].trim();
         if (jsonText.includes('Recipe') || jsonText.includes('recipeIngredient')) {
           jsonLdSummary += `\n[Dữ liệu cấu trúc Recipe từ trang]:\n${jsonText.slice(0, 3500)}\n`;
+          if (!extractedImage) {
+            const imgFieldMatch =
+              jsonText.match(/"image"\s*:\s*"([^"]+)"/i) ||
+              jsonText.match(/"image"\s*:\s*\[\s*"([^"]+)"/i) ||
+              jsonText.match(/"image"\s*:\s*\{[^}]*"url"\s*:\s*"([^"]+)"/i);
+            if (imgFieldMatch?.[1]) {
+              extractedImage = imgFieldMatch[1].trim();
+            }
+          }
         }
       } catch {
         // ignore
+      }
+    }
+
+    // Tầng 4: Nếu vẫn chưa có ảnh, quét thẻ <img> lớn đầu tiên trong nội dung bài viết
+    if (!extractedImage) {
+      const imgTagMatches = html.matchAll(/<img[^>]+(?:data-src|src)=["']([^"']+)["'][^>]*>/gi);
+      for (const m of imgTagMatches) {
+        const candidate = (m[1] || '').trim();
+        const lowerImg = candidate.toLowerCase();
+        if (
+          candidate &&
+          !lowerImg.startsWith('data:') &&
+          !lowerImg.includes('logo') &&
+          !lowerImg.includes('icon') &&
+          !lowerImg.includes('avatar') &&
+          !lowerImg.includes('banner') &&
+          (lowerImg.endsWith('.jpg') ||
+            lowerImg.endsWith('.jpeg') ||
+            lowerImg.endsWith('.png') ||
+            lowerImg.endsWith('.webp') ||
+            lowerImg.includes('upload') ||
+            lowerImg.includes('images'))
+        ) {
+          extractedImage = candidate;
+          break;
+        }
+      }
+    }
+
+    // Chuẩn hóa đường dẫn ảnh tương đối sang URL tuyệt đối
+    let normalizedImage: string | undefined;
+    if (extractedImage) {
+      try {
+        const resolved = new URL(extractedImage.replace(/&amp;/g, '&'), parsedUrl.toString()).toString();
+        if (resolved.startsWith('http://') || resolved.startsWith('https://')) {
+          normalizedImage = resolved;
+        }
+      } catch {
+        normalizedImage = undefined;
       }
     }
 
@@ -211,7 +313,7 @@ export async function fetchExternalRecipeContent(url: string): Promise<{
     return {
       title: rawTitle,
       content: `${jsonLdSummary}\n[Nội dung bài viết]:\n${cleanedText}`.trim(),
-      image: extractedImage && extractedImage.startsWith('http') ? extractedImage : undefined,
+      image: normalizedImage,
     };
   } finally {
     clearTimeout(timeout);
@@ -442,6 +544,9 @@ Hãy phân tích và soạn thảo bản thảo công thức có cấu trúc ho�
     );
   }
 
+  const finalHeroImage =
+    extractedImage || resolveSmartDishIllustration(validatedName, validatedRole);
+
   return {
     draft: {
       name: validatedName,
@@ -457,7 +562,8 @@ Hãy phân tích và soạn thảo bản thảo công thức có cấu trúc ho�
       isCookTested: false, // INVARIANT: Không đánh dấu đã nấu thử
       isEditorialReviewed: false, // INVARIANT: Không đánh dấu đã biên tập kiểm chứng
       isNutritionVerified: false,
-      heroImage: extractedImage,
+      heroImage: finalHeroImage,
+      hasExtractedRealPhoto: Boolean(extractedImage),
       sourceUrl: sourceUrl || undefined,
       ingredients: processedIngredients,
       steps: processedSteps,

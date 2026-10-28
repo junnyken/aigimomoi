@@ -39,6 +39,8 @@ interface HarvestedItem {
   foodMatchRatePercent: number;
   estimatedTotalVnd: number;
   caloriesPerServing: number | null;
+  heroImage?: string | null;
+  hasRealPhoto?: boolean;
 }
 
 interface RecentHarvestedRow {
@@ -47,11 +49,17 @@ interface RecentHarvestedRow {
   name: string;
   role: string;
   status: string;
+  heroImage?: string | null;
   caloriesPerServing: number | null;
   sourceAttribution: string | null;
   reviewNotes: string | null;
   createdAt: string;
 }
+
+type HarvesterMode =
+  | 'AUTO_PUBLISH_IF_QUALIFIED'
+  | 'AUTO_PUBLISH_REAL_PHOTO_ONLY'
+  | 'REVIEW_QUEUE';
 
 interface DailyHarvesterPanelProps {
   onHarvestCompleted?: () => void;
@@ -62,9 +70,7 @@ export function DailyHarvesterPanel({ onHarvestCompleted }: DailyHarvesterPanelP
   const [sources, setSources] = useState<CuratedSourceSummary[]>([]);
   const [selectedSourceIds, setSelectedSourceIds] = useState<string[]>([]);
   const [recentHarvested, setRecentHarvested] = useState<RecentHarvestedRow[]>([]);
-  const [publishMode, setPublishMode] = useState<'AUTO_PUBLISH_IF_QUALIFIED' | 'REVIEW_QUEUE'>(
-    'AUTO_PUBLISH_IF_QUALIFIED'
-  );
+  const [publishMode, setPublishMode] = useState<HarvesterMode>('AUTO_PUBLISH_IF_QUALIFIED');
   const [maxItems, setMaxItems] = useState<number>(3);
   const [customUrlText, setCustomUrlText] = useState('');
   const [running, setRunning] = useState(false);
@@ -85,6 +91,13 @@ export function DailyHarvesterPanel({ onHarvestCompleted }: DailyHarvesterPanelP
         if (selectedSourceIds.length === 0 && srcList.length > 0) {
           setSelectedSourceIds(srcList.map((s) => s.id));
         }
+        if (
+          data.defaultPublishMode === 'REVIEW_QUEUE' ||
+          data.defaultPublishMode === 'AUTO_PUBLISH_REAL_PHOTO_ONLY' ||
+          data.defaultPublishMode === 'AUTO_PUBLISH_IF_QUALIFIED'
+        ) {
+          setPublishMode(data.defaultPublishMode);
+        }
         setRecentHarvested(data.recentHarvested || []);
       }
     } catch {
@@ -95,6 +108,22 @@ export function DailyHarvesterPanel({ onHarvestCompleted }: DailyHarvesterPanelP
   useEffect(() => {
     loadConfig();
   }, []);
+
+  const handleSelectMode = async (mode: HarvesterMode) => {
+    setPublishMode(mode);
+    try {
+      await fetch('/api/editor/daily-harvest', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'SET_DEFAULT_MODE',
+          publishMode: mode,
+        }),
+      });
+    } catch {
+      // ignore
+    }
+  };
 
   const toggleSource = (id: string) => {
     setSelectedSourceIds((prev) =>
@@ -154,7 +183,7 @@ export function DailyHarvesterPanel({ onHarvestCompleted }: DailyHarvesterPanelP
     >
       {/* Header Banner */}
       <div className="p-4 sm:p-5 bg-gradient-to-r from-[#F2F7F2] via-[#FAF7F0] to-[#FFF8EE] flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-        <div className="space-y-1">
+        <div className="space-y-1.5">
           <div className="flex flex-wrap items-center gap-2">
             <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-700 text-white text-[11px] font-bold">
               <CalendarClock className="w-3.5 h-3.5" />
@@ -162,15 +191,53 @@ export function DailyHarvesterPanel({ onHarvestCompleted }: DailyHarvesterPanelP
             </span>
             <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-200 text-[11px] font-semibold">
               <ShieldCheck className="w-3.5 h-3.5 text-amber-700" />
-              4 Chốt Kiểm Định Đúng Thực Phẩm & Định Lượng
+              5 Chốt Kiểm Định: Nguyên Liệu Thật · Calo Chuẩn · Bắt Ảnh Đa Tầng
             </span>
           </div>
           <h2 className="text-base sm:text-lg font-extrabold text-[#2D482E]">
             Bộ Thu Thập Món Ngon Mỗi Ngày từ 10 Chuyên Trang Ẩm Thực Uy Tín (Phương Án 3)
           </h2>
           <p className="text-xs text-[#5C4A3A] leading-relaxed">
-            Tự động lấy món mới từ <strong>Món Ngon Mỗi Ngày, Hướng Nghiệp Á Âu, Điện Máy Xanh Vào Bếp, Bách Hóa Xanh, VnExpress, Esheep Kitchen, Cookpad...</strong> — đối chiếu từ điển thực phẩm Việt, tự tính Calo FCT &amp; Giá Bách Hóa Xanh.
+            Tự động lấy món mới từ <strong>Món Ngon Mỗi Ngày, Hướng Nghiệp Á Âu, Điện Máy Xanh Vào Bếp, Bách Hóa Xanh, VnExpress, Esheep Kitchen, Cookpad...</strong> — bắt ảnh đa tầng, đối chiếu từ điển thực phẩm Việt, tự tính Calo FCT &amp; Giá Bách Hóa Xanh.
           </p>
+
+          {/* Thanh gạt nhanh chế độ duyệt ngay trên mặt chính */}
+          <div className="pt-1 flex flex-wrap items-center gap-1.5">
+            <span className="text-[11px] font-bold text-[#3F6240] mr-1">Chế độ hiện tại:</span>
+            <button
+              type="button"
+              onClick={() => handleSelectMode('REVIEW_QUEUE')}
+              className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border transition-all cursor-pointer ${
+                publishMode === 'REVIEW_QUEUE'
+                  ? 'bg-amber-600 text-white border-amber-700 shadow-2xs'
+                  : 'bg-white text-amber-900 border-amber-200 hover:bg-amber-50'
+              }`}
+            >
+              🟡 Chờ tôi duyệt mới đăng
+            </button>
+            <button
+              type="button"
+              onClick={() => handleSelectMode('AUTO_PUBLISH_REAL_PHOTO_ONLY')}
+              className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border transition-all cursor-pointer ${
+                publishMode === 'AUTO_PUBLISH_REAL_PHOTO_ONLY'
+                  ? 'bg-sky-700 text-white border-sky-800 shadow-2xs'
+                  : 'bg-white text-sky-900 border-sky-200 hover:bg-sky-50'
+              }`}
+            >
+              🔵 Có ảnh gốc + Đạt chuẩn mới tự đăng
+            </button>
+            <button
+              type="button"
+              onClick={() => handleSelectMode('AUTO_PUBLISH_IF_QUALIFIED')}
+              className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border transition-all cursor-pointer ${
+                publishMode === 'AUTO_PUBLISH_IF_QUALIFIED'
+                  ? 'bg-emerald-700 text-white border-emerald-800 shadow-2xs'
+                  : 'bg-white text-emerald-900 border-emerald-200 hover:bg-emerald-50'
+              }`}
+            >
+              🟢 Tự động đăng món đạt 5 chốt (kèm ảnh minh họa)
+            </button>
+          </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5 shrink-0">
@@ -231,34 +298,44 @@ export function DailyHarvesterPanel({ onHarvestCompleted }: DailyHarvesterPanelP
                 key={item.recipeId}
                 className="p-3.5 rounded-xl bg-white border border-emerald-200 shadow-2xs flex flex-col justify-between gap-2"
               >
-                <div>
-                  <div className="flex items-center justify-between gap-1.5 mb-1">
-                    <span
-                      className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                <div className="flex items-start gap-3">
+                  {item.heroImage && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={item.heroImage}
+                      alt=""
+                      className="w-16 h-16 rounded-lg object-cover border border-stone-200 shrink-0"
+                    />
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-1.5 mb-1 flex-wrap">
+                      <span
+                        className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                          item.status === 'PUBLISHED'
+                            ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                            : 'bg-amber-100 text-amber-800 border border-amber-300'
+                        }`}
+                      >
+                        {item.status === 'PUBLISHED' ? '🟢 Đã Tự Động Xuất Bản' : '🟡 Chờ Bạn Duyệt'}
+                      </span>
+                      <span className="text-[10px] font-bold text-emerald-700">
+                        {item.hasRealPhoto ? '📸 Ảnh bài gốc' : '🖼️ Ảnh minh họa'} · {item.qualityScore}/100
+                      </span>
+                    </div>
+                    <Link
+                      href={
                         item.status === 'PUBLISHED'
-                          ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                          : 'bg-amber-100 text-amber-800 border border-amber-300'
-                      }`}
+                          ? `/cong-thuc/${item.slug}`
+                          : `/editor/recipes/${item.recipeId}`
+                      }
+                      className="text-sm font-bold text-[#2D2A26] hover:text-[#3F6240] hover:underline line-clamp-1"
                     >
-                      {item.status === 'PUBLISHED' ? '🟢 Đã Tự Động Xuất Bản' : '🟡 Đưa Vào Hàng Chờ Duyệt'}
-                    </span>
-                    <span className="text-[11px] font-bold text-emerald-700">
-                      Điểm: {item.qualityScore}/100
-                    </span>
+                      {item.name}
+                    </Link>
+                    <p className="text-[11px] text-[#7C6A59] mt-0.5 truncate">
+                      Nguồn: {item.sourceName}
+                    </p>
                   </div>
-                  <Link
-                    href={
-                      item.status === 'PUBLISHED'
-                        ? `/cong-thuc/${item.slug}`
-                        : `/editor/recipes/${item.recipeId}`
-                    }
-                    className="text-sm font-bold text-[#2D2A26] hover:text-[#3F6240] hover:underline line-clamp-1"
-                  >
-                    {item.name}
-                  </Link>
-                  <p className="text-[11px] text-[#7C6A59] mt-0.5 truncate">
-                    Nguồn: {item.sourceName}
-                  </p>
                 </div>
 
                 <div className="pt-2 border-t border-stone-100 flex flex-wrap items-center justify-between gap-1 text-[11px]">
@@ -285,37 +362,15 @@ export function DailyHarvesterPanel({ onHarvestCompleted }: DailyHarvesterPanelP
       {isExpanded && (
         <div className="p-4 sm:p-5 border-t border-[#EADBC8] space-y-5 bg-white">
           {/* 1. Chế độ duyệt (Phương án 3) & Số lượng món */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 p-4 rounded-xl bg-[#FAF7F0] border border-[#EADBC8]">
-            <div className="lg:col-span-2 space-y-2">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 p-4 rounded-xl bg-[#FAF7F0] border border-[#EADBC8]">
+            <div className="lg:col-span-3 space-y-2">
               <label className="block text-xs font-extrabold uppercase tracking-wider text-[#3F6240]">
-                1. Chế độ Kiểm duyệt & Xuất bản (Phương án 3)
+                1. Chế độ Kiểm duyệt & Xuất bản (Tùy chọn linh hoạt 1 chạm)
               </label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                 <button
                   type="button"
-                  onClick={() => setPublishMode('AUTO_PUBLISH_IF_QUALIFIED')}
-                  className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
-                    publishMode === 'AUTO_PUBLISH_IF_QUALIFIED'
-                      ? 'bg-emerald-50 border-emerald-600 ring-2 ring-emerald-500/20'
-                      : 'bg-white border-[#EADBC8] hover:bg-stone-50'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-extrabold text-emerald-900">
-                      🟢 Tự động lên sóng nếu đạt 100% chuẩn
-                    </span>
-                    {publishMode === 'AUTO_PUBLISH_IF_QUALIFIED' && (
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                    )}
-                  </div>
-                  <p className="text-[11px] text-[#5C4A3A] mt-1 leading-snug">
-                    Món vượt qua đủ 4 chốt (≥3 nguyên liệu có số lượng, ≥2 bước nấu, khớp thực phẩm chuẩn ≥70%, tính xong Calo &amp; Giá) sẽ tự động <strong>PUBLISHED</strong>.
-                  </p>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setPublishMode('REVIEW_QUEUE')}
+                  onClick={() => handleSelectMode('REVIEW_QUEUE')}
                   className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
                     publishMode === 'REVIEW_QUEUE'
                       ? 'bg-amber-50 border-amber-600 ring-2 ring-amber-500/20'
@@ -324,14 +379,58 @@ export function DailyHarvesterPanel({ onHarvestCompleted }: DailyHarvesterPanelP
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-extrabold text-amber-900">
-                      🟡 Đưa vào Hàng chờ duyệt 1 chạm
+                      🟡 Để công thức xong tôi duyệt
                     </span>
                     {publishMode === 'REVIEW_QUEUE' && (
                       <CheckCircle2 className="w-4 h-4 text-amber-600" />
                     )}
                   </div>
                   <p className="text-[11px] text-[#5C4A3A] mt-1 leading-snug">
-                    Mọi món thu thập về được chuẩn hóa sẵn Calo &amp; Giá rồi xếp vào trạng thái <strong>SUBMITTED</strong> tại Cổng Kiểm Duyệt để bạn duyệt tay.
+                    Mọi món lấy về được bóc tách sẵn nguyên liệu, tính Calo &amp; Giá, gắn ảnh rồi xếp vào <strong>Chờ duyệt (SUBMITTED)</strong> để bạn kiểm tra chính xác mới lên sóng.
+                  </p>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleSelectMode('AUTO_PUBLISH_REAL_PHOTO_ONLY')}
+                  className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                    publishMode === 'AUTO_PUBLISH_REAL_PHOTO_ONLY'
+                      ? 'bg-sky-50 border-sky-600 ring-2 ring-sky-500/20'
+                      : 'bg-white border-[#EADBC8] hover:bg-stone-50'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-extrabold text-sky-900">
+                      🔵 Có ảnh bài gốc + Đạt chuẩn mới tự đăng
+                    </span>
+                    {publishMode === 'AUTO_PUBLISH_REAL_PHOTO_ONLY' && (
+                      <CheckCircle2 className="w-4 h-4 text-sky-600" />
+                    )}
+                  </div>
+                  <p className="text-[11px] text-[#5C4A3A] mt-1 leading-snug">
+                    Chỉ tự động <strong>PUBLISHED</strong> khi bắt được ảnh chụp thật từ link bài viết gốc và đạt đủ 5 chốt Calo/Thực phẩm; nếu dùng ảnh minh họa sẽ đưa vào Chờ duyệt.
+                  </p>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleSelectMode('AUTO_PUBLISH_IF_QUALIFIED')}
+                  className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                    publishMode === 'AUTO_PUBLISH_IF_QUALIFIED'
+                      ? 'bg-emerald-50 border-emerald-600 ring-2 ring-emerald-500/20'
+                      : 'bg-white border-[#EADBC8] hover:bg-stone-50'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-extrabold text-emerald-900">
+                      🟢 Tự động lên sóng nếu đạt đủ 5 chốt
+                    </span>
+                    {publishMode === 'AUTO_PUBLISH_IF_QUALIFIED' && (
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                    )}
+                  </div>
+                  <p className="text-[11px] text-[#5C4A3A] mt-1 leading-snug">
+                    Món vượt qua 5 chốt (nguyên liệu thật, khớp thực phẩm ≥75%, Calo chuẩn, tự gắn ảnh bài gốc hoặc ảnh minh họa nhóm món) sẽ tự động <strong>PUBLISHED</strong>.
                   </p>
                 </button>
               </div>

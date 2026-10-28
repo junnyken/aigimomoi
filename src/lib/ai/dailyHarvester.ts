@@ -16,13 +16,30 @@ import {
   users,
 } from '@/lib/db/schema';
 import { eq, inArray, desc, sql } from 'drizzle-orm';
-import { generateRecipeDraft, type AiRecipeDraftPayload } from './recipeDraftGenerator';
+import {
+  generateRecipeDraft,
+  resolveSmartDishIllustration,
+  type AiRecipeDraftPayload,
+} from './recipeDraftGenerator';
 import { calculateRecipeNutrition } from '@/lib/nutrition/calculator';
 import { VIETNAMESE_RETAIL_PRICE_DICTIONARY, calculateRecipeRealCost } from '@/lib/recipes/priceDictionary';
 import { VIETNAMESE_STANDARD_FCT } from '@/lib/nutrition/seedData';
 import { logger } from '@/lib/logger';
 
-export type HarvestPublishMode = 'REVIEW_QUEUE' | 'AUTO_PUBLISH_IF_QUALIFIED';
+export type HarvestPublishMode =
+  | 'REVIEW_QUEUE'
+  | 'AUTO_PUBLISH_REAL_PHOTO_ONLY'
+  | 'AUTO_PUBLISH_IF_QUALIFIED';
+
+let currentDefaultPublishMode: HarvestPublishMode = 'AUTO_PUBLISH_IF_QUALIFIED';
+
+export function getDefaultHarvestPublishMode(): HarvestPublishMode {
+  return currentDefaultPublishMode;
+}
+
+export function setDefaultHarvestPublishMode(mode: HarvestPublishMode): void {
+  currentDefaultPublishMode = mode;
+}
 
 export interface CuratedRecipeSource {
   id: string;
@@ -228,23 +245,30 @@ export interface QualityGateReport {
   hasValidSteps: boolean;
   foodMatchRate: number; // 0.0 - 1.0
   hasValidCost: boolean;
+  hasHeroImage: boolean;
+  hasRealPhoto: boolean;
   estimatedTotalVnd: number;
   reasons: string[];
 }
 
 /**
- * Kiểm định 4 chốt "Đúng Thực Phẩm Chuẩn & Đúng Định Lượng Công Thức" (Quality Gate)
+ * Kiểm định 5 chốt "Đúng Thực Phẩm Chuẩn, Định Lượng Thật & Đủ Hình Ảnh" (Quality Gate)
  */
 export function evaluateFoodAndRecipeQuality(draft: AiRecipeDraftPayload): QualityGateReport {
   const reasons: string[] = [];
 
-  // Chốt 1: Phải có ít nhất 3 nguyên liệu có định lượng > 0
+  // Chốt 1: Phải có ít nhất 3 nguyên liệu có định lượng > 0 và KHÔNG chứa tên giả định ('Nguyên liệu chính')
   const validIngredients = (draft.ingredients || []).filter(
-    (ing) => ing && typeof ing.name === 'string' && ing.name.trim().length >= 2 && Number(ing.amount) > 0
+    (ing) =>
+      ing &&
+      typeof ing.name === 'string' &&
+      ing.name.trim().length >= 2 &&
+      !ing.name.toLowerCase().includes('nguyên liệu chính') &&
+      Number(ing.amount) > 0
   );
   const hasValidQuantities = validIngredients.length >= 3;
   if (!hasValidQuantities) {
-    reasons.push(`Số nguyên liệu có định lượng (${validIngredients.length}) ít hơn mức chuẩn tối thiểu (3).`);
+    reasons.push(`Số nguyên liệu thực tế có định lượng (${validIngredients.length}) ít hơn mức chuẩn tối thiểu (3).`);
   }
 
   // Chốt 2: Phải có ít nhất 2 bước thực hiện rõ ràng (>= 15 ký tự)
@@ -274,9 +298,9 @@ export function evaluateFoodAndRecipeQuality(draft: AiRecipeDraftPayload): Quali
 
   const foodMatchRate =
     validIngredients.length > 0 ? matchedFoodCount / validIngredients.length : 0;
-  if (foodMatchRate < 0.7) {
+  if (foodMatchRate < 0.75) {
     reasons.push(
-      `Tỷ lệ khớp thực phẩm chuẩn chợ Việt đạt ${Math.round(foodMatchRate * 100)}% (yêu cầu ≥ 70%).`
+      `Tỷ lệ khớp thực phẩm chuẩn chợ Việt đạt ${Math.round(foodMatchRate * 100)}% (yêu cầu ≥ 75%).`
     );
   }
 
@@ -286,18 +310,31 @@ export function evaluateFoodAndRecipeQuality(draft: AiRecipeDraftPayload): Quali
     draft.baseServings || 4,
     draft.baseServings || 4
   );
-  const hasValidCost = costBreakdown.totalUsedVnd >= 8000 && costBreakdown.totalUsedVnd <= 600000;
+  const hasValidCost = costBreakdown.totalUsedVnd >= 12000 && costBreakdown.totalUsedVnd <= 600000;
   if (!hasValidCost) {
     reasons.push(`Chi phí ước tính (${costBreakdown.totalUsedVnd}đ) nằm ngoài ngưỡng bữa ăn gia đình.`);
   }
 
+  // Chốt 5: Kiểm tra hình ảnh món ăn (heroImage)
+  const hasHeroImage = Boolean(draft.heroImage && draft.heroImage.trim().length > 5);
+  const hasRealPhoto = Boolean(draft.hasExtractedRealPhoto);
+  if (!hasHeroImage) {
+    reasons.push('Chưa có ảnh đại diện món ăn (heroImage).');
+  }
+
   let score = 0;
-  if (hasValidQuantities) score += 30;
-  if (hasValidSteps) score += 25;
+  if (hasValidQuantities) score += 25;
+  if (hasValidSteps) score += 20;
   score += Math.round(foodMatchRate * 30);
   if (hasValidCost) score += 15;
+  if (hasHeroImage) score += 10;
 
-  const passed = hasValidQuantities && hasValidSteps && foodMatchRate >= 0.7 && hasValidCost;
+  const passed =
+    hasValidQuantities &&
+    hasValidSteps &&
+    foodMatchRate >= 0.75 &&
+    hasValidCost &&
+    hasHeroImage;
 
   return {
     passed,
@@ -306,6 +343,8 @@ export function evaluateFoodAndRecipeQuality(draft: AiRecipeDraftPayload): Quali
     hasValidSteps,
     foodMatchRate: Math.round(foodMatchRate * 100) / 100,
     hasValidCost,
+    hasHeroImage,
+    hasRealPhoto,
     estimatedTotalVnd: costBreakdown.totalUsedVnd,
     reasons,
   };
@@ -332,6 +371,8 @@ export interface HarvestedRecipeItemResult {
   foodMatchRatePercent: number;
   estimatedTotalVnd: number;
   caloriesPerServing: number | null;
+  heroImage: string | null;
+  hasRealPhoto: boolean;
 }
 
 export interface DailyHarvestRunResult {
@@ -347,6 +388,85 @@ export interface DailyHarvestRunResult {
 let lastAutoHarvestDateKey: string | null = null;
 
 /**
+ * Tự động kiểm tra và nâng cấp các món Daily Harvester cũ bị thiếu ảnh hoặc bị thiếu định lượng Calo (<35 kcal)
+ */
+export async function repairExistingHarvestedRecipes(): Promise<number> {
+  try {
+    const rows = await db
+      .select({
+        id: recipes.id,
+        name: recipes.name,
+        role: recipes.role,
+        heroImage: recipes.heroImage,
+        caloriesPerServing: recipes.caloriesPerServing,
+      })
+      .from(recipes)
+      .where(sql`${recipes.reviewNotes} LIKE 'Daily Harvester%'`);
+
+    let repairedCount = 0;
+    for (const row of rows) {
+      const needsImage = !row.heroImage || row.heroImage.trim().length === 0;
+      const needsIngredients = !row.caloriesPerServing || row.caloriesPerServing < 35;
+
+      if (!needsImage && !needsIngredients) continue;
+
+      const role = (row.role as 'MAIN' | 'SOUP' | 'SIDE' | 'ONE_DISH_MEAL') || 'MAIN';
+      const fallbackImg = resolveSmartDishIllustration(row.name, role);
+
+      if (needsIngredients) {
+        const draftRes = await generateRecipeDraft({
+          dishTitle: row.name,
+          role,
+          baseServings: 4,
+          clientId: 'daily-harvester-repair',
+        });
+        const draft = draftRes.draft;
+
+        await db.transaction(async (tx) => {
+          await tx
+            .update(recipes)
+            .set({
+              heroImage: row.heroImage || draft.heroImage || fallbackImg,
+              shortDescription: draft.shortDescription,
+            })
+            .where(eq(recipes.id, row.id));
+
+          if (draft.ingredients.length >= 3) {
+            await tx.delete(recipeIngredients).where(eq(recipeIngredients.recipeId, row.id));
+            await tx.insert(recipeIngredients).values(
+              draft.ingredients.map((ing, idx) => ({
+                recipeId: row.id,
+                ingredientId: ing.ingredientId,
+                amount: ing.amount,
+                unit: ing.unit,
+                scalePolicy: ing.scalePolicy,
+                preparation: ing.preparation || null,
+                isOptional: ing.isOptional,
+                sortOrder: idx + 1,
+              }))
+            );
+          }
+        });
+
+        await calculateRecipeNutrition(row.id);
+        repairedCount++;
+      } else if (needsImage) {
+        await db
+          .update(recipes)
+          .set({ heroImage: fallbackImg })
+          .where(eq(recipes.id, row.id));
+        repairedCount++;
+      }
+    }
+
+    return repairedCount;
+  } catch (err) {
+    logger.warn('Failed to repair existing harvested recipes', { error: err });
+    return 0;
+  }
+}
+
+/**
  * Chạy thu thập & chuẩn hóa món ăn mới từ các nguồn uy tín đã chọn
  */
 export async function runDailyCuratedHarvest(options: {
@@ -357,7 +477,15 @@ export async function runDailyCuratedHarvest(options: {
   liveDiscover?: boolean;
   authorId?: number;
 }): Promise<DailyHarvestRunResult> {
-  const publishMode: HarvestPublishMode = options.publishMode || 'AUTO_PUBLISH_IF_QUALIFIED';
+  // Tự động sửa chữa các món cũ thiếu ảnh hoặc thiếu nguyên liệu trước khi chạy
+  await repairExistingHarvestedRecipes();
+
+  const publishMode: HarvestPublishMode =
+    options.publishMode || currentDefaultPublishMode || 'AUTO_PUBLISH_IF_QUALIFIED';
+  if (options.publishMode) {
+    currentDefaultPublishMode = options.publishMode;
+  }
+
   const maxItems = Math.min(8, Math.max(1, Number(options.maxItems) || 3));
 
   // 1. Xác định authorId (Admin / Editor mặc định nếu chạy từ bộ lập lịch tự động)
@@ -483,10 +611,17 @@ export async function runDailyCuratedHarvest(options: {
       const draft = draftRes.draft;
       const quality = evaluateFoodAndRecipeQuality(draft);
 
-      // Quyết định trạng thái xuất bản theo Phương án 3
-      const shouldAutoPublish =
-        publishMode === 'AUTO_PUBLISH_IF_QUALIFIED' && quality.passed;
-      const targetStatus: 'PUBLISHED' | 'SUBMITTED' = shouldAutoPublish
+      // Quyết định trạng thái xuất bản ban đầu theo chế độ của Admin
+      let shouldAutoPublish = false;
+      if (publishMode === 'AUTO_PUBLISH_IF_QUALIFIED') {
+        shouldAutoPublish = quality.passed;
+      } else if (publishMode === 'AUTO_PUBLISH_REAL_PHOTO_ONLY') {
+        shouldAutoPublish = quality.passed && quality.hasRealPhoto;
+      } else {
+        shouldAutoPublish = false;
+      }
+
+      let targetStatus: 'PUBLISHED' | 'SUBMITTED' = shouldAutoPublish
         ? 'PUBLISHED'
         : 'SUBMITTED';
 
@@ -499,6 +634,8 @@ export async function runDailyCuratedHarvest(options: {
       existingSlugs.add(finalSlug);
 
       const dishSlug = slugify(draft.dishName || draft.name) || finalSlug;
+      const resolvedHeroImage =
+        draft.heroImage || resolveSmartDishIllustration(draft.name, draft.role);
 
       const saved = await db.transaction(async (tx) => {
         let dishId: number;
@@ -540,14 +677,14 @@ export async function runDailyCuratedHarvest(options: {
             prepTimeMinutes: draft.prepTimeMinutes || 15,
             cookTimeMinutes: draft.cookTimeMinutes || 25,
             difficulty: draft.difficulty || 'Dễ',
-            heroImage: draft.heroImage || null,
+            heroImage: resolvedHeroImage,
             isEditorialReviewed: shouldAutoPublish,
             isCookTested: false,
             isNutritionVerified: false,
             reviewedById: shouldAutoPublish ? authorId : null,
             reviewedAt: shouldAutoPublish ? now : null,
             publishedAt: shouldAutoPublish ? now : null,
-            reviewNotes: `Daily Harvester [${cand.sourceName}] · Điểm chất lượng: ${quality.score}/100 · Khớp thực phẩm: ${Math.round(quality.foodMatchRate * 100)}%`,
+            reviewNotes: `Daily Harvester [${cand.sourceName}] · Điểm chất lượng: ${quality.score}/100 · Khớp thực phẩm: ${Math.round(quality.foodMatchRate * 100)}% · ${quality.hasRealPhoto ? 'Ảnh gốc bài viết' : 'Ảnh minh họa chuẩn nhóm món'}`,
             authorId,
           })
           .returning({ id: recipes.id, slug: recipes.slug });
@@ -616,13 +753,31 @@ export async function runDailyCuratedHarvest(options: {
         return insertedRecipe;
       });
 
-      // Tính toán dinh dưỡng Viện Dinh Dưỡng FCT
+      // Tính toán dinh dưỡng Viện Dinh Dưỡng FCT & Kiểm định chốt Calo thực tế
       let caloriesPerServing: number | null = null;
       try {
         const nut = await calculateRecipeNutrition(saved.id);
         caloriesPerServing = nut?.perServing?.calories ?? null;
       } catch {
         // ignore secondary nutrition error
+      }
+
+      // Chốt khóa an toàn sau khi tính Calo: Món chính phải >= 95 kcal/phần, Món canh/rau >= 35 kcal/phần
+      const minRequiredCalories =
+        draft.role === 'MAIN' || draft.role === 'ONE_DISH_MEAL' ? 95 : 35;
+      if (
+        targetStatus === 'PUBLISHED' &&
+        (!caloriesPerServing || caloriesPerServing < minRequiredCalories)
+      ) {
+        targetStatus = 'SUBMITTED';
+        await db
+          .update(recipes)
+          .set({
+            status: 'SUBMITTED',
+            isEditorialReviewed: false,
+            publishedAt: null,
+          })
+          .where(eq(recipes.id, saved.id));
       }
 
       harvested.push({
@@ -636,6 +791,8 @@ export async function runDailyCuratedHarvest(options: {
         foodMatchRatePercent: Math.round(quality.foodMatchRate * 100),
         estimatedTotalVnd: quality.estimatedTotalVnd,
         caloriesPerServing,
+        heroImage: resolvedHeroImage,
+        hasRealPhoto: quality.hasRealPhoto,
       });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Lỗi không xác định';
@@ -670,6 +827,7 @@ export async function getRecentHarvestedRecipes(limit = 8) {
       name: recipes.name,
       role: recipes.role,
       status: recipes.status,
+      heroImage: recipes.heroImage,
       caloriesPerServing: recipes.caloriesPerServing,
       sourceAttribution: recipes.sourceAttribution,
       reviewNotes: recipes.reviewNotes,
@@ -754,6 +912,19 @@ export function startDailyRecipeHarvesterScheduler() {
 
   const checkAndRunDaily = async () => {
     try {
+      // Nâng cấp ngay các món cũ nếu thiếu ảnh hoặc thiếu nguyên liệu chuẩn
+      const repaired = await repairExistingHarvestedRecipes();
+      if (repaired > 0) {
+        logger.info(`Auto-repaired ${repaired} existing harvested recipes with full ingredients & dish illustrations`);
+        try {
+          const { revalidateTag } = await import('next/cache');
+          const { PUBLIC_RECIPES_TAG } = await import('@/lib/recipes/public');
+          revalidateTag(PUBLIC_RECIPES_TAG, { expire: 0 });
+        } catch {
+          // ignore
+        }
+      }
+
       // Lấy ngày hiện tại theo múi giờ Việt Nam (UTC+7)
       const nowVn = new Date(Date.now() + 7 * 60 * 60 * 1000);
       const todayKey = nowVn.toISOString().slice(0, 10); // YYYY-MM-DD
@@ -779,7 +950,7 @@ export function startDailyRecipeHarvesterScheduler() {
       logger.info(`Running scheduled daily recipe harvest for date ${todayKey}`);
       const res = await runDailyCuratedHarvest({
         maxItems: 3,
-        publishMode: 'AUTO_PUBLISH_IF_QUALIFIED',
+        publishMode: currentDefaultPublishMode,
       });
 
       if (res.harvested.some((h) => h.status === 'PUBLISHED')) {
