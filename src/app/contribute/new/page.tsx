@@ -71,8 +71,10 @@ export default function ContributorNewRecipePage() {
   ]);
 
   const [stepRows, setStepRows] = useState<StepRow[]>([
-    { phaseName: 'Sơ chế', instruction: '', timerMinutes: '', tipText: '' },
-    { phaseName: 'Chế biến', instruction: '', timerMinutes: '', tipText: '' },
+    { phaseName: 'Sơ chế & Khử mùi', instruction: '', timerMinutes: '', tipText: '' },
+    { phaseName: 'Ướp thấm vị & Pha sốt', instruction: '', timerMinutes: '', tipText: '' },
+    { phaseName: 'Chế biến & Canh lửa', instruction: '', timerMinutes: '', tipText: '' },
+    { phaseName: 'Hoàn thành & Trình bày', instruction: '', timerMinutes: '', tipText: '' },
   ]);
 
   // UI state
@@ -144,10 +146,35 @@ export default function ContributorNewRecipePage() {
     setIngredientRows((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const SUGGESTED_PHASES = [
+    'Sơ chế & Khử mùi',
+    'Ướp thấm vị & Pha sốt',
+    'Chiên vàng / Áp chảo',
+    'Xào săn & Thấm gia vị',
+    'Kho / Rim / Ninh chín',
+    'Áo sốt keo sánh',
+    'Hoàn thành & Trình bày',
+    'Sơ chế',
+    'Chế biến',
+    'Hoàn thành',
+  ];
+
   const addStepRow = () => {
+    const lastPhase = stepRows[stepRows.length - 1]?.phaseName || 'Chế biến & Canh lửa';
     setStepRows((prev) => [
       ...prev,
-      { phaseName: 'Chế biến', instruction: '', timerMinutes: '', tipText: '' },
+      { phaseName: lastPhase, instruction: '', timerMinutes: '', tipText: '' },
+    ]);
+  };
+
+  const addNewPhaseRow = () => {
+    const existingPhases = new Set(stepRows.map((s) => s.phaseName.trim()));
+    const nextSuggested =
+      SUGGESTED_PHASES.find((p) => !existingPhases.has(p)) ||
+      `Giai đoạn ${existingPhases.size + 1}`;
+    setStepRows((prev) => [
+      ...prev,
+      { phaseName: nextSuggested, instruction: '', timerMinutes: '', tipText: '' },
     ]);
   };
 
@@ -583,35 +610,46 @@ export default function ContributorNewRecipePage() {
 
         {/* Section 3: Các bước thực hiện */}
         <section className="bg-white p-6 rounded-2xl border border-[#EADBC8] shadow-xs space-y-4">
-          <div className="flex items-center justify-between border-b border-[#F3E9DD] pb-3">
-            <h2 className="text-base font-bold text-[#3F6240]">
-              3. Các bước thực hiện ({stepRows.length})
-            </h2>
-            <button
-              type="button"
-              onClick={addStepRow}
-              className="inline-flex items-center gap-1 px-3 py-1.5 bg-[#FAF7F0] hover:bg-[#F3E9DD] text-[#3F6240] text-xs font-semibold rounded-lg border border-[#EADBC8] transition-colors"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Thêm bước</span>
-            </button>
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#F3E9DD] pb-3">
+            <div>
+              <h2 className="text-base font-bold text-[#3F6240]">
+                3. Các bước thực hiện theo từng giai đoạn ({stepRows.length} bước)
+              </h2>
+              <p className="text-xs text-[#7C6A59] mt-0.5">
+                Bạn có thể chia thành 3, 4, 5 hoặc nhiều giai đoạn tùy độ cầu kỳ của món ăn, và viết nhiều bước nhỏ trong mỗi giai đoạn.
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={addNewPhaseRow}
+                className="inline-flex items-center gap-1 px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 text-xs font-semibold rounded-lg border border-amber-200 transition-colors cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Thêm giai đoạn mới</span>
+              </button>
+              <button
+                type="button"
+                onClick={addStepRow}
+                className="inline-flex items-center gap-1 px-3 py-1.5 bg-[#FAF7F0] hover:bg-[#F3E9DD] text-[#3F6240] text-xs font-semibold rounded-lg border border-[#EADBC8] transition-colors cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Thêm bước</span>
+              </button>
+            </div>
           </div>
 
-          {/* Tóm tắt Pipeline Giai đoạn nấu */}
+          {/* Tóm tắt Pipeline Giai đoạn nấu linh hoạt */}
           <div className="flex flex-wrap items-center gap-2 p-3 rounded-xl bg-[#FAF7F0] border border-[#EADBC8]">
             <span className="text-[11px] font-bold uppercase tracking-wider text-[#7C6A59] mr-1">
-              Pipeline giai đoạn:
+              Lộ trình các giai đoạn ({Array.from(new Set(stepRows.map((s) => s.phaseName.trim() || 'Chế biến'))).length} giai đoạn):
             </span>
-            {['Sơ chế', 'Chế biến', 'Hoàn thành'].map((phaseName, pIdx) => {
-              const count = stepRows.filter((s) => s.phaseName === phaseName).length;
+            {Array.from(new Set(stepRows.map((s) => s.phaseName.trim() || 'Chế biến'))).map((phaseName, pIdx) => {
+              const count = stepRows.filter((s) => (s.phaseName.trim() || 'Chế biến') === phaseName).length;
               return (
                 <span
-                  key={phaseName}
-                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold border ${
-                    count > 0
-                      ? 'bg-white border-[#BCD0BE] text-[#3F6240]'
-                      : 'bg-stone-100/70 border-stone-200 text-stone-400'
-                  }`}
+                  key={`${phaseName}-${pIdx}`}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold border bg-white border-[#BCD0BE] text-[#3F6240]"
                 >
                   <span>{pIdx + 1}. {phaseName}</span>
                   <span className="px-1.5 py-0.2 rounded-full bg-[#EAF0EA] text-[10px] font-bold">
@@ -623,58 +661,72 @@ export default function ContributorNewRecipePage() {
           </div>
 
           <div className="space-y-4">
-            {stepRows.map((step, index) => (
-              <div
-                key={index}
-                className="p-4 rounded-xl bg-[#FAF7F0] border border-[#EADBC8] space-y-3"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="w-6 h-6 rounded-full bg-[#3F6240] text-white text-xs font-bold flex items-center justify-center">
-                      {index + 1}
-                    </span>
-                    <select
-                      value={step.phaseName}
-                      onChange={(e) => updateStepRow(index, { phaseName: e.target.value })}
-                      className="px-2.5 py-1 bg-white border border-[#EADBC8] rounded-lg text-xs font-medium"
-                    >
-                      <option value="Sơ chế">Sơ chế</option>
-                      <option value="Chế biến">Chế biến</option>
-                      <option value="Hoàn thành">Hoàn thành</option>
-                    </select>
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-1 text-xs text-[#7C6A59]">
-                      <span>Hẹn giờ:</span>
+            {stepRows.map((step, index) => {
+              const allPhaseOptions = Array.from(
+                new Set([...SUGGESTED_PHASES, ...stepRows.map((s) => s.phaseName).filter(Boolean)])
+              );
+              return (
+                <div
+                  key={index}
+                  className="p-4 rounded-xl bg-[#FAF7F0] border border-[#EADBC8] space-y-3"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="w-6 h-6 rounded-full bg-[#3F6240] text-white text-xs font-bold flex items-center justify-center shrink-0">
+                        {index + 1}
+                      </span>
+                      <select
+                        value={step.phaseName}
+                        onChange={(e) => updateStepRow(index, { phaseName: e.target.value })}
+                        className="px-2.5 py-1 bg-white border border-[#EADBC8] rounded-lg text-xs font-semibold text-[#3F6240]"
+                        title="Chọn nhanh giai đoạn mẫu"
+                      >
+                        {allPhaseOptions.map((p) => (
+                          <option key={p} value={p}>
+                            {p}
+                          </option>
+                        ))}
+                      </select>
                       <input
-                        type="number"
-                        min={0}
-                        value={step.timerMinutes}
-                        onChange={(e) => updateStepRow(index, { timerMinutes: e.target.value === '' ? '' : Number(e.target.value) })}
-                        placeholder="phút"
-                        className="w-16 px-2 py-1 bg-white border border-[#EADBC8] rounded text-center text-xs"
+                        type="text"
+                        value={step.phaseName}
+                        onChange={(e) => updateStepRow(index, { phaseName: e.target.value })}
+                        placeholder="Hoặc tự nhập tên giai đoạn riêng..."
+                        className="px-2.5 py-1 bg-white border border-[#EADBC8] rounded-lg text-xs text-[#2D2A26] w-48 sm:w-56"
                       />
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => removeStepRow(index)}
-                      className="p-1 text-stone-400 hover:text-red-600 transition-colors"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-1 text-xs text-[#7C6A59]">
+                        <span>Hẹn giờ:</span>
+                        <input
+                          type="number"
+                          min={0}
+                          value={step.timerMinutes}
+                          onChange={(e) => updateStepRow(index, { timerMinutes: e.target.value === '' ? '' : Number(e.target.value) })}
+                          placeholder="phút"
+                          className="w-16 px-2 py-1 bg-white border border-[#EADBC8] rounded text-center text-xs"
+                        />
+                      </div>
 
-                <textarea
-                  rows={2}
-                  value={step.instruction}
-                  onChange={(e) => updateStepRow(index, { instruction: e.target.value })}
-                  placeholder={`Hướng dẫn chi tiết bước ${index + 1}...`}
-                  className="w-full px-3 py-2 bg-white border border-[#EADBC8] rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#3F6240]"
-                  required
-                />
+                      <button
+                        type="button"
+                        onClick={() => removeStepRow(index)}
+                        className="p-1 text-stone-400 hover:text-red-600 transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  <textarea
+                    rows={3}
+                    value={step.instruction}
+                    onChange={(e) => updateStepRow(index, { instruction: e.target.value })}
+                    placeholder={`Hướng dẫn chi tiết bước ${index + 1} (ghi rõ số muỗng/gam nguyên liệu, độ lửa lớn/vừa/nhỏ, thời gian nấu và dấu hiệu nhận biết)...`}
+                    className="w-full px-3 py-2 bg-white border border-[#EADBC8] rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#3F6240] leading-relaxed"
+                    required
+                  />
 
                 <input
                   type="text"
@@ -693,7 +745,8 @@ export default function ContributorNewRecipePage() {
                   />
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         </section>
 

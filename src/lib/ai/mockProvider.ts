@@ -28,7 +28,7 @@ export function buildSmartVietnameseRecipeFromTitle(
   ingredients: HeuristicIngredientSpec[];
   steps: Array<{
     stepNumber: number;
-    phaseName: 'Sơ chế' | 'Chế biến' | 'Hoàn thành';
+    phaseName: string;
     instruction: string;
     timerSeconds: number;
     tipText: string;
@@ -467,15 +467,27 @@ export function buildSmartVietnameseRecipeFromTitle(
     },
     {
       name: 'Nước mắm truyền thống',
-      amount: 2,
+      amount: role === 'MAIN' ? 3 : 2,
       unit: 'muỗng canh',
       scalePolicy: 'MANUAL_ADJUST',
-      preparation: '',
+      preparation: 'Độ đạm cao cho dậy mùi thơm',
       isOptional: false,
     },
+    ...(role === 'MAIN'
+      ? [
+          {
+            name: 'Đường cát',
+            amount: 1.5,
+            unit: 'muỗng canh',
+            scalePolicy: 'MANUAL_ADJUST' as const,
+            preparation: 'Cân bằng vị mặn ngọt hoặc thắng màu',
+            isOptional: false,
+          },
+        ]
+      : []),
     {
       name: 'Dầu ăn thực vật',
-      amount: 1,
+      amount: lower.includes('chiên') ? 3 : 1,
       unit: 'muỗng canh',
       scalePolicy: 'FIXED',
       preparation: '',
@@ -483,53 +495,202 @@ export function buildSmartVietnameseRecipeFromTitle(
     }
   );
 
+  const primaryIng = ingredients[0];
+  const secondaryIng = ingredients.length > 2 ? ingredients[1] : null;
   const mainIngNames = ingredients
     .slice(0, 2)
     .map((i) => i.name.toLowerCase())
     .join(' kết hợp cùng ');
 
   const prepTimeMinutes = role === 'SIDE' ? 10 : 15;
-  const cookTimeMinutes = role === 'SIDE' ? 10 : role === 'SOUP' ? 18 : 25;
+  const cookTimeMinutes = role === 'SIDE' ? 10 : role === 'SOUP' ? 20 : 25;
 
-  const shortDescription = `Công thức ${dishName} chuẩn vị cơm nhà Việt Nam, kết hợp hài hòa từ ${mainIngNames}, giàu dinh dưỡng và dễ thực hiện mỗi ngày.`;
+  const shortDescription = `Công thức ${dishName} chuẩn vị cơm nhà Việt Nam, kết hợp hài hòa từ ${mainIngNames}, hướng dẫn chi tiết từng giai đoạn canh lửa giúp ai vào bếp cũng làm thành công ngay lần đầu.`;
 
-  const steps: Array<{
+  const isFriedSauce =
+    lower.includes('chiên nước mắm') ||
+    lower.includes('sốt') ||
+    lower.includes('rim') ||
+    lower.includes('chua ngọt');
+  const isBraised = lower.includes('kho');
+
+  let steps: Array<{
     stepNumber: number;
-    phaseName: 'Sơ chế' | 'Chế biến' | 'Hoàn thành';
+    phaseName: string;
     instruction: string;
     timerSeconds: number;
     tipText: string;
-  }> = [
-    {
-      stepNumber: 1,
-      phaseName: 'Sơ chế',
-      instruction: `Sơ chế sạch sẽ ${mainIngNames} với nước muối loãng rồi để ráo. Ướp nguyên liệu chính với hành tỏi băm và 1 muỗng canh nước mắm trong 15 phút cho thấm vị.`,
-      timerSeconds: 900,
-      tipText: 'Thấm khô bề mặt nguyên liệu trước khi ướp giúp gia vị rút sâu và khi nấu không bị ra nước.',
-    },
-    {
-      stepNumber: 2,
-      phaseName: 'Chế biến',
-      instruction:
-        role === 'SOUP'
-          ? `Phi thơm hành tím với chút dầu ăn, cho nguyên liệu vào xào săn rồi chế 1 lít nước sôi. Đun sôi và hớt sạch bọt trên lửa vừa khoảng 12–15 phút cho nước canh ngọt thanh.`
-          : role === 'SIDE'
-          ? `Đun nóng chảo trên lửa lớn, phi thơm tỏi băm rồi cho nguyên liệu vào đảo nhanh tay 3–5 phút để giữ trọn độ giòn ngọt và màu xanh tự nhiên.`
-          : `Phi thơm hành tỏi trên chảo/nồi, cho nguyên liệu chính vào đảo săn đều hai mặt, sau đó hạ lửa vừa rim/nấu chín trong 15–20 phút cho nước sốt sánh quyện đậm đà.`,
-      timerSeconds: role === 'SIDE' ? 300 : 1080,
-      tipText:
-        role === 'SOUP'
-          ? 'Chế nước sôi và hớt bọt kỹ giúp nước canh trong veo, ngọt tự nhiên.'
-          : 'Canh nhiệt độ lửa phù hợp giúp món ăn chín mềm mọng mà không bị khô.',
-    },
-    {
-      stepNumber: 3,
-      phaseName: 'Hoàn thành',
-      instruction: `Nếm lại gia vị cho vừa khẩu vị gia đình, rắc hành lá thái nhỏ và chút tiêu xay lên trên rồi bày ra đĩa/tô thưởng thức nóng cùng cơm trắng.`,
-      timerSeconds: 60,
-      tipText: 'Dọn kèm chén nước mắm ớt tươi để bữa cơm gia đình thêm tròn vị.',
-    },
-  ];
+  }> = [];
+
+  if (role === 'SOUP') {
+    steps = [
+      {
+        stepNumber: 1,
+        phaseName: 'Sơ chế & Khử mùi',
+        instruction: `Chuẩn bị ${primaryIng.amount}${primaryIng.unit} ${primaryIng.name.toLowerCase()}, rửa qua nước muối pha loãng 3 phút rồi xả sạch và để thật ráo nước (${primaryIng.preparation}).`,
+        timerSeconds: 300,
+        tipText: 'Rửa qua nước muối loãng hoặc gừng đập dập giúp khử sạch mùi tanh và làm nước canh trong veo.',
+      },
+      {
+        stepNumber: 2,
+        phaseName: 'Sơ chế & Khử mùi',
+        instruction: secondaryIng
+          ? `Nhặt rửa sạch ${secondaryIng.amount}${secondaryIng.unit} ${secondaryIng.name.toLowerCase()} (${secondaryIng.preparation}), để ráo. Bóc vỏ và băm nhỏ 20g hành tím, rửa sạch 15g hành lá thái nhỏ để riêng phần đầu hành trắng.`
+          : `Bóc vỏ, băm nhỏ 20g hành tím và thái nhỏ 15g hành lá, tách riêng phần đầu hành trắng để phi thơm tạo mùi cho nồi canh.`,
+        timerSeconds: 300,
+        tipText: 'Để riêng phần đầu hành trắng phi lúc đầu và lá hành xanh rắc lúc tắt bếp giúp canh thơm dậy mùi.',
+      },
+      {
+        stepNumber: 3,
+        phaseName: 'Ướp thấm vị & Xào săn',
+        instruction: `Ướp ${primaryIng.amount}${primaryIng.unit} ${primaryIng.name.toLowerCase()} với 1 muỗng canh nước mắm, 1/2 phần hành tím băm và 1/3 muỗng cà phê hạt tiêu trong 10 phút. Sau đó làm nóng nồi với 1 muỗng canh dầu ăn ở lửa vừa, phi thơm đầu hành rồi trút nguyên liệu chính vào đảo săn trong 3 phút.`,
+        timerSeconds: 780,
+        tipText: 'Xào săn nguyên liệu chính trước khi đổ nước giúp giữ trọn vị ngọt tự nhiên trong từng thớ thịt.',
+      },
+      {
+        stepNumber: 4,
+        phaseName: 'Ninh nước dùng & Nấu chín',
+        instruction: `Chế vào nồi 1,2 lít nước sôi, đun trên lửa lớn đến khi sôi bùng thì hạ xuống lửa vừa và dùng vá hớt sạch lớp bọt trên mặt trong 8 phút.${
+          secondaryIng
+            ? ` Tiếp tục thả ${secondaryIng.amount}${secondaryIng.unit} ${secondaryIng.name.toLowerCase()} vào nấu thêm 4–5 phút đến khi chín mềm vừa tới.`
+            : ''
+        }`,
+        timerSeconds: 780,
+        tipText: 'Luôn chế nước ấm/sôi và không đậy kín nắp nồi sau khi cho rau để rau giữ màu xanh tươi và không bị nồng.',
+      },
+      {
+        stepNumber: 5,
+        phaseName: 'Hoàn thành & Trình bày',
+        instruction: `Nêm thêm 1 muỗng canh nước mắm truyền thống vào nồi canh trước khi tắt bếp 30 giây để dậy hương thơm. Rắc 15g hành lá thái nhỏ và chút tiêu xay lên mặt, múc ra tô lớn dùng nóng với cơm trắng.`,
+        timerSeconds: 60,
+        tipText: 'Nêm nước mắm ở bước cuối cùng ngay trước khi tắt bếp giúp canh thơm dịu mà không bị chua nước.',
+      },
+    ];
+  } else if (role === 'SIDE') {
+    steps = [
+      {
+        stepNumber: 1,
+        phaseName: 'Sơ chế & Rửa sạch',
+        instruction: `Nhặt và rửa sạch ${primaryIng.amount}${primaryIng.unit} ${primaryIng.name.toLowerCase()} (${primaryIng.preparation}), ngâm qua nước muối loãng 5 phút rồi vớt ra rổ vẩy thật ráo nước. Bóc vỏ, đập dập và băm nhỏ 20g tỏi khô chia làm 2 phần bằng nhau.`,
+        timerSeconds: 300,
+        tipText: 'Rau củ phải để thật ráo nước trước khi cho vào chảo thì khi xào mới giòn ngọt và không bị bắn dầu.',
+      },
+      {
+        stepNumber: 2,
+        phaseName: 'Chần sơ giữ sắc xanh',
+        instruction: `Đun sôi 1 lít nước với 1/2 muỗng cà phê muối và vài giọt dầu ăn trên lửa lớn. Cho ${primaryIng.name.toLowerCase()} vào trụng nhanh khoảng 45–60 giây đến khi vừa chuyển màu xanh ngọc thì vớt ngay ra đĩa cho ráo.`,
+        timerSeconds: 120,
+        tipText: 'Trụng nhanh trong nước sôi có chút muối rồi vớt ra ngay giúp rau giữ màu xanh mướt như ngoài hàng.',
+      },
+      {
+        stepNumber: 3,
+        phaseName: 'Xào lửa lớn & Pha sốt',
+        instruction: `Đặt chảo lên bếp ở lửa lớn nhất, cho 1 muỗng canh dầu ăn vào phi thơm vàng 1/2 lượng tỏi băm (10g).${
+          secondaryIng
+            ? ` Cho ${secondaryIng.amount}${secondaryIng.unit} ${secondaryIng.name.toLowerCase()} vào đảo săn 2 phút, sau đó trút phần ${primaryIng.name.toLowerCase()} vào đảo nhanh tay cùng 2 muỗng canh nước mắm (hoặc dầu hào) trong 2 phút.`
+            : ` Trút toàn bộ ${primaryIng.amount}${primaryIng.unit} ${primaryIng.name.toLowerCase()} vào đảo nhanh tay cùng 2 muỗng canh nước mắm/dầu hào trong 2 phút cho thấm đều.`
+        }`,
+        timerSeconds: 240,
+        tipText: 'Giữ lửa lớn xuyên suốt lúc xào để khóa nước ngọt bên trong rau củ.',
+      },
+      {
+        stepNumber: 4,
+        phaseName: 'Hoàn thành & Trình bày',
+        instruction: `Cho nốt 10g tỏi băm còn lại và 15g hành lá cắt khúc vào đảo đều 15 giây cho dậy mùi tỏi mới rồi tắt bếp ngay. Gắp ra đĩa rộng để thoát hơi nóng, rắc chút tiêu xay và thưởng thức nóng.`,
+        timerSeconds: 60,
+        tipText: 'Chia tỏi làm 2 lần (phi đầu và đảo cuối) là bí quyết giúp đĩa đồ xào thơm nức mũi.',
+      },
+    ];
+  } else if (isFriedSauce) {
+    steps = [
+      {
+        stepNumber: 1,
+        phaseName: 'Sơ chế & Khử mùi',
+        instruction: `Rửa sạch ${primaryIng.amount}${primaryIng.unit} ${primaryIng.name.toLowerCase()} với nước muối loãng và vài lát gừng đập dập trong 3 phút để khử sạch mùi hôi, xả lại nước lạnh rồi dùng khăn giấy bếp thấm thật khô từng miếng (${primaryIng.preparation}).`,
+        timerSeconds: 300,
+        tipText: 'Thấm thật khô bề mặt nguyên liệu bằng khăn giấy giúp khi chiên da giòn rụm và hoàn toàn không bị văng dầu.',
+      },
+      {
+        stepNumber: 2,
+        phaseName: 'Ướp thấm vị & Pha sốt định lượng',
+        instruction: `Ướp ${primaryIng.name.toLowerCase()} với 1/2 muỗng cà phê muối và 1/2 muỗng cà phê tiêu xay trong 15 phút (áo nhẹ 2–3 muỗng canh bột mỏng bên ngoài nếu chiên giòn). Trong lúc chờ, băm nhuyễn 20g–40g tỏi ớt và khuấy tan chén sốt chuẩn tỷ lệ gồm: 3 muỗng canh nước mắm truyền thống + 1,5 đến 2 muỗng canh đường cát + 2 muỗng canh nước lọc ấm.`,
+        timerSeconds: 900,
+        tipText: 'Khuấy tan hoàn toàn đường và nước mắm với 2 muỗng nước lọc ấm ở ngoài chén trước giúp khi rim sốt không bị cháy khét.',
+      },
+      {
+        stepNumber: 3,
+        phaseName: 'Chiên vàng giòn & Phi tỏi ớt',
+        instruction: `Làm nóng chảo với 3 muỗng canh dầu ăn ở lửa vừa. Xếp từng miếng ${primaryIng.name.toLowerCase()} vào chiên khoảng 4–5 phút mỗi mặt cho đến khi lớp vỏ ngoài chín vàng giòn đều hai mặt thì gắp ra đĩa có lót giấy thấm dầu.`,
+        timerSeconds: 600,
+        tipText: 'Không lật trở quá sớm trong 3 phút đầu để lớp da định hình giòn rụm và vàng óng đẹp mắt.',
+      },
+      {
+        stepNumber: 4,
+        phaseName: 'Áo sốt keo sánh',
+        instruction: `Chắt bớt dầu thừa trong chảo, chỉ giữ lại đúng 1 muỗng canh dầu nóng rồi cho 20g tỏi ớt băm vào phi thơm vàng (vớt 1/2 lượng tỏi phi ra để riêng). Đổ chén nước sốt mắm đường đã pha vào đun ở lửa vừa khoảng 1 phút cho sủi bọt sánh nhẹ, sau đó trút ${primaryIng.name.toLowerCase()} vào đảo đều tay ở lửa nhỏ trong 2–3 phút đến khi sốt keo lại màu hổ phách bám bóng mượt quanh từng miếng.`,
+        timerSeconds: 240,
+        tipText: 'Hạ lửa nhỏ khi áo sốt để lớp sốt mắm đường bọc đều mà vẫn giữ được độ giòn của lớp vỏ.',
+      },
+      {
+        stepNumber: 5,
+        phaseName: 'Hoàn thành & Trình bày',
+        instruction: `Tắt bếp, rắc phần tỏi phi vàng giòn đã chừa lại cùng 15g hành lá hoặc ngò rí lên trên mặt. Bày ra đĩa dùng ngay khi còn nóng hổi kèm cơm trắng và dưa leo thái lát.`,
+        timerSeconds: 60,
+        tipText: 'Rắc phần tỏi phi khô lên sau cùng giúp món ăn vừa có vị sốt mặn ngọt đậm đà vừa có tỏi giòn rụm thơm lừng.',
+      },
+    ];
+  } else {
+    // Món Kho / Rim / Áp chảo chuẩn 4 giai đoạn · 5 bước
+    steps = [
+      {
+        stepNumber: 1,
+        phaseName: 'Sơ chế & Khử mùi',
+        instruction: `Rửa sạch ${primaryIng.amount}${primaryIng.unit} ${primaryIng.name.toLowerCase()} với nước muối loãng rồi chần nhanh qua nước sôi khoảng 1–2 phút để loại bỏ tạp chất, sau đó rửa lại và để ráo (${primaryIng.preparation}).${
+          secondaryIng
+            ? ` Sơ chế sạch ${secondaryIng.amount}${secondaryIng.unit} ${secondaryIng.name.toLowerCase()} (${secondaryIng.preparation}) để riêng.`
+            : ''
+        }`,
+        timerSeconds: 300,
+        tipText: 'Trụng sơ qua nước sôi giúp thớ thịt/cá săn chắc, khử mùi tanh và khi kho nước sốt trong, bóng đẹp.',
+      },
+      {
+        stepNumber: 2,
+        phaseName: 'Ướp thấm vị chuẩn tỷ lệ',
+        instruction: `Cho ${primaryIng.amount}${primaryIng.unit} ${primaryIng.name.toLowerCase()} vào tô lớn, ướp cùng 1/2 lượng hành tỏi băm (10g), 2 muỗng canh nước mắm truyền thống, 1/2 muỗng canh đường cát và 1/2 muỗng cà phê tiêu xay. Đảo đều và để thấm gia vị trong 15–20 phút.`,
+        timerSeconds: 900,
+        tipText: 'Ướp đủ 15–20 phút giúp gia vị ngấm sâu vào bên trong thớ nguyên liệu trước khi lên bếp.',
+      },
+      {
+        stepNumber: 3,
+        phaseName: isBraised ? 'Thắng màu & Xào săn' : 'Áp chảo & Xào săn',
+        instruction: isBraised
+          ? `Bắc nồi lên bếp ở lửa nhỏ, cho 1 muỗng canh dầu ăn và 1 muỗng canh đường cát vào khuấy khoảng 2 phút đến khi đường tan chảy chuyển màu cánh gián. Cho 10g hành tỏi băm còn lại vào phi thơm rồi trút phần ${primaryIng.name.toLowerCase()} đã ướp vào đảo săn đều ở lửa vừa trong 4–5 phút.`
+          : `Làm nóng chảo với 1 muỗng canh dầu ăn ở lửa vừa, phi thơm 10g hành tỏi băm rồi cho ${primaryIng.name.toLowerCase()} vào áp chảo/đảo săn đều hai mặt trong 5 phút cho vàng thơm.`,
+        timerSeconds: 360,
+        tipText: isBraised
+          ? 'Khi đường vừa chuyển màu nâu cánh gián thì cho hành tỏi và thịt/cá vào đảo ngay để màu lên óng ả mà không bị đắng.'
+          : 'Đảo trên lửa vừa giúp bề mặt nguyên liệu xém vàng thơm lừng mà bên trong vẫn giữ được độ mọng nước.',
+      },
+      {
+        stepNumber: 4,
+        phaseName: isBraised ? 'Kho liu riu thấm vị' : 'Chế biến chín mềm & Thấm sốt',
+        instruction: `${
+          secondaryIng
+            ? `Xếp ${secondaryIng.amount}${secondaryIng.unit} ${secondaryIng.name.toLowerCase()} vào nồi cùng nguyên liệu chính, thêm `
+            : 'Chế thêm '
+        }150ml nước sôi (hoặc nước dừa tươi) xâm xấp mặt và nêm thêm 1 muỗng canh nước mắm. Đun sôi rồi hạ xuống lửa nhỏ liu riu trong 15–20 phút đến khi nguyên liệu chín mềm và nước sốt cạn bớt, sánh kẹo lại khoảng 1/3 ban đầu.`,
+        timerSeconds: 1080,
+        tipText: 'Luôn châm nước sôi (tuyệt đối không dùng nước lạnh) để không làm co thớ thịt hay gây tanh cá khi đang nấu.',
+      },
+      {
+        stepNumber: 5,
+        phaseName: 'Hoàn thành & Trình bày',
+        instruction: `Kiểm tra thấy nước sốt đã sánh bóng bám đều nguyên liệu thì rắc 15g hành lá cắt khúc, vài lát ớt tươi và 1/2 muỗng cà phê tiêu xay lên mặt rồi tắt bếp. Dọn món ra đĩa/tộ dùng nóng với cơm trắng.`,
+        timerSeconds: 60,
+        tipText: 'Rưới phần nước sốt sánh đậm đà lên cơm nóng hoặc chấm kèm rau củ luộc rất bắt cơm.',
+      },
+    ];
+  }
 
   return {
     role,

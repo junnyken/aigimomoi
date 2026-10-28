@@ -54,7 +54,18 @@ interface StepRow {
   image?: string;
 }
 
-const PHASES = ['Sơ chế', 'Chế biến', 'Hoàn thành'];
+const PHASES = [
+  'Sơ chế & Khử mùi',
+  'Ướp thấm vị & Pha sốt',
+  'Chiên vàng / Áp chảo',
+  'Xào săn & Thấm gia vị',
+  'Kho / Rim / Ninh chín',
+  'Áo sốt keo sánh',
+  'Hoàn thành & Trình bày',
+  'Sơ chế',
+  'Chế biến',
+  'Hoàn thành',
+];
 
 export default function EditRecipePage() {
   return (
@@ -301,10 +312,22 @@ function EditRecipeContent() {
 
   const addStepRow = () => {
     if (isReadOnly) return;
-    const lastPhase = stepRows[stepRows.length - 1]?.phaseName || 'Chế biến';
+    const lastPhase = stepRows[stepRows.length - 1]?.phaseName || 'Chế biến & Canh lửa';
     setStepRows((prev) => [
       ...prev,
       { phaseName: lastPhase, instruction: '', timerMinutes: '', tipText: '' },
+    ]);
+  };
+
+  const addNewPhaseRow = () => {
+    if (isReadOnly) return;
+    const existingPhases = new Set(stepRows.map((s) => s.phaseName.trim()));
+    const nextSuggested =
+      PHASES.find((p) => !existingPhases.has(p)) ||
+      `Giai đoạn ${existingPhases.size + 1}`;
+    setStepRows((prev) => [
+      ...prev,
+      { phaseName: nextSuggested, instruction: '', timerMinutes: '', tipText: '' },
     ]);
   };
 
@@ -853,38 +876,49 @@ function EditRecipeContent() {
 
         {/* Section 3: Các bước thực hiện */}
         <section className="bg-white p-6 rounded-2xl border border-[#EADBC8] shadow-xs space-y-4">
-          <div className="flex items-center justify-between border-b border-[#F3E9DD] pb-3">
-            <h2 className="text-base font-bold text-[#3F6240]">
-              3. Các bước nấu ({stepRows.length} bước)
-            </h2>
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#F3E9DD] pb-3">
+            <div>
+              <h2 className="text-base font-bold text-[#3F6240]">
+                3. Các bước nấu theo từng giai đoạn ({stepRows.length} bước)
+              </h2>
+              <p className="text-xs text-[#7C6A59] mt-0.5">
+                Hỗ trợ chia linh hoạt 3, 4, 5+ giai đoạn kỹ thuật tùy độ cầu kỳ của món ăn, mỗi giai đoạn có thể gồm nhiều bước chi tiết.
+              </p>
+            </div>
 
             {!isReadOnly && (
-              <button
-                type="button"
-                onClick={addStepRow}
-                className="inline-flex items-center gap-1 px-3 py-1.5 bg-[#FAF7F0] hover:bg-[#F3E9DD] text-[#3F6240] text-xs font-semibold rounded-xl border border-[#EADBC8] transition-colors"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                Thêm bước
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={addNewPhaseRow}
+                  className="inline-flex items-center gap-1 px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 text-xs font-semibold rounded-xl border border-amber-200 transition-colors cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  Thêm giai đoạn mới
+                </button>
+                <button
+                  type="button"
+                  onClick={addStepRow}
+                  className="inline-flex items-center gap-1 px-3 py-1.5 bg-[#FAF7F0] hover:bg-[#F3E9DD] text-[#3F6240] text-xs font-semibold rounded-xl border border-[#EADBC8] transition-colors cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  Thêm bước
+                </button>
+              </div>
             )}
           </div>
 
-          {/* Tóm tắt Pipeline Giai đoạn nấu */}
+          {/* Tóm tắt Pipeline Giai đoạn nấu linh hoạt */}
           <div className="flex flex-wrap items-center gap-2 p-3 rounded-xl bg-[#FAF7F0] border border-[#EADBC8]">
             <span className="text-[11px] font-bold uppercase tracking-wider text-[#7C6A59] mr-1">
-              Pipeline giai đoạn:
+              Lộ trình ({Array.from(new Set(stepRows.map((s) => s.phaseName.trim() || 'Chế biến'))).length} giai đoạn):
             </span>
-            {PHASES.map((phaseName, pIdx) => {
-              const count = stepRows.filter((s) => s.phaseName === phaseName).length;
+            {Array.from(new Set(stepRows.map((s) => s.phaseName.trim() || 'Chế biến'))).map((phaseName, pIdx) => {
+              const count = stepRows.filter((s) => (s.phaseName.trim() || 'Chế biến') === phaseName).length;
               return (
                 <span
-                  key={phaseName}
-                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold border ${
-                    count > 0
-                      ? 'bg-white border-[#BCD0BE] text-[#3F6240]'
-                      : 'bg-stone-100/70 border-stone-200 text-stone-400'
-                  }`}
+                  key={`${phaseName}-${pIdx}`}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold border bg-white border-[#BCD0BE] text-[#3F6240]"
                 >
                   <span>{pIdx + 1}. {phaseName}</span>
                   <span className="px-1.5 py-0.2 rounded-full bg-[#EAF0EA] text-[10px] font-bold">
@@ -896,29 +930,41 @@ function EditRecipeContent() {
           </div>
 
           <div className="space-y-4">
-            {stepRows.map((step, idx) => (
-              <div
-                key={idx}
-                className="p-4 bg-[#FAF7F0] rounded-xl border border-[#EADBC8] space-y-3"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <span className="w-6 h-6 rounded-full bg-[#3F6240] text-white text-xs font-bold flex items-center justify-center">
-                      {idx + 1}
-                    </span>
-                    <select
-                      disabled={isReadOnly}
-                      value={step.phaseName}
-                      onChange={(e) => updateStepRow(idx, { phaseName: e.target.value })}
-                      className="px-2.5 py-1 bg-white border border-[#EADBC8] rounded-lg text-xs font-semibold text-[#5C4A3A] disabled:opacity-70"
-                    >
-                      {PHASES.map((p) => (
-                        <option key={p} value={p}>
-                          {p}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+            {stepRows.map((step, idx) => {
+              const allPhaseOptions = Array.from(
+                new Set([...PHASES, ...stepRows.map((s) => s.phaseName).filter(Boolean)])
+              );
+              return (
+                <div
+                  key={idx}
+                  className="p-4 bg-[#FAF7F0] rounded-xl border border-[#EADBC8] space-y-3"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="w-6 h-6 rounded-full bg-[#3F6240] text-white text-xs font-bold flex items-center justify-center shrink-0">
+                        {idx + 1}
+                      </span>
+                      <select
+                        disabled={isReadOnly}
+                        value={step.phaseName}
+                        onChange={(e) => updateStepRow(idx, { phaseName: e.target.value })}
+                        className="px-2.5 py-1 bg-white border border-[#EADBC8] rounded-lg text-xs font-semibold text-[#5C4A3A] disabled:opacity-70"
+                      >
+                        {allPhaseOptions.map((p) => (
+                          <option key={p} value={p}>
+                            {p}
+                          </option>
+                        ))}
+                      </select>
+                      <input
+                        type="text"
+                        disabled={isReadOnly}
+                        value={step.phaseName}
+                        onChange={(e) => updateStepRow(idx, { phaseName: e.target.value })}
+                        placeholder="Hoặc tự nhập tên giai đoạn..."
+                        className="px-2.5 py-1 bg-white border border-[#EADBC8] rounded-lg text-xs text-[#2D2A26] w-48 sm:w-56 disabled:opacity-70"
+                      />
+                    </div>
 
                   <div className="flex items-center gap-2">
                     <div className="flex items-center gap-1 bg-white px-2.5 py-1 border border-[#EADBC8] rounded-lg">
@@ -982,7 +1028,8 @@ function EditRecipeContent() {
                   </div>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         </section>
 

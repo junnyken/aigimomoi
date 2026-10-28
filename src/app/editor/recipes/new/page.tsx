@@ -52,12 +52,19 @@ interface StepRow {
   image?: string;
 }
 
-const PHASES = ['Sơ chế', 'Chế biến', 'Hoàn thành'];
-const SCALE_POLICIES = [
-  { value: 'LINEAR', label: 'Tỉ lệ thuận (LINEAR)', desc: 'Co giãn theo số người' },
-  { value: 'FIXED', label: 'Cố định (FIXED)', desc: 'Dầu mỡ, lá thơm, gia vị cơ bản' },
-  { value: 'MANUAL_ADJUST', label: 'Tùy chỉnh (MANUAL)', desc: 'Gia vị cần nếm thử' },
+const PHASES = [
+  'Sơ chế & Khử mùi',
+  'Ướp thấm vị & Pha sốt',
+  'Chiên / Áp chảo / Xào săn',
+  'Kho / Rim / Ninh mềm',
+  'Hoàn thành & Trình bày',
+  'Sơ chế',
+  'Chế biến',
+  'Hoàn thành',
 ];
+const SCALE_POLICIES = {
+  LINEAR: 'Tỉ lệ thuận (LINEAR)',
+};
 
 export default function NewRecipePage() {
   const router = useRouter();
@@ -86,8 +93,10 @@ export default function NewRecipePage() {
 
   // Structured Steps
   const [stepRows, setStepRows] = useState<StepRow[]>([
-    { phaseName: 'Sơ chế', instruction: '', timerMinutes: '', tipText: '' },
-    { phaseName: 'Chế biến', instruction: '', timerMinutes: '', tipText: '' },
+    { phaseName: 'Sơ chế & Khử mùi', instruction: '', timerMinutes: '', tipText: '' },
+    { phaseName: 'Ướp thấm vị & Pha sốt', instruction: '', timerMinutes: '', tipText: '' },
+    { phaseName: 'Chiên / Áp chảo / Xào săn', instruction: '', timerMinutes: '', tipText: '' },
+    { phaseName: 'Hoàn thành & Trình bày', instruction: '', timerMinutes: '', tipText: '' },
   ]);
 
   // Selected Taxonomies
@@ -171,6 +180,17 @@ export default function NewRecipePage() {
     setStepRows((prev) => [
       ...prev,
       { phaseName: lastPhase, instruction: '', timerMinutes: '', tipText: '' },
+    ]);
+  };
+
+  const addNewPhaseRow = () => {
+    const usedPhases = new Set(stepRows.map((s) => s.phaseName));
+    const nextSuggested =
+      PHASES.find((p) => !usedPhases.has(p)) ||
+      `Giai đoạn ${usedPhases.size + 1}: Chế biến tiếp theo`;
+    setStepRows((prev) => [
+      ...prev,
+      { phaseName: nextSuggested, instruction: '', timerMinutes: '', tipText: '' },
     ]);
   };
 
@@ -680,112 +700,155 @@ export default function NewRecipePage() {
 
         {/* Section 3: Các bước thực hiện */}
         <section className="bg-white p-6 rounded-2xl border border-[#EADBC8] shadow-xs space-y-4">
-          <div className="flex items-center justify-between border-b border-[#F3E9DD] pb-3">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#F3E9DD] pb-3">
             <div>
               <h2 className="text-base font-bold text-[#3F6240] flex items-center gap-2">
-                <span>3. Các bước nấu theo giai đoạn (Invariants §5.2)</span>
+                <span>3. Các bước nấu theo giai đoạn linh hoạt (4–6+ giai đoạn)</span>
               </h2>
               <p className="text-xs text-[#7C6A59] mt-0.5">
-                Tích hợp bộ hẹn giờ an toàn, mẹo nấu dân gian, không tự động chuyển bước.
+                Tự do thêm nhiều giai đoạn theo độ cầu kỳ của món ăn, ghi rõ định lượng từng bước nấu.
               </p>
             </div>
 
-            <button
-              type="button"
-              onClick={addStepRow}
-              className="inline-flex items-center gap-1 px-3 py-1.5 bg-[#FAF7F0] hover:bg-[#F3E9DD] text-[#3F6240] text-xs font-semibold rounded-xl border border-[#EADBC8] transition-colors"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              Thêm bước
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={addNewPhaseRow}
+                className="inline-flex items-center gap-1 px-3 py-1.5 bg-[#EAF0EA] hover:bg-[#DCE6DC] text-[#3F6240] text-xs font-semibold rounded-xl border border-[#BCD0BE] transition-colors"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Thêm giai đoạn mới
+              </button>
+              <button
+                type="button"
+                onClick={addStepRow}
+                className="inline-flex items-center gap-1 px-3 py-1.5 bg-[#FAF7F0] hover:bg-[#F3E9DD] text-[#3F6240] text-xs font-semibold rounded-xl border border-[#EADBC8] transition-colors"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Thêm bước
+              </button>
+            </div>
+          </div>
+
+          {/* Tóm tắt Pipeline Giai đoạn */}
+          <div className="flex flex-wrap items-center gap-2 p-3 rounded-xl bg-[#FAF7F0] border border-[#EADBC8]">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-[#7C6A59] mr-1">
+              Lộ trình ({Array.from(new Set(stepRows.map((s) => s.phaseName.trim() || 'Chế biến'))).length} giai đoạn):
+            </span>
+            {Array.from(new Set(stepRows.map((s) => s.phaseName.trim() || 'Chế biến'))).map((phaseName, pIdx) => {
+              const count = stepRows.filter((s) => (s.phaseName.trim() || 'Chế biến') === phaseName).length;
+              return (
+                <span
+                  key={`${phaseName}-${pIdx}`}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold border bg-white border-[#BCD0BE] text-[#3F6240]"
+                >
+                  <span>{pIdx + 1}. {phaseName}</span>
+                  <span className="px-1.5 py-0.2 rounded-full bg-[#EAF0EA] text-[10px] font-bold">
+                    {count} bước
+                  </span>
+                </span>
+              );
+            })}
           </div>
 
           <div className="space-y-4">
-            {stepRows.map((step, idx) => (
-              <div
-                key={idx}
-                className="p-4 bg-[#FAF7F0] rounded-xl border border-[#EADBC8] space-y-3 relative"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <span className="w-6 h-6 rounded-full bg-[#3F6240] text-white text-xs font-bold flex items-center justify-center">
-                      {idx + 1}
-                    </span>
-                    <select
-                      value={step.phaseName}
-                      onChange={(e) => updateStepRow(idx, { phaseName: e.target.value })}
-                      className="px-2.5 py-1 bg-white border border-[#EADBC8] rounded-lg text-xs font-semibold text-[#5C4A3A] focus:outline-none focus:ring-2 focus:ring-[#3F6240]"
-                    >
-                      {PHASES.map((p) => (
-                        <option key={p} value={p}>
-                          Giai đoạn: {p}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <div className="flex items-center gap-1 bg-white px-2.5 py-1 border border-[#EADBC8] rounded-lg">
-                      <Clock className="w-3.5 h-3.5 text-[#B75B35]" />
-                      <span className="text-[11px] text-[#7C6A59]">Hẹn giờ:</span>
+            {stepRows.map((step, idx) => {
+              const allPhaseOptions = Array.from(
+                new Set([...PHASES, ...stepRows.map((s) => s.phaseName).filter(Boolean)])
+              );
+              return (
+                <div
+                  key={idx}
+                  className="p-4 bg-[#FAF7F0] rounded-xl border border-[#EADBC8] space-y-3 relative"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="w-6 h-6 rounded-full bg-[#3F6240] text-white text-xs font-bold flex items-center justify-center shrink-0">
+                        {idx + 1}
+                      </span>
+                      <select
+                        value={step.phaseName}
+                        onChange={(e) => updateStepRow(idx, { phaseName: e.target.value })}
+                        className="px-2.5 py-1 bg-white border border-[#EADBC8] rounded-lg text-xs font-semibold text-[#5C4A3A] focus:outline-none focus:ring-2 focus:ring-[#3F6240]"
+                      >
+                        {allPhaseOptions.map((p) => (
+                          <option key={p} value={p}>
+                            {p}
+                          </option>
+                        ))}
+                      </select>
                       <input
-                        type="number"
-                        placeholder="0"
-                        min={0}
-                        value={step.timerMinutes}
-                        onChange={(e) =>
-                          updateStepRow(idx, {
-                            timerMinutes: e.target.value === '' ? '' : Number(e.target.value),
-                          })
-                        }
-                        className="w-12 text-xs font-medium text-[#2D2A26] focus:outline-none text-right"
+                        type="text"
+                        value={step.phaseName}
+                        onChange={(e) => updateStepRow(idx, { phaseName: e.target.value })}
+                        placeholder="Hoặc tự nhập tên giai đoạn..."
+                        className="px-2.5 py-1 bg-white border border-[#EADBC8] rounded-lg text-xs text-[#2D2A26] w-48 sm:w-56"
                       />
-                      <span className="text-[11px] text-[#7C6A59]">phút</span>
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => removeStepRow(idx)}
-                      className="p-1 text-[#9C8B7A] hover:text-red-600 rounded-lg hover:bg-red-50 transition-colors"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1 bg-white px-2.5 py-1 border border-[#EADBC8] rounded-lg">
+                        <Clock className="w-3.5 h-3.5 text-[#B75B35]" />
+                        <span className="text-[11px] text-[#7C6A59]">Hẹn giờ:</span>
+                        <input
+                          type="number"
+                          placeholder="0"
+                          min={0}
+                          value={step.timerMinutes}
+                          onChange={(e) =>
+                            updateStepRow(idx, {
+                              timerMinutes: e.target.value === '' ? '' : Number(e.target.value),
+                            })
+                          }
+                          className="w-12 text-xs font-medium text-[#2D2A26] focus:outline-none text-right"
+                        />
+                        <span className="text-[11px] text-[#7C6A59]">phút</span>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => removeStepRow(idx)}
+                        className="p-1 text-[#9C8B7A] hover:text-red-600 rounded-lg hover:bg-red-50 transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
-                </div>
 
-                <div>
-                  <textarea
-                    rows={2}
-                    placeholder={`Mô tả chi tiết bước #${idx + 1} cần làm gì...`}
-                    value={step.instruction}
-                    onChange={(e) => updateStepRow(idx, { instruction: e.target.value })}
-                    className="w-full px-3 py-2 bg-white border border-[#EADBC8] rounded-xl text-xs text-[#2D2A26] focus:outline-none focus:ring-2 focus:ring-[#3F6240] leading-relaxed"
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-center">
-                  <div className="md:col-span-2 relative">
-                    <Sparkles className="w-3.5 h-3.5 text-[#B75B35] absolute left-2.5 top-1/2 -translate-y-1/2" />
-                    <input
-                      type="text"
-                      placeholder="Mẹo nhỏ của mẹ (VD: thắng đường vừa ngả màu cánh gián cho nước dừa vào ngay...)"
-                      value={step.tipText}
-                      onChange={(e) => updateStepRow(idx, { tipText: e.target.value })}
-                      className="w-full pl-8 pr-3 py-2 bg-[#FAF7F0] border border-[#EADBC8] rounded-lg text-xs text-[#5C4A3A] italic placeholder:not-italic focus:outline-none focus:ring-2 focus:ring-[#3F6240]"
+                  <div>
+                    <textarea
+                      rows={3}
+                      placeholder={`Mô tả chi tiết bước #${idx + 1} (ghi rõ số gram/muỗng nguyên liệu, độ lửa, thời gian và dấu hiệu nhận biết)...`}
+                      value={step.instruction}
+                      onChange={(e) => updateStepRow(idx, { instruction: e.target.value })}
+                      className="w-full px-3 py-2 bg-white border border-[#EADBC8] rounded-xl text-xs text-[#2D2A26] focus:outline-none focus:ring-2 focus:ring-[#3F6240] leading-relaxed"
                     />
                   </div>
-                  <div className="md:col-span-1">
-                    <ImageUpload
-                      value={step.image}
-                      onChange={(url) => updateStepRow(idx, { image: url })}
-                      onRemove={() => updateStepRow(idx, { image: '' })}
-                      hint="Ảnh bước nấu (tùy chọn)"
-                      aspectRatio="wide"
-                    />
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-center">
+                    <div className="md:col-span-2 relative">
+                      <Sparkles className="w-3.5 h-3.5 text-[#B75B35] absolute left-2.5 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="text"
+                        placeholder="Mẹo nhỏ của mẹ (VD: thắng đường vừa ngả màu cánh gián cho nước dừa vào ngay...)"
+                        value={step.tipText}
+                        onChange={(e) => updateStepRow(idx, { tipText: e.target.value })}
+                        className="w-full pl-8 pr-3 py-2 bg-[#FAF7F0] border border-[#EADBC8] rounded-lg text-xs text-[#5C4A3A] italic placeholder:not-italic focus:outline-none focus:ring-2 focus:ring-[#3F6240]"
+                      />
+                    </div>
+                    <div className="md:col-span-1">
+                      <ImageUpload
+                        value={step.image}
+                        onChange={(url) => updateStepRow(idx, { image: url })}
+                        onRemove={() => updateStepRow(idx, { image: '' })}
+                        hint="Ảnh bước nấu (tùy chọn)"
+                        aspectRatio="wide"
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </section>
 

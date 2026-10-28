@@ -271,13 +271,13 @@ export function evaluateFoodAndRecipeQuality(draft: AiRecipeDraftPayload): Quali
     reasons.push(`Số nguyên liệu thực tế có định lượng (${validIngredients.length}) ít hơn mức chuẩn tối thiểu (3).`);
   }
 
-  // Chốt 2: Phải có ít nhất 2 bước thực hiện rõ ràng (>= 15 ký tự)
+  // Chốt 2: Phải có ít nhất 4 bước thực hiện chi tiết (>= 45 ký tự/bước) chia theo các giai đoạn kỹ thuật
   const validSteps = (draft.steps || []).filter(
-    (st) => st && typeof st.instruction === 'string' && st.instruction.trim().length >= 15
+    (st) => st && typeof st.instruction === 'string' && st.instruction.trim().length >= 45
   );
-  const hasValidSteps = validSteps.length >= 2;
+  const hasValidSteps = validSteps.length >= 4;
   if (!hasValidSteps) {
-    reasons.push(`Số bước chế biến chi tiết (${validSteps.length}) ít hơn mức chuẩn tối thiểu (2).`);
+    reasons.push(`Số bước chế biến chi tiết (${validSteps.length}) ít hơn mức chuẩn tối thiểu (4 bước).`);
   }
 
   // Chốt 3: Đối chiếu từng nguyên liệu với Từ điển Thực phẩm Chuẩn Việt Nam (FCT + Bách Hóa Xanh)
@@ -405,15 +405,21 @@ export async function repairExistingHarvestedRecipes(): Promise<number> {
 
     let repairedCount = 0;
     for (const row of rows) {
+      const existingSteps = await db
+        .select({ id: cookingSteps.id })
+        .from(cookingSteps)
+        .where(eq(cookingSteps.recipeId, row.id));
+
       const needsImage = !row.heroImage || row.heroImage.trim().length === 0;
       const needsIngredients = !row.caloriesPerServing || row.caloriesPerServing < 35;
+      const needsDetailedSteps = existingSteps.length <= 3;
 
-      if (!needsImage && !needsIngredients) continue;
+      if (!needsImage && !needsIngredients && !needsDetailedSteps) continue;
 
       const role = (row.role as 'MAIN' | 'SOUP' | 'SIDE' | 'ONE_DISH_MEAL') || 'MAIN';
       const fallbackImg = resolveSmartDishIllustration(row.name, role);
 
-      if (needsIngredients) {
+      if (needsIngredients || needsDetailedSteps) {
         const draftRes = await generateRecipeDraft({
           dishTitle: row.name,
           role,
@@ -431,7 +437,7 @@ export async function repairExistingHarvestedRecipes(): Promise<number> {
             })
             .where(eq(recipes.id, row.id));
 
-          if (draft.ingredients.length >= 3) {
+          if (needsIngredients && draft.ingredients.length >= 3) {
             await tx.delete(recipeIngredients).where(eq(recipeIngredients.recipeId, row.id));
             await tx.insert(recipeIngredients).values(
               draft.ingredients.map((ing, idx) => ({
@@ -446,9 +452,25 @@ export async function repairExistingHarvestedRecipes(): Promise<number> {
               }))
             );
           }
+
+          if (draft.steps.length >= 4) {
+            await tx.delete(cookingSteps).where(eq(cookingSteps.recipeId, row.id));
+            await tx.insert(cookingSteps).values(
+              draft.steps.map((st, idx) => ({
+                recipeId: row.id,
+                stepNumber: idx + 1,
+                phaseName: st.phaseName,
+                instruction: st.instruction,
+                timerSeconds: st.timerSeconds,
+                tipText: st.tipText || null,
+              }))
+            );
+          }
         });
 
-        await calculateRecipeNutrition(row.id);
+        if (needsIngredients) {
+          await calculateRecipeNutrition(row.id);
+        }
         repairedCount++;
       } else if (needsImage) {
         await db

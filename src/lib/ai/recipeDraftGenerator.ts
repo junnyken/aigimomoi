@@ -352,14 +352,14 @@ export async function generateRecipeDraft(params: AiRecipeDraftParams): Promise<
   const styleNotes = params.styleNotes || 'Chuẩn vị cơm nhà, cân bằng hương vị';
   const baseServings = params.baseServings && params.baseServings > 0 ? params.baseServings : 4;
 
-  const systemInstruction = `Bạn là Chuyên gia Biên soạn Công thức Bếp Việt Ăn Gì Mom.
-Nhiệm vụ: Phân tích món ăn được yêu cầu và tạo cấu trúc bản thảo công thức hoàn chỉnh, chuẩn mực văn hóa ẩm thực gia đình Việt Nam.
+  const systemInstruction = `Bạn là Giảng viên Đầu bếp Trưởng của Bếp Việt Ăn Gì Mom (chuẩn sư phạm Hướng Nghiệp Á Âu & Món Ngon Mỗi Ngày).
+Nhiệm vụ: Phân tích món ăn được yêu cầu và biên soạn công thức hoàn chỉnh, cầm tay chỉ việc cực kỳ chi tiết để người mới vào bếp lần đầu cũng nấu thành công 100%.
 QUY TẮC BẮT BUỘC:
 1. Trả về định dạng JSON thuần túy theo schema:
 {
-  "name": "Tên công thức đầy đủ (ví dụ: Cá lóc kho tộ đậm đà miền Tây)",
-  "dishName": "Tên món khái quát (ví dụ: Cá lóc kho tộ)",
-  "shortDescription": "Đoạn văn 1-3 câu mô tả đặc trưng hương vị, màu sắc và cảm giác khi thưởng thức.",
+  "name": "Tên công thức đầy đủ (ví dụ: Cánh gà chiên nước mắm tỏi ớt giòn rụm)",
+  "dishName": "Tên món khái quát (ví dụ: Cánh gà chiên nước mắm)",
+  "shortDescription": "Đoạn văn 2-3 câu mô tả đặc trưng hương vị, màu sắc và cảm giác khi thưởng thức.",
   "role": "MAIN | SOUP | SIDE | ONE_DISH_MEAL",
   "difficulty": "Dễ | Trung bình | Khó",
   "baseServings": 4,
@@ -368,30 +368,34 @@ QUY TẮC BẮT BUỘC:
   "ingredients": [
     {
       "name": "Tên nguyên liệu (tiếng Việt rõ ràng)",
-      "amount": 400,
+      "amount": 500,
       "unit": "g | ml | muỗng canh | muỗng cà phê | củ | trái | nhánh",
       "scalePolicy": "LINEAR | FIXED | MANUAL_ADJUST",
-      "preparation": "Cách sơ chế (ví dụ: Cắt khúc 3cm, để ráo)",
+      "preparation": "Cách sơ chế (ví dụ: Rửa sạch với muối gừng, chặt miếng 4cm, để ráo)",
       "isOptional": false
     }
   ],
   "steps": [
     {
-      "phaseName": "Sơ chế | Chế biến | Hoàn thành",
-      "instruction": "Nội dung hướng dẫn chi tiết, rõ ràng từng thao tác",
-      "timerSeconds": 600,
-      "tipText": "Mẹo nhỏ thực tế giúp món ăn thơm ngon, chuẩn vị hơn"
+      "phaseName": "Tên giai đoạn kỹ thuật (ví dụ: Sơ chế & Khử mùi | Ướp thấm vị & Pha sốt | Chiên vàng giòn | Áo sốt & Rim thấm vị | Hoàn thành & Trình bày)",
+      "instruction": "Hướng dẫn chi tiết 3-4 câu đầy đủ: nêu rõ số lượng nguyên liệu (VD: 3 muỗng canh nước mắm + 2 muỗng canh đường), mức lửa (lửa lớn/lửa vừa/lửa nhỏ), thời gian (bao nhiêu phút) và dấu hiệu nhận biết bằng mắt/mũi.",
+      "timerSeconds": 300,
+      "tipText": "Mẹo kỹ thuật thực tế của đầu bếp giúp món ăn ngon vượt trội"
     }
   ]
 }
-2. Chính sách scalePolicy:
-- 'LINEAR': Dành cho nguyên liệu chính (thịt, cá, tôm, rau, đậu hũ) co giãn theo số người ăn.
-- 'FIXED': Dành cho dầu ăn phi, lá thơm, hành ngò rắc trên mặt.
-- 'MANUAL_ADJUST': Dành cho mắm, muối, tiêu, ớt cần nếm thử theo khẩu vị.
-3. Không trả về markdown code blocks, chỉ JSON hợp lệ.`;
+2. QUY TẮC CHIA GIAI ĐOẠN & CÁC BƯỚC NẤU (CỰC KỲ QUAN TRỌNG):
+- KHÔNG ĐƯỢC gộp sơ sài thành 3 bước ngắn! Phải chia thành 4 đến 5 GIAI ĐOẠN KỸ THUẬT rõ ràng tùy đặc thù món (ví dụ: Giai đoạn 1: Sơ chế & Khử mùi -> Giai đoạn 2: Ướp thấm vị & Pha sốt định lượng -> Giai đoạn 3: Chiên vàng / Áp chảo / Xào săn -> Giai đoạn 4: Kho / Rim / Áo sốt keo sánh -> Giai đoạn 5: Hoàn thành & Trình bày), tổng cộng từ 5 đến 7 bước thực hiện (mỗi giai đoạn có 1-2 bước).
+- CẤM TUYỆT ĐỐI viết chung chung kiểu "pha theo tỉ lệ vừa ăn" hay "cho một ít gia vị". Trong mỗi bước (instruction), BẮT BUỘC phải ghi lại chính xác con số định lượng khớp với bảng ingredients (ví dụ: "Khuấy đều 3 muỗng canh nước mắm, 2 muỗng canh đường cát và 2 muỗng canh nước lọc ấm cho tan hoàn toàn").
+- Mỗi bước phải nêu rõ: (a) Thao tác + Định lượng cụ thể, (b) Độ lửa (lửa lớn / lửa vừa / lửa nhỏ liu riu), (c) Thời gian canh giờ (phút/giây), (d) Dấu hiệu nhận biết đạt chuẩn (màu sắc, độ sánh, mùi thơm).
+3. Chính sách scalePolicy:
+- 'LINEAR': Nguyên liệu chính (thịt, cá, tôm, rau, đậu hũ) co giãn theo số người ăn.
+- 'FIXED': Dầu ăn phi, lá thơm, hành ngò rắc trên mặt.
+- 'MANUAL_ADJUST': Mắm, muối, đường, tiêu, ớt.
+4. Không trả về markdown code blocks, chỉ JSON hợp lệ.`;
 
   const prompt = sourceText
-    ? `YÊU CẦU TRÍCH XUẤT & CHUẨN HÓA CÔNG THỨC TỪ NGUỒN KIẾN THỨC NẤU ĂN:
+    ? `YÊU CẦU TRÍCH XUẤT & CHUẨN HÓA CÔNG THỨC CHI TIẾT TỪ NGUỒN KIẾN THỨC NẤU ĂN:
 - Tên gợi ý / Tiêu đề gốc: ${title}
 - Nguồn tham khảo: ${sourceUrl || 'Văn bản cung cấp trực tiếp'}
 - Vai trò dự kiến: ${role}
@@ -404,15 +408,15 @@ NỘI DUNG NGUỒN CẦN BÓC TÁCH:
 ${sourceText.slice(0, 6000)}
 """
 
-Hãy bóc tách nguyên liệu (nếu nguồn bằng tiếng Anh từ NHS, BBC Good Food, WeightWatchers, Eat the Gains, Fit Men Cook... hãy dịch sang tiếng Việt tự nhiên, quy đổi toàn bộ oz/lb/cup/tbsp/tsp sang g, ml, muỗng canh, muỗng cà phê và ưu tiên nguyên liệu dễ mua tại chợ/siêu thị Việt Nam nhưng giữ nguyên chuẩn Ít Calo / Giàu Protein của bài gốc), chia các bước thành 3 giai đoạn (Sơ chế, Chế biến, Hoàn thành), ước tính timerSeconds cho các bước cần canh giờ, và diễn đạt lại bằng văn phong hướng dẫn nấu ăn ấm cúng, mạch lạc của Ăn Gì Mom.`
-    : `YÊU CẦU SOẠN THẢO CÔNG THỨC:
+Hãy bóc tách nguyên liệu (nếu nguồn tiếng Anh hãy dịch sang tiếng Việt tự nhiên, quy đổi oz/lb/cup/tbsp/tsp sang g, ml, muỗng canh, muỗng cà phê), và biên soạn 5 đến 6 bước thực hiện chia theo 4–5 giai đoạn kỹ thuật (Sơ chế & Khử mùi, Ướp & Pha sốt, Chế biến nhiệt, Áo sốt / Ninh chín, Hoàn thành & Trình bày). Nhớ ghi rõ định lượng từng muỗng gia vị, mức lửa và thời gian ngay trong câu hướng dẫn của từng bước.`
+    : `YÊU CẦU BIÊN SOẠN CÔNG THỨC CHI TIẾT CHUẨN ĐẦU BẾP:
 - Tên món ăn: ${title}
 - Vai trò dự kiến: ${role}
 - Vùng miền ẩm thực: ${region}
 - Khẩu phần ăn chuẩn: ${baseServings} người
 - Ghi chú phong cách: ${styleNotes}
 
-Hãy phân tích và soạn thảo bản thảo công thức có cấu trúc hoàn chỉnh.`;
+Hãy phân tích kỹ thuật chế biến của món "${title}" và biên soạn bản thảo công thức gồm 5 đến 6 bước chi tiết chia làm 4–5 giai đoạn kỹ thuật (Sơ chế & Khử mùi, Ướp thấm vị & Pha sốt định lượng, Chiên / Xào săn / Thắng màu, Kho / Rim / Áo sốt, Hoàn thành & Trình bày). Mỗi bước phải ghi rõ số gam/muỗng gia vị khớp với bảng nguyên liệu, độ lửa, thời gian và dấu hiệu mắt thấy tai nghe.`;
 
   const aiResult = await aiGateway.complete(
     {
@@ -420,7 +424,7 @@ Hãy phân tích và soạn thảo bản thảo công thức có cấu trúc ho�
       systemInstruction,
       temperature: 0.3,
       jsonMode: true,
-      maxTokens: 2800,
+      maxTokens: 3500,
     },
     params.clientId || 'editor-agent'
   );
@@ -510,9 +514,9 @@ Hãy phân tích và soạn thảo bản thảo công thức có cấu trúc ho�
     }
   }
 
-  // Xử lý các bước nấu
+  // Xử lý các bước nấu (yêu cầu tối thiểu 4 bước chi tiết trở lên, cho phép chia nhiều giai đoạn linh hoạt)
   const rawSteps =
-    Array.isArray(parsed.steps) && parsed.steps.length >= 2
+    Array.isArray(parsed.steps) && parsed.steps.length >= 4
       ? parsed.steps
       : smartFallback.steps;
   const processedSteps: AiRecipeStepDraft[] = [];
@@ -521,13 +525,17 @@ Hãy phân tích và soạn thảo bản thảo công thức có cấu trúc ho�
     const instruction = String(raw.instruction || '').trim();
     if (!instruction) return;
 
-    const phaseName = ['Sơ chế', 'Chế biến', 'Hoàn thành'].includes(raw.phaseName)
-      ? raw.phaseName
-      : idx === 0
-      ? 'Sơ chế'
-      : idx === rawSteps.length - 1
-      ? 'Hoàn thành'
-      : 'Chế biến';
+    const rawPhase = String(raw.phaseName || '').trim();
+    const phaseName =
+      rawPhase.length >= 2
+        ? rawPhase
+        : idx === 0
+        ? 'Sơ chế & Khử mùi'
+        : idx === 1
+        ? 'Ướp thấm vị & Pha sốt'
+        : idx === rawSteps.length - 1
+        ? 'Hoàn thành & Trình bày'
+        : 'Chế biến & Canh lửa';
 
     const timerSeconds = Number(raw.timerSeconds) >= 0 ? Number(raw.timerSeconds) : 0;
     const tipText = String(raw.tipText || '').trim();
@@ -541,7 +549,8 @@ Hãy phân tích và soạn thảo bản thảo công thức có cấu trúc ho�
     });
   });
 
-  if (processedSteps.length === 0) {
+  if (processedSteps.length < 4) {
+    processedSteps.length = 0;
     for (const fbStep of smartFallback.steps) {
       processedSteps.push(fbStep);
     }
