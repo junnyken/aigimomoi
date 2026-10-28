@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { AiDraftModal } from '@/components/editor/AiDraftModal';
 import { AdminTopNav } from '@/components/editor/AdminTopNav';
+import { DailyHarvesterPanel } from '@/components/editor/DailyHarvesterPanel';
 
 interface Recipe {
   id: number;
@@ -270,6 +271,10 @@ export default function EditorRecipesPage() {
             </Link>
           </div>
         </div>
+
+        {/* Bộ Thu Thập Món Ngon Mỗi Ngày (Phương án 3: Auto Harvester + 4-Stage Food & Quality Gate) */}
+        <DailyHarvesterPanel onHarvestCompleted={fetchRecipes} />
+
         {/* Metric Cards */}
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
           <div className="bg-white p-4 rounded-2xl border border-[#EADBC8] shadow-xs">
