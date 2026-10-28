@@ -354,6 +354,7 @@ export async function runDailyCuratedHarvest(options: {
   customUrls?: string[];
   maxItems?: number;
   publishMode?: HarvestPublishMode;
+  liveDiscover?: boolean;
   authorId?: number;
 }): Promise<DailyHarvestRunResult> {
   const publishMode: HarvestPublishMode = options.publishMode || 'AUTO_PUBLISH_IF_QUALIFIED';
@@ -443,6 +444,23 @@ export async function runDailyCuratedHarvest(options: {
         sourceName: `${src.name} (${src.domain})`,
         styleNotes: src.defaultStyleNotes,
       });
+    }
+  }
+
+  // Nếu bật chế độ quét bài mới trực tiếp từ trang web nguồn (hoặc khi kho dự phòng đã lấy hết)
+  if (options.liveDiscover || candidates.length < maxItems) {
+    for (const src of selectedSources.slice(0, 3)) {
+      const liveUrls = await discoverLiveRecipeUrlsFromSource(src, 2);
+      for (const liveUrl of liveUrls) {
+        if (existingSources.has(liveUrl.toLowerCase())) continue;
+        candidates.unshift({
+          sourceUrl: liveUrl,
+          role: 'MAIN',
+          region: 'Toàn quốc',
+          sourceName: `${src.name} (${src.domain})`,
+          styleNotes: src.defaultStyleNotes,
+        });
+      }
     }
   }
 
@@ -666,6 +684,66 @@ export async function getRecentHarvestedRecipes(limit = 8) {
 }
 
 /**
+ * Tự động quét trang chuyên mục của nguồn ẩm thực để phát hiện các bài công thức mới (Live URL Discovery)
+ */
+export async function discoverLiveRecipeUrlsFromSource(
+  source: CuratedRecipeSource,
+  maxLinks = 3
+): Promise<string[]> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 7000);
+  try {
+    const res = await fetch(source.url, {
+      headers: {
+        'User-Agent':
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+        Accept: 'text/html,application/xhtml+xml',
+      },
+      signal: controller.signal,
+    });
+    if (!res.ok) return [];
+    const html = await res.text();
+    const hrefMatches = html.matchAll(/href=["']([^"'#]+)["']/gi);
+    const discovered: string[] = [];
+    const seen = new Set<string>();
+
+    for (const m of hrefMatches) {
+      const rawHref = (m[1] || '').trim();
+      if (!rawHref) continue;
+      let fullUrl = '';
+      try {
+        fullUrl = new URL(rawHref, source.url).toString();
+      } catch {
+        continue;
+      }
+      if (!fullUrl.includes(source.domain)) continue;
+      // Lọc các đường dẫn bài viết công thức sâu (có slug dài, tránh trang chủ/danh mục/tag)
+      const urlObj = new URL(fullUrl);
+      const pathParts = urlObj.pathname.split('/').filter(Boolean);
+      const lastSeg = pathParts[pathParts.length - 1] || '';
+      if (
+        lastSeg.length >= 16 &&
+        lastSeg.includes('-') &&
+        !fullUrl.includes('/tag/') &&
+        !fullUrl.includes('/category/') &&
+        !fullUrl.includes('/author/') &&
+        !fullUrl.includes('tim-kiem') &&
+        !seen.has(fullUrl)
+      ) {
+        seen.add(fullUrl);
+        discovered.push(fullUrl);
+        if (discovered.length >= maxLinks) break;
+      }
+    }
+    return discovered;
+  } catch {
+    return [];
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+/**
  * Bộ lập lịch tự động chạy ngầm mỗi ngày 1 lần (vào khung giờ sáng Việt Nam hoặc khi khởi động ngày mới)
  */
 let schedulerStarted = false;
@@ -699,14 +777,27 @@ export function startDailyRecipeHarvesterScheduler() {
 
       lastAutoHarvestDateKey = todayKey;
       logger.info(`Running scheduled daily recipe harvest for date ${todayKey}`);
-      await runDailyCuratedHarvest({
+      const res = await runDailyCuratedHarvest({
         maxItems: 3,
         publishMode: 'AUTO_PUBLISH_IF_QUALIFIED',
       });
+
+      if (res.harvested.some((h) => h.status === 'PUBLISHED')) {
+        try {
+          const { revalidateTag } = await import('next/cache');
+          const { PUBLIC_RECIPES_TAG } = await import('@/lib/recipes/public');
+          revalidateTag(PUBLIC_RECIPES_TAG, { expire: 0 });
+        } catch {
+          // ignore if outside request context
+        }
+      }
     } catch (err) {
       logger.warn('Scheduled daily recipe harvest check skipped', { error: err });
     }
   };
+
+  // Chạy kiểm tra lần đầu sau khi server khởi động 15 giây (để lấy ngay món mới cho ngày hôm nay nếu chưa lấy)
+  setTimeout(checkAndRunDaily, 15 * 1000).unref?.();
 
   // Kiểm tra định kỳ mỗi 60 phút
   setInterval(checkAndRunDaily, 60 * 60 * 1000).unref?.();
