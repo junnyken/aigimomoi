@@ -17,9 +17,9 @@ interface HeuristicIngredientSpec {
 /**
  * Phân tích tên món ăn & văn bản nguồn để trích xuất bộ nguyên liệu chuẩn bếp Việt (không bao giờ dùng tên chung chung)
  */
-function buildSmartVietnameseRecipeFromTitle(
+export function buildSmartVietnameseRecipeFromTitle(
   dishName: string,
-  promptText: string
+  promptText = ''
 ): {
   role: 'MAIN' | 'SOUP' | 'SIDE';
   prepTimeMinutes: number;

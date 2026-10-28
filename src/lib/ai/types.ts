@@ -37,7 +37,7 @@ export interface AiBudgetConfig {
 }
 
 export const DEFAULT_AI_BUDGET: AiBudgetConfig = {
-  maxOutputTokens: 1200,
-  timeoutMs: 10000, // 10 giây
-  maxRequestsPerMinute: 15,
+  maxOutputTokens: 4096,
+  timeoutMs: 15000, // 15 giây
+  maxRequestsPerMinute: 25,
 };

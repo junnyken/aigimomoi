@@ -8,6 +8,7 @@ import { db } from '../db';
 import { ingredients, recipes, recipeIngredients, cookingSteps, dishes, taxonomies, recipeTags } from '../db/schema';
 import { eq, ilike, inArray } from 'drizzle-orm';
 import { aiGateway } from './gateway';
+import { buildSmartVietnameseRecipeFromTitle } from './mockProvider';
 import { calculateRecipeNutrition } from '../nutrition/calculator';
 
 export interface AiRecipeDraftParams {
@@ -419,14 +420,18 @@ Hãy phân tích và soạn thảo bản thảo công thức có cấu trúc ho�
       systemInstruction,
       temperature: 0.3,
       jsonMode: true,
-      maxTokens: 1200,
+      maxTokens: 2800,
     },
     params.clientId || 'editor-agent'
   );
 
   let parsed: any = {};
   try {
-    parsed = JSON.parse(aiResult.text);
+    const cleanedJson = aiResult.text
+      .replace(/^```(?:json)?\s*/i, '')
+      .replace(/\s*```$/i, '')
+      .trim();
+    parsed = JSON.parse(cleanedJson);
   } catch {
     parsed = {};
   }
@@ -435,30 +440,35 @@ Hãy phân tích và soạn thảo bản thảo công thức có cấu trúc ho�
   // SCHEMA SANITIZATION & INVARIANTS ENFORCEMENT (Gate P4)
   // ==========================================================
 
+  const smartFallback = buildSmartVietnameseRecipeFromTitle(title, sourceText);
+
   const validatedName = (parsed.name && typeof parsed.name === 'string' ? parsed.name : title).trim();
   const validatedDishName = (parsed.dishName && typeof parsed.dishName === 'string' ? parsed.dishName : title).trim();
   const validatedDescription = (
     parsed.shortDescription && typeof parsed.shortDescription === 'string'
       ? parsed.shortDescription
-      : `Công thức ${validatedName} chuẩn vị cơm nhà truyền thống, thơm ngon, đậm đà và giàu dinh dưỡng.`
+      : smartFallback.shortDescription
   ).trim();
 
-  let validatedRole: 'MAIN' | 'SOUP' | 'SIDE' | 'ONE_DISH_MEAL' = role;
+  let validatedRole: 'MAIN' | 'SOUP' | 'SIDE' | 'ONE_DISH_MEAL' = role || smartFallback.role;
   if (['MAIN', 'SOUP', 'SIDE', 'ONE_DISH_MEAL'].includes(parsed.role)) {
     validatedRole = parsed.role;
   }
 
   const validatedDifficulty = ['Dễ', 'Trung bình', 'Khó'].includes(parsed.difficulty) ? parsed.difficulty : 'Dễ';
-  const validatedPrep = Number(parsed.prepTimeMinutes) > 0 ? Number(parsed.prepTimeMinutes) : 15;
-  const validatedCook = Number(parsed.cookTimeMinutes) > 0 ? Number(parsed.cookTimeMinutes) : 25;
+  const validatedPrep = Number(parsed.prepTimeMinutes) > 0 ? Number(parsed.prepTimeMinutes) : smartFallback.prepTimeMinutes;
+  const validatedCook = Number(parsed.cookTimeMinutes) > 0 ? Number(parsed.cookTimeMinutes) : smartFallback.cookTimeMinutes;
 
   // Xử lý nguyên liệu
-  const rawIngs = Array.isArray(parsed.ingredients) && parsed.ingredients.length > 0 ? parsed.ingredients : [];
+  const rawIngs =
+    Array.isArray(parsed.ingredients) && parsed.ingredients.length >= 3
+      ? parsed.ingredients
+      : smartFallback.ingredients;
   const processedIngredients: AiRecipeIngredientDraft[] = [];
 
   for (const raw of rawIngs) {
     const ingName = String(raw.name || '').trim();
-    if (!ingName) continue;
+    if (!ingName || ingName.toLowerCase().includes('nguyên liệu chính')) continue;
 
     const amount = Number(raw.amount) > 0 ? Number(raw.amount) : 1;
     const unit = String(raw.unit || 'g').trim();
@@ -483,22 +493,28 @@ Hãy phân tích và soạn thảo bản thảo công thức có cấu trúc ho�
     });
   }
 
-  // Đảm bảo có ít nhất 2 nguyên liệu mặc định nếu AI không trả về đủ
-  if (processedIngredients.length === 0) {
-    const defaultIngId = await resolveOrRegisterIngredient('Nguyên liệu chính', 'g');
-    processedIngredients.push({
-      ingredientId: defaultIngId,
-      name: 'Nguyên liệu chính',
-      amount: 400,
-      unit: 'g',
-      scalePolicy: 'LINEAR',
-      preparation: 'Sơ chế sạch sẽ',
-      isOptional: false,
-    });
+  // Đảm bảo luôn có ít nhất 3 nguyên liệu chuẩn bếp Việt nếu AI trả về thiếu
+  if (processedIngredients.length < 3) {
+    processedIngredients.length = 0;
+    for (const fbIng of smartFallback.ingredients) {
+      const ingredientId = await resolveOrRegisterIngredient(fbIng.name, fbIng.unit);
+      processedIngredients.push({
+        ingredientId,
+        name: fbIng.name,
+        amount: fbIng.amount,
+        unit: fbIng.unit,
+        scalePolicy: fbIng.scalePolicy,
+        preparation: fbIng.preparation,
+        isOptional: fbIng.isOptional,
+      });
+    }
   }
 
   // Xử lý các bước nấu
-  const rawSteps = Array.isArray(parsed.steps) && parsed.steps.length > 0 ? parsed.steps : [];
+  const rawSteps =
+    Array.isArray(parsed.steps) && parsed.steps.length >= 2
+      ? parsed.steps
+      : smartFallback.steps;
   const processedSteps: AiRecipeStepDraft[] = [];
 
   rawSteps.forEach((raw: any, idx: number) => {
@@ -526,22 +542,9 @@ Hãy phân tích và soạn thảo bản thảo công thức có cấu trúc ho�
   });
 
   if (processedSteps.length === 0) {
-    processedSteps.push(
-      {
-        stepNumber: 1,
-        phaseName: 'Sơ chế',
-        instruction: `Sơ chế sạch các nguyên liệu cho món ${validatedName}.`,
-        timerSeconds: 600,
-        tipText: 'Ướp gia vị trước 15 phút để món ăn đậm đà hơn.',
-      },
-      {
-        stepNumber: 2,
-        phaseName: 'Chế biến',
-        instruction: `Tiến hành nấu chín món ăn ở lửa vừa cho đến khi đạt độ chín và hương thơm mong muốn.`,
-        timerSeconds: 1200,
-        tipText: 'Theo dõi lửa để món ăn không bị cạn nước hoặc quá nhiệt.',
-      }
-    );
+    for (const fbStep of smartFallback.steps) {
+      processedSteps.push(fbStep);
+    }
   }
 
   const finalHeroImage =

@@ -27,8 +27,8 @@ export class GeminiProvider implements AiProvider {
       throw new Error('GEMINI_API_KEY is not configured or empty');
     }
 
-    const maxTokens = Math.min(options.maxTokens || 1200, 1500); // Áp trần ngân sách
-    const timeoutMs = Math.min(options.timeoutMs || 10000, 15000); // Áp trần timeout 10-15s
+    const maxTokens = Math.min(options.maxTokens || 2500, 4096); // Đủ rộng để JSON công thức đầy đủ không bao giờ bị cắt cụt
+    const timeoutMs = Math.min(options.timeoutMs || 15000, 20000); // Áp trần timeout 15-20s
 
     const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${this.modelName}:generateContent?key=${this.apiKey}`;
 
