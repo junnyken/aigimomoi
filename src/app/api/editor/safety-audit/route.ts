@@ -1,7 +1,7 @@
 // API Kiểm định An toàn Thực phẩm & Chất lượng bằng AI — CHỈ DÀNH RIÊNG CHO NGƯỜI KIỂM DUYỆT (ADMIN / EDITOR)
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionUser } from '@/lib/auth/session';
-import { getAiProvider } from '@/lib/ai/factory';
+import { aiGateway } from '@/lib/ai/gateway';
 import { auditRecipeSafetyAndQuality, type FoodSafetyAuditInput } from '@/lib/safety/foodSafetyAuditor';
 
 export interface AiDeepSafetyVerdict {
@@ -68,8 +68,7 @@ ${stepSummary || '(Chưa có)'}
 
     let aiDeepResult: AiDeepSafetyVerdict | null = null;
     try {
-      const provider = getAiProvider();
-      const raw = await provider.generateCompletion(prompt, systemInstruction, {
+      const raw = await aiGateway.generateCompletion(prompt, systemInstruction, {
         jsonMode: true,
         temperature: 0.2,
         maxTokens: 1500,
