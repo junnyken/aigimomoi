@@ -26,6 +26,8 @@ import {
   REVIEW_NOTES_MIN,
   type VerificationFlags,
 } from '@/lib/recipes/gate';
+import { auditRecipeSafetyAndQuality } from '@/lib/safety/foodSafetyAuditor';
+import { FoodSafetyScorecard } from '@/components/safety/FoodSafetyScorecard';
 
 interface QueueItem {
   id: number;
@@ -150,13 +152,22 @@ export default function ReviewQueuePage() {
     return () => clearTimeout(t);
   }, [toast]);
 
+  const safetyReport = useMemo(
+    () => (detail ? auditRecipeSafetyAndQuality(detail) : null),
+    [detail]
+  );
   const gateChecks = useMemo(() => (detail ? evaluateGateChecks(detail) : []), [detail]);
   const gatePassed = gateChecks.length > 0 && gateChecks.every((c) => c.passed);
   const flagErrors = useMemo(
     () => (detail ? validateVerificationFlags(flags, detail) : []),
     [flags, detail]
   );
-  const canPublish = isAdmin && gatePassed && flagErrors.length === 0 && !busy;
+  const canPublish =
+    isAdmin &&
+    gatePassed &&
+    safetyReport?.verdict !== 'DANGER' &&
+    flagErrors.length === 0 &&
+    !busy;
   const notesValid = notes.trim().length >= REVIEW_NOTES_MIN && notes.trim().length <= REVIEW_NOTES_MAX;
 
   const finishAction = (message: string) => {
@@ -338,6 +349,18 @@ export default function ReviewQueuePage() {
                     </div>
                   </div>
                 </article>
+
+                {/* Bảng Đèn Giao Thông Kiểm Định An Toàn Thực Phẩm & Tương Kỵ */}
+                {safetyReport && (
+                  <FoodSafetyScorecard
+                    report={safetyReport}
+                    mode="admin"
+                    onApplyRejectionReason={(reason) => {
+                      setMode('reject');
+                      setNotes(reason);
+                    }}
+                  />
+                )}
 
                 {/* Gate checklist */}
                 <div className="bg-white rounded-2xl border border-[#EADBC8] shadow-xs p-5 space-y-3">

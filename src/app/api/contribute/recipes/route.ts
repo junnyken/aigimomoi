@@ -10,6 +10,7 @@ import { db } from '@/lib/db';
 import { recipes, dishes, recipeIngredients, cookingSteps, recipeTags, mealRoleEnum } from '@/lib/db/schema';
 import { getSessionUser } from '@/lib/auth/session';
 import { calculateRecipeNutrition } from '@/lib/nutrition/calculator';
+import { auditRecipeSafetyAndQuality } from '@/lib/safety/foodSafetyAuditor';
 import { eq, desc, and } from 'drizzle-orm';
 import { logger } from '@/lib/logger';
 
@@ -119,6 +120,31 @@ export async function POST(request: NextRequest) {
 
     if (!Array.isArray(rawSteps) || rawSteps.length === 0) {
       return NextResponse.json({ error: 'Công thức cần có ít nhất một bước thực hiện.' }, { status: 400 });
+    }
+
+    // CHỐT CHẶN AN TOÀN THỰC PHẨM & ĐỘC TỐ NGAY TỪ CỬA ĐÓNG GÓP:
+    const safetyAudit = auditRecipeSafetyAndQuality({
+      name,
+      shortDescription,
+      baseServings: Number(baseServings) || 4,
+      prepTimeMinutes: Number(prepTimeMinutes) || 15,
+      cookTimeMinutes: Number(cookTimeMinutes) || 30,
+      ingredients: rawIngredients,
+      steps: rawSteps,
+    });
+
+    if (safetyAudit.verdict === 'DANGER') {
+      const dangerDetails = safetyAudit.checks
+        .filter((c) => c.level === 'DANGER')
+        .map((c) => `${c.title}: ${c.detail}`)
+        .join(' ');
+      return NextResponse.json(
+        {
+          error: `⛔ Cảnh báo An toàn Thực phẩm: Không thể tiếp nhận công thức này. ${dangerDetails}`,
+          safetyAudit,
+        },
+        { status: 400 }
+      );
     }
 
     // INVARIANTS GATE P5:

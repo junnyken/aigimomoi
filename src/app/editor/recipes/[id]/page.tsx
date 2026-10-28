@@ -22,6 +22,8 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { ImageUpload } from '@/components/ui/ImageUpload';
+import { auditRecipeSafetyAndQuality } from '@/lib/safety/foodSafetyAuditor';
+import { FoodSafetyScorecard } from '@/components/safety/FoodSafetyScorecard';
 
 interface IngredientOption {
   id: number;
@@ -609,6 +611,37 @@ function EditRecipeContent() {
             <p>{errorMsg}</p>
           </div>
         )}
+
+        {/* Hồ sơ Kiểm định An toàn Thực phẩm & Độc tố tự động */}
+        <FoodSafetyScorecard
+          report={auditRecipeSafetyAndQuality({
+            name,
+            shortDescription,
+            baseServings,
+            prepTimeMinutes,
+            cookTimeMinutes,
+            ingredients: ingredientRows.map((row) => ({
+              name: availableIngredients.find((i) => i.id === row.ingredientId)?.name || '',
+              amount: row.amount,
+              unit: row.unit,
+              preparation: row.preparation,
+            })),
+            steps: stepRows,
+          })}
+          mode="admin"
+          onInjectSafetyTip={
+            !isReadOnly
+              ? (tip) => {
+                  setStepRows((prev) => {
+                    if (prev.length === 0) return prev;
+                    const first = prev[0];
+                    const mergedTip = first.tipText ? `${first.tipText} | ${tip}` : tip;
+                    return [{ ...first, tipText: mergedTip }, ...prev.slice(1)];
+                  });
+                }
+              : undefined
+          }
+        />
 
         {/* Section 1: Thông tin cơ bản */}
         <section className="bg-white p-6 rounded-2xl border border-[#EADBC8] shadow-xs space-y-5">

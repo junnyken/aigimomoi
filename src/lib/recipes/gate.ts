@@ -1,13 +1,27 @@
 // AG-15 — Publishing Gate Check (pure, dùng chung cho API server và UI duyệt bài).
 // Không import DB ở đây để client component có thể dùng lại cùng một bộ luật.
 
+import { auditRecipeSafetyAndQuality } from '@/lib/safety/foodSafetyAuditor';
+
 export interface GateRecipeInput {
   name: string | null | undefined;
   shortDescription: string | null | undefined;
   heroImage: string | null | undefined;
   caloriesPerServing?: number | null;
-  ingredients: Array<{ ingredientId: number; amount: number }>;
-  steps: Array<{ instruction: string | null | undefined }>;
+  baseServings?: number | null;
+  cookTimeMinutes?: number | null;
+  ingredients: Array<{
+    ingredientId: number;
+    amount: number;
+    unit?: string | null;
+    preparation?: string | null;
+    ingredient?: { name?: string | null } | null;
+  }>;
+  steps: Array<{
+    phaseName?: string | null;
+    instruction: string | null | undefined;
+    tipText?: string | null;
+  }>;
 }
 
 export interface GateCheckItem {
@@ -25,6 +39,14 @@ export interface VerificationFlags {
 export function evaluateGateChecks(recipe: GateRecipeInput): GateCheckItem[] {
   const steps = recipe.steps || [];
   const ingredients = recipe.ingredients || [];
+  const safety = auditRecipeSafetyAndQuality({
+    name: recipe.name,
+    shortDescription: recipe.shortDescription,
+    baseServings: recipe.baseServings,
+    cookTimeMinutes: recipe.cookTimeMinutes,
+    ingredients,
+    steps,
+  });
 
   return [
     {
@@ -53,6 +75,11 @@ export function evaluateGateChecks(recipe: GateRecipeInput): GateCheckItem[] {
       passed:
         steps.length > 0 &&
         steps.every((s) => Boolean(s.instruction && s.instruction.trim().length > 0)),
+    },
+    {
+      key: 'foodSafety',
+      label: 'Đạt chuẩn An toàn Thực phẩm (Không có độc tố / món sống cấm / quá liều)',
+      passed: safety.verdict !== 'DANGER',
     },
   ];
 }
