@@ -31,6 +31,8 @@ import { POST as safetyAuditPostHandler } from '../app/api/editor/safety-audit/r
 import { POST as nutritionPostHandler } from '../app/api/recipes/[id]/nutrition/route';
 import { POST as pantryPostHandler } from '../app/api/pantry/route';
 import { POST as claimPostHandler } from '../app/api/recipes/[id]/claim/route';
+import { GET as aiSettingsGetHandler, PUT as aiSettingsPutHandler, POST as aiSettingsPostHandler } from '../app/api/editor/ai-settings/route';
+import { encryptConfigPayload, decryptConfigPayload, maskApiKey } from '../lib/ai/configStore';
 import { GET as healthGetHandler } from '../app/api/health/route';
 import { proxy } from '../proxy';
 import fs from 'node:fs';
@@ -393,6 +395,69 @@ async function runSecurityVerificationSuite() {
     const r2 = checkRateLimit(rlNamespace, '203.0.113.55', 2, 60_000);
     const r3 = checkRateLimit(rlNamespace, '203.0.113.55', 2, 60_000);
     assert(r1.allowed && r2.allowed && !r3.allowed, 'Rate Limiter chặn chính xác yêu cầu vượt ngưỡng tối đa');
+
+    // =========================================================================
+    // [F-07] DeepSeek AI Settings Encryption (AES-256-GCM) & RBAC/CSRF Protection
+    // =========================================================================
+    console.log('\n[F-07] Kiểm thử mã hóa AES-256-GCM & phân quyền cho cổng Kết nối AI DeepSeek:');
+
+    const sampleSecretKey = 'sk-deepseek-secret-key-9876543210abcd';
+    const encrypted = encryptConfigPayload({
+      primaryOrder: 'DEEPSEEK_FIRST',
+      deepseekApiKey: sampleSecretKey,
+      deepseekModel: 'deepseek-chat',
+    });
+    assert(
+      encrypted.startsWith('v1:') && !encrypted.includes(sampleSecretKey),
+      'encryptConfigPayload() mã hóa AES-256-GCM không để lộ plaintext API key'
+    );
+
+    const decrypted = decryptConfigPayload(encrypted);
+    assert(
+      decrypted !== null &&
+        decrypted.primaryOrder === 'DEEPSEEK_FIRST' &&
+        decrypted.deepseekApiKey === sampleSecretKey,
+      'decryptConfigPayload() giải mã chính xác cấu hình AI đã mã hóa'
+    );
+
+    const masked = maskApiKey(sampleSecretKey);
+    assert(
+      masked === 'sk-••••••••••••abcd' && !masked.includes('9876543210'),
+      'maskApiKey() che giấu toàn bộ thân khóa, chỉ giữ 3 ký tự đầu và 4 ký tự cuối'
+    );
+
+    const anonAiGet = await aiSettingsGetHandler(
+      new NextRequest('http://localhost:3000/api/editor/ai-settings')
+    );
+    assert(anonAiGet.status === 401, 'GET /api/editor/ai-settings chặn khách chưa đăng nhập (401)');
+
+    const csrfAiPut = await aiSettingsPutHandler(
+      new NextRequest('http://localhost:3000/api/editor/ai-settings', {
+        method: 'PUT',
+        headers: {
+          'content-type': 'application/json',
+          host: 'localhost:3000',
+          origin: 'https://evil-attacker.example.com',
+          'sec-fetch-site': 'cross-site',
+        },
+        body: JSON.stringify({ deepseekApiKey: 'sk-123' }),
+      })
+    );
+    assert(csrfAiPut.status === 403, 'PUT /api/editor/ai-settings chặn yêu cầu Cross-Site CSRF (403)');
+
+    const csrfAiPost = await aiSettingsPostHandler(
+      new NextRequest('http://localhost:3000/api/editor/ai-settings', {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          host: 'localhost:3000',
+          origin: 'https://evil-attacker.example.com',
+          'sec-fetch-site': 'cross-site',
+        },
+        body: JSON.stringify({ provider: 'deepseek' }),
+      })
+    );
+    assert(csrfAiPost.status === 403, 'POST /api/editor/ai-settings chặn yêu cầu Cross-Site CSRF (403)');
   } finally {
     if (originalSecret !== undefined) {
       process.env.AUTH_SECRET = originalSecret;

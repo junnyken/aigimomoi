@@ -16,16 +16,18 @@ export interface AiTokensUsage {
   totalTokens: number;
 }
 
+export type AiProviderName = 'deepseek' | 'gemini' | 'openai' | 'mock';
+
 export interface AiCompletionResult {
   text: string;
-  provider: 'gemini' | 'openai' | 'mock';
+  provider: AiProviderName;
   model: string;
   tokensUsed?: AiTokensUsage;
   isFallback?: boolean;
 }
 
 export interface AiProvider {
-  readonly name: 'gemini' | 'openai' | 'mock';
+  readonly name: AiProviderName;
   isAvailable(): boolean;
   generateCompletion(options: AiCompletionOptions): Promise<AiCompletionResult>;
 }

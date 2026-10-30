@@ -24,6 +24,12 @@ const SENSITIVE_KEYS = new Set([
   'auth_secret',
   'authsecret',
   'jwt_secret',
+  'deepseek_api_key',
+  'deepseekapikey',
+  'gemini_api_key',
+  'geminiapikey',
+  'openai_api_key',
+  'openaiapikey',
 ]);
 
 const POSTGRES_URL_REGEX = /postgres(?:ql)?:\/\/([^:]+):([^@]+)@([^\s?#]+)/gi;

@@ -1,12 +1,14 @@
-// AG-27: AI Gateway & Budget Manager
-// Quản lý rate limit, token capping, timeout và chuỗi tự động Fallback
+// AG-27: AI Gateway & Budget Manager (Hỗ trợ DeepSeek + Gemini + OpenAI + Heuristic Fallback)
+// Quản lý rate limit, token capping, timeout và chuỗi tự động Fallback theo thứ tự ưu tiên Admin cấu hình.
 // Invariants Gate P4: Không gây chi phí không kiểm soát, không crash khi AI provider lỗi.
 
 import type { AiProvider, AiCompletionOptions, AiCompletionResult, AiBudgetConfig } from './types';
 import { DEFAULT_AI_BUDGET } from './types';
+import { DeepSeekProvider } from './deepseekProvider';
 import { GeminiProvider } from './geminiProvider';
 import { OpenAiProvider } from './openaiProvider';
 import { MockHeuristicProvider } from './mockProvider';
+import { getEffectiveAiConfig } from './configStore';
 import { logger } from '../logger';
 
 interface RateLimitRecord {
@@ -15,7 +17,7 @@ interface RateLimitRecord {
 }
 
 export class AiGateway {
-  private providers: AiProvider[];
+  private customProviders: AiProvider[] | null = null;
   private budgetConfig: AiBudgetConfig;
   private rateLimitMap = new Map<string, RateLimitRecord>();
 
@@ -23,15 +25,32 @@ export class AiGateway {
     this.budgetConfig = { ...DEFAULT_AI_BUDGET, ...config };
 
     if (providers && providers.length > 0) {
-      this.providers = providers;
-    } else {
-      // Chuỗi provider mặc định theo thứ tự ưu tiên: Gemini -> OpenAI -> Mock
-      this.providers = [
-        new GeminiProvider(),
-        new OpenAiProvider(),
-        new MockHeuristicProvider(),
-      ];
+      this.customProviders = providers;
     }
+  }
+
+  /**
+   * Xây dựng danh sách Provider động dựa trên cấu hình mới nhất trong Admin Portal & biến môi trường
+   */
+  private async resolveActiveProviders(): Promise<AiProvider[]> {
+    if (this.customProviders && this.customProviders.length > 0) {
+      return this.customProviders;
+    }
+
+    const cfg = await getEffectiveAiConfig();
+    const deepseek = new DeepSeekProvider(cfg.deepseek.apiKey, cfg.deepseek.model, cfg.deepseek.baseUrl);
+    const gemini = new GeminiProvider(cfg.gemini.apiKey, cfg.gemini.model);
+    const openai = new OpenAiProvider(cfg.openai.apiKey, cfg.openai.model);
+    const mock = new MockHeuristicProvider();
+
+    if (cfg.primaryOrder === 'GEMINI_FIRST') {
+      return [gemini, deepseek, openai, mock];
+    }
+    if (cfg.primaryOrder === 'OPENAI_FIRST') {
+      return [openai, deepseek, gemini, mock];
+    }
+    // Mặc định: DEEPSEEK_FIRST (DeepSeek số 1 -> Gemini số 2 dự phòng -> OpenAI -> Mock)
+    return [deepseek, gemini, openai, mock];
   }
 
   /**
@@ -90,7 +109,6 @@ export class AiGateway {
         resetInSeconds: rateStatus.resetInSeconds,
       });
 
-      // Thay vì crash, fallback an toàn về Heuristic Mock để phục vụ người dùng
       const mock = new MockHeuristicProvider();
       const mockResult = await mock.generateCompletion(options);
       return {
@@ -106,10 +124,11 @@ export class AiGateway {
       timeoutMs: Math.min(options.timeoutMs || this.budgetConfig.timeoutMs, this.budgetConfig.timeoutMs),
     };
 
-    // 3. Chuỗi Fallback: Thử từng provider có sẵn
+    // 3. Chuỗi Fallback: Thử từng provider theo thứ tự ưu tiên đã cấu hình
+    const activeProviders = await this.resolveActiveProviders();
     let lastError: Error | null = null;
 
-    for (const provider of this.providers) {
+    for (const provider of activeProviders) {
       if (!provider.isAvailable()) {
         continue;
       }

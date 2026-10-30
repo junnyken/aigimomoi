@@ -16,6 +16,7 @@ import {
   ChefHat,
   Plus,
   LogOut,
+  Sparkles,
 } from 'lucide-react';
 
 interface AdminNavItem {
@@ -65,6 +66,11 @@ const ADMIN_NAV_ITEMS: AdminNavItem[] = [
     href: '/editor/reports',
     label: 'Báo cáo vi phạm',
     icon: Flag,
+  },
+  {
+    href: '/editor/ai-settings',
+    label: 'Kết nối AI (DeepSeek)',
+    icon: Sparkles,
   },
 ];
 
