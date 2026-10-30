@@ -91,12 +91,18 @@ ${stepSummary || '(Chưa có)'}
 
     let aiDeepResult: AiDeepSafetyVerdict | null = null;
     try {
-      const raw = await aiGateway.generateCompletion(prompt, systemInstruction, {
-        jsonMode: true,
-        temperature: 0.2,
-        maxTokens: 1500,
-        timeoutMs: 12000,
-      });
+      const aiRes = await aiGateway.complete(
+        {
+          prompt,
+          systemInstruction,
+          jsonMode: true,
+          temperature: 0.2,
+          maxTokens: 1500,
+          timeoutMs: 12000,
+        },
+        `safety-audit-${user.id}`
+      );
+      const raw = aiRes.text;
       const cleaned = raw.replace(/^```json\s*/i, '').replace(/```\s*$/i, '').trim();
       const parsed = JSON.parse(cleaned);
       aiDeepResult = {

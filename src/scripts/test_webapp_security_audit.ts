@@ -293,7 +293,7 @@ async function runSecurityVerificationSuite() {
       steps: [{ phaseName: 'Pha chế', instruction: 'Hãm tiết sống với nước mắm rồi đánh đông không nấu chín.' }],
     });
     assert(
-      toxicAudit.verdict === 'DANGER' && !toxicAudit.canAutoApprove,
+      toxicAudit.verdict === 'DANGER' && toxicAudit.safetyScore < 40,
       'Bộ kiểm định an toàn thực phẩm trả về DANGER cho món Tiết canh sống'
     );
 
