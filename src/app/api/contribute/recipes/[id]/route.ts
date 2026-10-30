@@ -6,6 +6,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { recipes, recipeIngredients, cookingSteps, recipeTags } from '@/lib/db/schema';
 import { getSessionUser } from '@/lib/auth/session';
+import { checkRateLimitShared, getClientIp } from '@/lib/auth/rateLimit';
+import { isCrossSiteRequest } from '@/lib/http/sameOrigin';
+import { auditRecipeSafetyAndQuality } from '@/lib/safety/foodSafetyAuditor';
 import { eq, and } from 'drizzle-orm';
 import { logger } from '@/lib/logger';
 
@@ -16,7 +19,7 @@ interface RouteContext {
 // GET /api/contribute/recipes/[id]
 export async function GET(request: NextRequest, context: RouteContext) {
   try {
-    const user = await getSessionUser();
+    const user = await getSessionUser(request);
     if (!user) {
       return NextResponse.json({ error: 'Yêu cầu đăng nhập.' }, { status: 401 });
     }
@@ -62,9 +65,29 @@ export async function GET(request: NextRequest, context: RouteContext) {
 // PUT /api/contribute/recipes/[id]
 export async function PUT(request: NextRequest, context: RouteContext) {
   try {
-    const user = await getSessionUser();
+    if (isCrossSiteRequest(request)) {
+      return NextResponse.json(
+        { error: 'Yêu cầu bị từ chối do khác nguồn gốc (CSRF).' },
+        { status: 403 }
+      );
+    }
+
+    const user = await getSessionUser(request);
     if (!user) {
       return NextResponse.json({ error: 'Yêu cầu đăng nhập.' }, { status: 401 });
+    }
+
+    const rate = await checkRateLimitShared(
+      'contribute-recipe-write',
+      `${user.id}:${getClientIp(request)}`,
+      20,
+      60_000
+    );
+    if (!rate.allowed) {
+      return NextResponse.json(
+        { error: 'Thao tác quá nhanh. Vui lòng thử lại sau ít phút.' },
+        { status: 429, headers: { 'Retry-After': String(rate.retryAfterSeconds) } }
+      );
     }
 
     const { id } = await context.params;
@@ -75,6 +98,11 @@ export async function PUT(request: NextRequest, context: RouteContext) {
         id: recipes.id,
         authorId: recipes.authorId,
         status: recipes.status,
+        name: recipes.name,
+        shortDescription: recipes.shortDescription,
+        baseServings: recipes.baseServings,
+        prepTimeMinutes: recipes.prepTimeMinutes,
+        cookTimeMinutes: recipes.cookTimeMinutes,
       })
       .from(recipes)
       .where(and(eq(recipes.id, recipeId), eq(recipes.authorId, user.id)))
@@ -119,6 +147,59 @@ export async function PUT(request: NextRequest, context: RouteContext) {
       taxonomyIds = [],
       submitNow = false,
     } = body;
+
+    // CHỐT CHẶN AN TOÀN THỰC PHẨM & ĐỘC TỐ KHI CẬP NHẬT / GỬI DUYỆT LẠI (F-04):
+    let auditIngredients = Array.isArray(rawIngredients) ? rawIngredients : [];
+    let auditSteps = Array.isArray(rawSteps) ? rawSteps : [];
+
+    if (auditIngredients.length === 0 || auditSteps.length === 0) {
+      const currentFull = await db.query.recipes.findFirst({
+        where: (r, { eq }) => eq(r.id, recipeId),
+        with: {
+          ingredients: { with: { ingredient: true } },
+          steps: true,
+        },
+      });
+      if (auditIngredients.length === 0 && currentFull?.ingredients) {
+        auditIngredients = currentFull.ingredients.map((ri) => ({
+          name: ri.ingredient?.name || '',
+          amount: ri.amount,
+          unit: ri.unit,
+          preparation: ri.preparation,
+        }));
+      }
+      if (auditSteps.length === 0 && currentFull?.steps) {
+        auditSteps = currentFull.steps.map((st) => ({
+          phaseName: st.phaseName,
+          instruction: st.instruction,
+          tipText: st.tipText,
+        }));
+      }
+    }
+
+    const safetyAudit = auditRecipeSafetyAndQuality({
+      name: name ? String(name).trim() : existing.name,
+      shortDescription: shortDescription ? String(shortDescription).trim() : existing.shortDescription,
+      baseServings: Number(baseServings) || existing.baseServings || 4,
+      prepTimeMinutes: Number(prepTimeMinutes) || existing.prepTimeMinutes || 15,
+      cookTimeMinutes: Number(cookTimeMinutes) || existing.cookTimeMinutes || 30,
+      ingredients: auditIngredients,
+      steps: auditSteps,
+    });
+
+    if (safetyAudit.verdict === 'DANGER') {
+      const dangerDetails = safetyAudit.checks
+        .filter((c) => c.level === 'DANGER')
+        .map((c) => `${c.title}: ${c.detail}`)
+        .join(' ');
+      return NextResponse.json(
+        {
+          error: `Từ chối cập nhật do phát hiện nguy cơ mất an toàn thực phẩm nghiêm trọng: ${dangerDetails}`,
+          safetyAudit,
+        },
+        { status: 422 }
+      );
+    }
 
     const nextStatus = submitNow ? 'SUBMITTED' : existing.status;
 
@@ -206,9 +287,29 @@ export async function PUT(request: NextRequest, context: RouteContext) {
 // DELETE /api/contribute/recipes/[id]
 export async function DELETE(request: NextRequest, context: RouteContext) {
   try {
-    const user = await getSessionUser();
+    if (isCrossSiteRequest(request)) {
+      return NextResponse.json(
+        { error: 'Yêu cầu bị từ chối do khác nguồn gốc (CSRF).' },
+        { status: 403 }
+      );
+    }
+
+    const user = await getSessionUser(request);
     if (!user) {
       return NextResponse.json({ error: 'Yêu cầu đăng nhập.' }, { status: 401 });
+    }
+
+    const rate = await checkRateLimitShared(
+      'contribute-recipe-delete',
+      `${user.id}:${getClientIp(request)}`,
+      20,
+      60_000
+    );
+    if (!rate.allowed) {
+      return NextResponse.json(
+        { error: 'Thao tác quá nhanh. Vui lòng thử lại sau ít phút.' },
+        { status: 429, headers: { 'Retry-After': String(rate.retryAfterSeconds) } }
+      );
     }
 
     const { id } = await context.params;

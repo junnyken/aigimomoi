@@ -7,19 +7,38 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionUser } from '@/lib/auth/session';
+import { checkRateLimitShared, getClientIp } from '@/lib/auth/rateLimit';
+import { isCrossSiteRequest } from '@/lib/http/sameOrigin';
 import { generateRecipeDraft, saveAiDraftToDatabase } from '@/lib/ai/recipeDraftGenerator';
+import { UnsafeOutboundUrlError } from '@/lib/security/safeUrl';
 import { logger } from '@/lib/logger';
 
 export async function POST(req: NextRequest) {
   try {
+    if (isCrossSiteRequest(req)) {
+      return NextResponse.json(
+        { error: 'Yêu cầu bị từ chối do khác nguồn gốc (CSRF).' },
+        { status: 403 }
+      );
+    }
+
     // 1. Phân quyền: Bắt buộc đăng nhập.
     // - Chế độ GENERATE (bóc tách văn bản/link để điền vào form, chưa ghi DB) mở cho cả COOK/Contributor.
     // - Chế độ SAVE_DRAFT và BATCH_SAVE_DRAFT (ghi thẳng vào DB với provenance AI_ASSISTED) chỉ dành cho EDITOR / ADMIN.
-    const user = await getSessionUser();
+    const user = await getSessionUser(req);
     if (!user) {
       return NextResponse.json(
         { error: 'Vui lòng đăng nhập để sử dụng tính năng Trợ lý Soạn thảo Công thức AI.' },
         { status: 401 }
+      );
+    }
+
+    const clientIp = getClientIp(req);
+    const rate = await checkRateLimitShared('ai-recipe-draft', `${user.id}:${clientIp}`, 15, 60_000);
+    if (!rate.allowed) {
+      return NextResponse.json(
+        { error: 'Bạn đã gửi quá nhiều yêu cầu tạo bản thảo AI. Vui lòng thử lại sau ít phút.' },
+        { status: 429, headers: { 'Retry-After': String(rate.retryAfterSeconds) } }
       );
     }
 
@@ -52,11 +71,6 @@ export async function POST(req: NextRequest) {
         { status: 403 }
       );
     }
-
-    const clientIp =
-      req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
-      req.headers.get('x-real-ip') ||
-      `user-${user.id}`;
 
     // Hỗ trợ nạp hàng loạt (Batch Import từ danh sách tên món hoặc danh sách link bài viết nấu ăn)
     if (mode === 'BATCH_SAVE_DRAFT') {
@@ -150,6 +164,13 @@ export async function POST(req: NextRequest) {
   } catch (err: unknown) {
     if ((err as { digest?: string })?.digest === 'NEXT_PRERENDER_INTERRUPTED') {
       throw err;
+    }
+
+    if (err instanceof UnsafeOutboundUrlError) {
+      return NextResponse.json(
+        { error: err.message, code: err.code },
+        { status: 400 }
+      );
     }
 
     const message = err instanceof Error ? err.message : 'Unknown AI authoring draft error';

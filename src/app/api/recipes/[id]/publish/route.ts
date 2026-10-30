@@ -15,7 +15,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     return NextResponse.json({ error: 'Yêu cầu không hợp lệ (origin)' }, { status: 403 });
   }
 
-  const user = await getSessionUser();
+  const user = await getSessionUser(request);
   if (!user || user.role !== 'ADMIN') {
     return NextResponse.json(
       { error: 'Chỉ Quản trị viên (ADMIN) được phê duyệt xuất bản' },

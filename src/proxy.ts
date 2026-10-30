@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { verifyToken, SESSION_COOKIE_NAME } from '@/lib/auth/session';
+import { verifyToken, getSessionUser, SESSION_COOKIE_NAME } from '@/lib/auth/session';
 import { queryPublicSlugResolution } from '@/lib/recipes/publicQueries';
 import { queryPublicCreatorSlugResolution } from '@/lib/creators/queries';
 import { PUBLIC_RECIPE_PREFIX, RECIPE_NOT_FOUND_PLACEHOLDER, recipePath } from '@/lib/recipes/labels';
@@ -97,7 +97,11 @@ export async function proxy(request: NextRequest) {
   }
 
   const token = request.cookies.get(SESSION_COOKIE_NAME)?.value;
-  const user = token ? await verifyToken(token) : null;
+  const decoded = token ? await verifyToken(token) : null;
+  const user =
+    decoded && (typeof decoded.sv === 'number' || process.env.NODE_ENV === 'production')
+      ? await getSessionUser(token!)
+      : decoded;
 
   if (!user) {
     const adminLoginUrl = new URL('/admin-login', request.url);

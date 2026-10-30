@@ -7,26 +7,40 @@ import { db } from '@/lib/db';
 import { ensureDatabaseBootstrapped } from '@/lib/db/autoBootstrap';
 import { sql } from 'drizzle-orm';
 import { logger } from '@/lib/logger';
-import { isAuthConfigurationValid } from '@/lib/auth/session';
+import { isAuthConfigurationValid, getSessionUser } from '@/lib/auth/session';
 
 export interface HealthResponse {
   status: 'healthy' | 'unhealthy';
   timestamp: string;
-  uptimeSeconds: number;
-  environment: string;
-  version: string;
+  uptimeSeconds?: number;
+  environment?: string;
+  version?: string;
   database: 'connected' | 'disconnected';
   auth: 'ready' | 'unconfigured';
   error?: string;
 }
 
-export async function GET() {
+export async function GET(request?: Request) {
   const startTime = Date.now();
-  const uptimeSeconds = Math.floor(process.uptime());
-  const environment = process.env.NODE_ENV || 'development';
-  const version = '0.1.0';
-
   const authValid = isAuthConfigurationValid();
+
+  // Chỉ hiển thị thông tin hạ tầng chi tiết (uptime, environment, version) cho ADMIN
+  let includeDiagnostics = false;
+  if (authValid && request) {
+    try {
+      const user = await getSessionUser(request);
+      includeDiagnostics = user?.role === 'ADMIN';
+    } catch {
+      includeDiagnostics = false;
+    }
+  }
+  const diagnostics = includeDiagnostics
+    ? {
+        uptimeSeconds: Math.floor(process.uptime()),
+        environment: process.env.NODE_ENV || 'development',
+        version: '0.1.0',
+      }
+    : {};
 
   try {
     // Probe database connectivity & ensure schema/catalog bootstrapped on first live connection
@@ -38,9 +52,7 @@ export async function GET() {
       const response: HealthResponse = {
         status: 'unhealthy',
         timestamp: new Date().toISOString(),
-        uptimeSeconds,
-        environment,
-        version,
+        ...diagnostics,
         database: 'connected',
         auth: 'unconfigured',
         error: 'Authentication configuration invalid or missing',
@@ -57,9 +69,7 @@ export async function GET() {
     const response: HealthResponse = {
       status: 'healthy',
       timestamp: new Date().toISOString(),
-      uptimeSeconds,
-      environment,
-      version,
+      ...diagnostics,
       database: 'connected',
       auth: 'ready',
     };
@@ -83,9 +93,7 @@ export async function GET() {
     const response: HealthResponse = {
       status: 'unhealthy',
       timestamp: new Date().toISOString(),
-      uptimeSeconds,
-      environment,
-      version,
+      ...diagnostics,
       database: 'disconnected',
       auth: authValid ? 'ready' : 'unconfigured',
       error: 'Database connection failed',

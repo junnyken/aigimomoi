@@ -1,8 +1,11 @@
 // API Kiểm định An toàn Thực phẩm & Chất lượng bằng AI — CHỈ DÀNH RIÊNG CHO NGƯỜI KIỂM DUYỆT (ADMIN / EDITOR)
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionUser } from '@/lib/auth/session';
+import { checkRateLimitShared, getClientIp } from '@/lib/auth/rateLimit';
+import { isCrossSiteRequest } from '@/lib/http/sameOrigin';
 import { aiGateway } from '@/lib/ai/gateway';
 import { auditRecipeSafetyAndQuality, type FoodSafetyAuditInput } from '@/lib/safety/foodSafetyAuditor';
+import { logger } from '@/lib/logger';
 
 export interface AiDeepSafetyVerdict {
   aiVerdict: 'SAFE' | 'CAUTION' | 'DANGER';
@@ -15,11 +18,31 @@ export interface AiDeepSafetyVerdict {
 
 export async function POST(request: NextRequest) {
   try {
-    const user = await getSessionUser();
+    if (isCrossSiteRequest(request)) {
+      return NextResponse.json(
+        { error: 'Yêu cầu bị từ chối do khác nguồn gốc (CSRF).' },
+        { status: 403 }
+      );
+    }
+
+    const user = await getSessionUser(request);
     if (!user || (user.role !== 'ADMIN' && user.role !== 'EDITOR')) {
       return NextResponse.json(
         { error: 'Chức năng Kiểm định An toàn Thực phẩm bằng AI chỉ dành riêng cho Người kiểm duyệt (ADMIN / EDITOR).' },
         { status: 403 }
+      );
+    }
+
+    const rate = await checkRateLimitShared(
+      'editor-safety-audit',
+      `${user.id}:${getClientIp(request)}`,
+      20,
+      60_000
+    );
+    if (!rate.allowed) {
+      return NextResponse.json(
+        { error: 'Thao tác gọi AI kiểm định quá nhanh. Vui lòng thử lại sau ít giây.' },
+        { status: 429, headers: { 'Retry-After': String(rate.retryAfterSeconds) } }
       );
     }
 
@@ -122,8 +145,11 @@ ${stepSummary || '(Chưa có)'}
       aiDeepResult,
     });
   } catch (error) {
+    logger.error('Error in editor AI safety audit endpoint', {
+      error: error instanceof Error ? error.message : String(error),
+    });
     return NextResponse.json(
-      { error: 'Không thể thực hiện kiểm định AI lúc này.', details: String(error) },
+      { error: 'Không thể thực hiện kiểm định AI lúc này.' },
       { status: 500 }
     );
   }

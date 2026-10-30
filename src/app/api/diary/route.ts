@@ -8,13 +8,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { mealDiaryEntries, recipes } from '@/lib/db/schema';
 import { getSessionUser } from '@/lib/auth/session';
-import { eq, and, desc, asc } from 'drizzle-orm';
+import { checkRateLimitShared, getClientIp } from '@/lib/auth/rateLimit';
+import { isCrossSiteRequest } from '@/lib/http/sameOrigin';
+import { eq, and, asc } from 'drizzle-orm';
 import { calculateRecipeNutrition } from '@/lib/nutrition/calculator';
 import { logger } from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
   try {
-    const user = await getSessionUser();
+    const user = await getSessionUser(request);
     if (!user) {
       return NextResponse.json({ error: 'Yêu cầu đăng nhập để xem nhật ký ăn uống.' }, { status: 401 });
     }
@@ -119,9 +121,21 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const user = await getSessionUser();
+    if (isCrossSiteRequest(request)) {
+      return NextResponse.json({ error: 'Yêu cầu bị từ chối do khác nguồn gốc (CSRF).' }, { status: 403 });
+    }
+
+    const user = await getSessionUser(request);
     if (!user) {
       return NextResponse.json({ error: 'Yêu cầu đăng nhập để ghi nhật ký bữa ăn.' }, { status: 401 });
+    }
+
+    const rate = await checkRateLimitShared('diary-write', `${user.id}:${getClientIp(request)}`, 40, 60_000);
+    if (!rate.allowed) {
+      return NextResponse.json(
+        { error: 'Thao tác ghi nhật ký quá nhanh. Vui lòng thử lại sau ít phút.' },
+        { status: 429, headers: { 'Retry-After': String(rate.retryAfterSeconds) } }
+      );
     }
 
     const body = await request.json().catch(() => ({}));
@@ -158,36 +172,51 @@ export async function POST(request: NextRequest) {
     let baseSodium: number | null = typeof customSodium === 'number' && customSodium >= 0 ? customSodium : null;
     let baseFiber: number | null = typeof customFiber === 'number' && customFiber >= 0 ? customFiber : null;
 
-    if (recipeId) {
+    let resolvedRecipeId: number | null = null;
+    if (recipeId !== undefined && recipeId !== null && recipeId !== '') {
       const numRecipeId = Number(recipeId);
+      if (!Number.isInteger(numRecipeId) || numRecipeId <= 0) {
+        return NextResponse.json({ error: 'Mã công thức không hợp lệ.' }, { status: 400 });
+      }
       const [recipe] = await db
         .select()
         .from(recipes)
         .where(eq(recipes.id, numRecipeId))
         .limit(1);
 
-      if (recipe) {
-        finalName = recipe.name;
-        // Kiểm tra xem đã có snapshot dinh dưỡng chưa
-        let snapshot: any = recipe.nutritionSnapshot;
-        if (!snapshot || !snapshot.perServing) {
-          try {
-            snapshot = await calculateRecipeNutrition(numRecipeId);
-          } catch {
-            // Dùng số liệu ước tính thô nếu không tính được
-          }
-        }
+      const isStaff = user.role === 'ADMIN' || user.role === 'EDITOR';
+      const canAccessRecipe =
+        Boolean(recipe) &&
+        (recipe.status === 'PUBLISHED' || recipe.authorId === user.id || isStaff);
 
-        if (snapshot && snapshot.perServing) {
-          baseCalories = snapshot.perServing.calories || recipe.caloriesPerServing || 250;
-          baseProtein = snapshot.perServing.protein || 0;
-          baseFat = snapshot.perServing.fat || 0;
-          baseCarbs = snapshot.perServing.carbs || 0;
-          baseSodium = snapshot.perServing.sodium ?? null;
-          baseFiber = snapshot.perServing.fiber ?? null;
-        } else if (recipe.caloriesPerServing) {
-          baseCalories = recipe.caloriesPerServing;
+      if (!recipe || !canAccessRecipe) {
+        return NextResponse.json(
+          { error: 'Không tìm thấy công thức đã xuất bản hoặc bạn không có quyền truy cập công thức này.' },
+          { status: 404 }
+        );
+      }
+
+      resolvedRecipeId = recipe.id;
+      finalName = recipe.name;
+      // Kiểm tra xem đã có snapshot dinh dưỡng chưa
+      let snapshot: any = recipe.nutritionSnapshot;
+      if (!snapshot || !snapshot.perServing) {
+        try {
+          snapshot = await calculateRecipeNutrition(numRecipeId);
+        } catch {
+          // Dùng số liệu ước tính thô nếu không tính được
         }
+      }
+
+      if (snapshot && snapshot.perServing) {
+        baseCalories = snapshot.perServing.calories || recipe.caloriesPerServing || 250;
+        baseProtein = snapshot.perServing.protein || 0;
+        baseFat = snapshot.perServing.fat || 0;
+        baseCarbs = snapshot.perServing.carbs || 0;
+        baseSodium = snapshot.perServing.sodium ?? null;
+        baseFiber = snapshot.perServing.fiber ?? null;
+      } else if (recipe.caloriesPerServing) {
+        baseCalories = recipe.caloriesPerServing;
       }
     }
 
@@ -203,7 +232,7 @@ export async function POST(request: NextRequest) {
       .insert(mealDiaryEntries)
       .values({
         userId: user.id,
-        recipeId: recipeId ? Number(recipeId) : null,
+        recipeId: resolvedRecipeId,
         recipeName: finalName,
         diaryDate: finalDate,
         mealType,

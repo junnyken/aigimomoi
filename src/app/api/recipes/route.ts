@@ -12,6 +12,8 @@ import {
   recipePublishStatusEnum,
 } from '@/lib/db/schema';
 import { getSessionUser } from '@/lib/auth/session';
+import { checkRateLimitShared, getClientIp } from '@/lib/auth/rateLimit';
+import { isCrossSiteRequest } from '@/lib/http/sameOrigin';
 import { calculateRecipeNutrition } from '@/lib/nutrition/calculator';
 import { ilike, eq, ne, and, desc } from 'drizzle-orm';
 
@@ -33,7 +35,7 @@ export async function GET(request: NextRequest) {
     const roleParam = searchParams.get('role');
     const statusParam = searchParams.get('status');
 
-    const user = await getSessionUser();
+    const user = await getSessionUser(request);
     const staff = user?.role === 'ADMIN' || user?.role === 'EDITOR';
 
     const conditions = [];
@@ -98,11 +100,31 @@ export async function GET(request: NextRequest) {
 // POST /api/recipes (Requires EDITOR or ADMIN)
 export async function POST(request: NextRequest) {
   try {
-    const user = await getSessionUser();
+    if (isCrossSiteRequest(request)) {
+      return NextResponse.json(
+        { error: 'Yêu cầu bị từ chối do khác nguồn gốc (CSRF).' },
+        { status: 403 }
+      );
+    }
+
+    const user = await getSessionUser(request);
     if (!user || (user.role !== 'ADMIN' && user.role !== 'EDITOR')) {
       return NextResponse.json(
         { error: 'Yêu cầu quyền Biên tập viên (EDITOR) hoặc Quản trị viên (ADMIN)' },
         { status: 403 }
+      );
+    }
+
+    const rate = await checkRateLimitShared(
+      'editor-recipe-create',
+      `${user.id}:${getClientIp(request)}`,
+      30,
+      60_000
+    );
+    if (!rate.allowed) {
+      return NextResponse.json(
+        { error: 'Thao tác tạo công thức quá nhanh. Vui lòng thử lại sau ít phút.' },
+        { status: 429, headers: { 'Retry-After': String(rate.retryAfterSeconds) } }
       );
     }
 

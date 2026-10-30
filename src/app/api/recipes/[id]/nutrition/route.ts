@@ -5,6 +5,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { recipes } from '@/lib/db/schema';
 import { getSessionUser } from '@/lib/auth/session';
+import { checkRateLimitShared, getClientIp } from '@/lib/auth/rateLimit';
+import { isCrossSiteRequest } from '@/lib/http/sameOrigin';
 import { calculateRecipeNutrition } from '@/lib/nutrition/calculator';
 import { canAccessRecipe } from '@/lib/gating/entitlements';
 import { getUserRecipeEntitlements } from '@/lib/gating/queries';
@@ -42,7 +44,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
       .where(eq(recipes.id, recipeId))
       .limit(1);
 
-    const user = await getSessionUser();
+    const user = await getSessionUser(request);
     const isStaff = user?.role === 'ADMIN' || user?.role === 'EDITOR';
 
     if (!recipe || (!isStaff && recipe.status !== 'PUBLISHED' && recipe.authorId !== user?.id)) {
@@ -92,9 +94,29 @@ export async function GET(request: NextRequest, context: RouteContext) {
 
 export async function POST(request: NextRequest, context: RouteContext) {
   try {
-    const user = await getSessionUser();
+    if (isCrossSiteRequest(request)) {
+      return NextResponse.json(
+        { error: 'Yêu cầu bị từ chối do khác nguồn gốc (CSRF).' },
+        { status: 403 }
+      );
+    }
+
+    const user = await getSessionUser(request);
     if (!user) {
       return NextResponse.json({ error: 'Yêu cầu đăng nhập để tính toán dinh dưỡng.' }, { status: 401 });
+    }
+
+    const rate = await checkRateLimitShared(
+      'recipe-nutrition-calc',
+      `${user.id}:${getClientIp(request)}`,
+      30,
+      60_000
+    );
+    if (!rate.allowed) {
+      return NextResponse.json(
+        { error: 'Thao tác tính toán dinh dưỡng quá nhanh. Vui lòng thử lại sau ít giây.' },
+        { status: 429, headers: { 'Retry-After': String(rate.retryAfterSeconds) } }
+      );
     }
 
     const { id } = await context.params;
@@ -130,10 +152,10 @@ export async function POST(request: NextRequest, context: RouteContext) {
       message: 'Đã tính toán dinh dưỡng thành công theo Bảng thành phần thực phẩm Việt Nam.',
       snapshot,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error calculating recipe nutrition:', error);
     return NextResponse.json(
-      { error: error.message || 'Lỗi khi tính toán dinh dưỡng.' },
+      { error: 'Lỗi khi tính toán dinh dưỡng.' },
       { status: 500 }
     );
   }

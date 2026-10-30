@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { recipes } from '@/lib/db/schema';
 import { getSessionUser } from '@/lib/auth/session';
-import { isSameOrigin } from '@/lib/http/sameOrigin';
+import { checkRateLimitShared, getClientIp } from '@/lib/auth/rateLimit';
+import { isCrossSiteRequest, isSameOrigin } from '@/lib/http/sameOrigin';
+import { validateVerificationFlags } from '@/lib/recipes/gate';
 import { eq } from 'drizzle-orm';
 import { logger } from '@/lib/logger';
 
@@ -10,17 +12,42 @@ interface RouteContext {
   params: Promise<{ id: string }>;
 }
 
-const VALID_STATUSES = ['DRAFT', 'SUBMITTED', 'PUBLISHED', 'NEEDS_CHANGES', 'ARCHIVED'] as const;
-
+/**
+ * PATCH /api/editor/recipes/[id]/quick-badges
+ * Bảo mật (F-02):
+ * - Chỉ ADMIN mới được phép gắn/gỡ nhãn kiểm chứng (D31).
+ * - Không cho phép đổi trực tiếp `status` hoặc `caloriesPerServing` qua endpoint này
+ *   (xuất bản bắt buộc đi qua POST /api/recipes/[id]/publish để chạy đủ Gate Check & An toàn thực phẩm).
+ * - Bắt buộc kiểm tra bất biến D23 & R7 (`validateVerificationFlags`) trước khi bật cờ xác minh.
+ */
 export async function PATCH(request: NextRequest, context: RouteContext) {
   try {
-    if (!isSameOrigin(request)) {
+    if (isCrossSiteRequest(request) || !isSameOrigin(request)) {
       return NextResponse.json({ error: 'Yêu cầu không hợp lệ (CSRF).' }, { status: 403 });
     }
 
     const user = await getSessionUser(request);
-    if (!user || (user.role !== 'ADMIN' && user.role !== 'EDITOR')) {
-      return NextResponse.json({ error: 'Chỉ Quản trị viên / Biên tập viên mới có quyền này.' }, { status: 403 });
+    if (!user) {
+      return NextResponse.json({ error: 'Vui lòng đăng nhập.' }, { status: 401 });
+    }
+    if (user.role !== 'ADMIN') {
+      return NextResponse.json(
+        { error: 'Chỉ Quản trị viên (ADMIN) mới có quyền xác nhận huy hiệu kiểm định (D31).' },
+        { status: 403 }
+      );
+    }
+
+    const rate = await checkRateLimitShared(
+      'admin-quick-badges',
+      `${user.id}:${getClientIp(request)}`,
+      30,
+      60_000
+    );
+    if (!rate.allowed) {
+      return NextResponse.json(
+        { error: 'Thao tác quá nhanh. Vui lòng thử lại sau ít giây.' },
+        { status: 429, headers: { 'Retry-After': String(rate.retryAfterSeconds) } }
+      );
     }
 
     const { id: rawId } = await context.params;
@@ -29,41 +56,65 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: 'ID công thức không hợp lệ.' }, { status: 400 });
     }
 
-    const body = await request.json();
-    const {
-      isEditorialReviewed,
-      isCookTested,
-      isNutritionVerified,
-      status,
-      caloriesPerServing,
-    } = body;
+    const body = await request.json().catch(() => ({}));
+    if (body && typeof body === 'object' && ('status' in body || 'caloriesPerServing' in body)) {
+      return NextResponse.json(
+        {
+          error:
+            'Không được phép thay đổi trạng thái xuất bản hoặc chỉ số Calo qua endpoint huy hiệu nhanh. Vui lòng sử dụng luồng Phê duyệt xuất bản (/api/recipes/[id]/publish).',
+        },
+        { status: 403 }
+      );
+    }
 
-    const patch: Partial<typeof recipes.$inferInsert> = {
-      updatedAt: new Date(),
+    const { isEditorialReviewed, isCookTested, isNutritionVerified } = body as Record<string, unknown>;
+
+    const [existing] = await db
+      .select()
+      .from(recipes)
+      .where(eq(recipes.id, recipeId))
+      .limit(1);
+
+    if (!existing) {
+      return NextResponse.json({ error: 'Không tìm thấy công thức.' }, { status: 404 });
+    }
+
+    const nextFlags = {
+      isEditorialReviewed:
+        typeof isEditorialReviewed === 'boolean' ? isEditorialReviewed : existing.isEditorialReviewed,
+      isCookTested:
+        typeof isCookTested === 'boolean' ? isCookTested : existing.isCookTested,
+      isNutritionVerified:
+        typeof isNutritionVerified === 'boolean' ? isNutritionVerified : existing.isNutritionVerified,
     };
 
-    if (typeof isEditorialReviewed === 'boolean') {
-      patch.isEditorialReviewed = isEditorialReviewed;
-    }
-    if (typeof isCookTested === 'boolean') {
-      patch.isCookTested = isCookTested;
-    }
-    if (typeof isNutritionVerified === 'boolean') {
-      patch.isNutritionVerified = isNutritionVerified;
-    }
-    if (typeof caloriesPerServing === 'number' && caloriesPerServing >= 0) {
-      patch.caloriesPerServing = Math.round(caloriesPerServing);
-    }
-    if (typeof status === 'string' && VALID_STATUSES.includes(status as (typeof VALID_STATUSES)[number])) {
-      patch.status = status as (typeof VALID_STATUSES)[number];
-      if (status === 'PUBLISHED') {
-        patch.publishedAt = new Date();
+    // Nếu bài đang PUBLISHED hoặc đang bật các cờ xác minh thực nghiệm / dinh dưỡng, bắt buộc kiểm tra D23 & R7
+    if (existing.status === 'PUBLISHED') {
+      const flagErrors = validateVerificationFlags(nextFlags, existing);
+      if (flagErrors.length > 0) {
+        return NextResponse.json({ error: flagErrors.join(' ') }, { status: 422 });
+      }
+    } else {
+      // Với bài chưa PUBLISHED, vẫn kiểm tra điều kiện trung thực của isCookTested (R7) và isNutritionVerified (D23)
+      const checkFlags = {
+        ...nextFlags,
+        // Giả lập đã tích biên tập để chỉ lấy lỗi của R7 / D23 nếu người dùng bật isCookTested hoặc isNutritionVerified
+        isEditorialReviewed: nextFlags.isCookTested ? nextFlags.isEditorialReviewed : true,
+      };
+      const flagErrors = validateVerificationFlags(checkFlags, existing);
+      if (flagErrors.length > 0) {
+        return NextResponse.json({ error: flagErrors.join(' ') }, { status: 422 });
       }
     }
 
     const [updated] = await db
       .update(recipes)
-      .set(patch)
+      .set({
+        isEditorialReviewed: nextFlags.isEditorialReviewed,
+        isCookTested: nextFlags.isCookTested,
+        isNutritionVerified: nextFlags.isNutritionVerified,
+        updatedAt: new Date(),
+      })
       .where(eq(recipes.id, recipeId))
       .returning({
         id: recipes.id,
@@ -73,10 +124,6 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
         isNutritionVerified: recipes.isNutritionVerified,
         caloriesPerServing: recipes.caloriesPerServing,
       });
-
-    if (!updated) {
-      return NextResponse.json({ error: 'Không tìm thấy công thức.' }, { status: 404 });
-    }
 
     return NextResponse.json({ ok: true, recipe: updated });
   } catch (error) {

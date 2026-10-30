@@ -25,6 +25,7 @@ import { calculateRecipeNutrition } from '@/lib/nutrition/calculator';
 import { VIETNAMESE_RETAIL_PRICE_DICTIONARY, calculateRecipeRealCost } from '@/lib/recipes/priceDictionary';
 import { VIETNAMESE_STANDARD_FCT } from '@/lib/nutrition/seedData';
 import { logger } from '@/lib/logger';
+import { safeFetchText } from '@/lib/security/safeUrl';
 
 export type HarvestPublishMode =
   | 'REVIEW_QUEUE'
@@ -870,19 +871,19 @@ export async function discoverLiveRecipeUrlsFromSource(
   source: CuratedRecipeSource,
   maxLinks = 3
 ): Promise<string[]> {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 7000);
   try {
-    const res = await fetch(source.url, {
+    const res = await safeFetchText(source.url, {
+      timeoutMs: 7_000,
+      maxBytes: 1_500_000,
+      maxRedirects: 3,
       headers: {
         'User-Agent':
           'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
         Accept: 'text/html,application/xhtml+xml',
       },
-      signal: controller.signal,
     });
     if (!res.ok) return [];
-    const html = await res.text();
+    const html = res.text;
     const hrefMatches = html.matchAll(/href=["']([^"'#]+)["']/gi);
     const discovered: string[] = [];
     const seen = new Set<string>();
@@ -918,8 +919,6 @@ export async function discoverLiveRecipeUrlsFromSource(
     return discovered;
   } catch {
     return [];
-  } finally {
-    clearTimeout(timeout);
   }
 }
 

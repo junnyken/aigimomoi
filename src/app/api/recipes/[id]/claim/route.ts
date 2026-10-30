@@ -1,6 +1,8 @@
 // R8 — API Mở khóa dùng thử công thức miễn phí (D66)
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionUser } from '@/lib/auth/session';
+import { checkRateLimitShared, getClientIp } from '@/lib/auth/rateLimit';
+import { isCrossSiteRequest } from '@/lib/http/sameOrigin';
 import { claimRecipePromo } from '@/lib/gating/queries';
 
 export async function POST(
@@ -8,11 +10,31 @@ export async function POST(
   context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const sessionUser = await getSessionUser();
+    if (isCrossSiteRequest(request)) {
+      return NextResponse.json(
+        { ok: false, message: 'Yêu cầu bị từ chối do khác nguồn gốc (CSRF).' },
+        { status: 403 }
+      );
+    }
+
+    const sessionUser = await getSessionUser(request);
     if (!sessionUser) {
       return NextResponse.json(
         { ok: false, message: 'Vui lòng đăng nhập để mở khóa công thức này.' },
         { status: 401 }
+      );
+    }
+
+    const rate = await checkRateLimitShared(
+      'recipe-claim',
+      `${sessionUser.id}:${getClientIp(request)}`,
+      20,
+      60_000
+    );
+    if (!rate.allowed) {
+      return NextResponse.json(
+        { ok: false, message: 'Thao tác quá nhanh. Vui lòng thử lại sau ít giây.' },
+        { status: 429, headers: { 'Retry-After': String(rate.retryAfterSeconds) } }
       );
     }
 

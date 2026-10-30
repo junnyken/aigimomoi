@@ -9,6 +9,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { recipes, dishes, recipeIngredients, cookingSteps, recipeTags, mealRoleEnum } from '@/lib/db/schema';
 import { getSessionUser } from '@/lib/auth/session';
+import { checkRateLimitShared, getClientIp } from '@/lib/auth/rateLimit';
+import { isCrossSiteRequest } from '@/lib/http/sameOrigin';
 import { calculateRecipeNutrition } from '@/lib/nutrition/calculator';
 import { auditRecipeSafetyAndQuality } from '@/lib/safety/foodSafetyAuditor';
 import { eq, desc, and } from 'drizzle-orm';
@@ -27,7 +29,7 @@ function slugify(text: string): string {
 // GET /api/contribute/recipes — Lấy danh sách công thức của chính tôi
 export async function GET(request: NextRequest) {
   try {
-    const user = await getSessionUser();
+    const user = await getSessionUser(request);
     if (!user) {
       return NextResponse.json(
         { error: 'Vui lòng đăng nhập để xem danh sách công thức đóng góp của bạn.' },
@@ -76,11 +78,31 @@ export async function GET(request: NextRequest) {
 // POST /api/contribute/recipes — Tạo mới bài đóng góp công thức
 export async function POST(request: NextRequest) {
   try {
-    const user = await getSessionUser();
+    if (isCrossSiteRequest(request)) {
+      return NextResponse.json(
+        { error: 'Yêu cầu bị từ chối do khác nguồn gốc (CSRF).' },
+        { status: 403 }
+      );
+    }
+
+    const user = await getSessionUser(request);
     if (!user) {
       return NextResponse.json(
         { error: 'Vui lòng đăng nhập để đóng góp công thức.' },
         { status: 401 }
+      );
+    }
+
+    const rate = await checkRateLimitShared(
+      'contribute-recipe-write',
+      `${user.id}:${getClientIp(request)}`,
+      15,
+      60_000
+    );
+    if (!rate.allowed) {
+      return NextResponse.json(
+        { error: 'Bạn đã gửi quá nhiều công thức trong thời gian ngắn. Vui lòng thử lại sau ít phút.' },
+        { status: 429, headers: { 'Retry-After': String(rate.retryAfterSeconds) } }
       );
     }
 

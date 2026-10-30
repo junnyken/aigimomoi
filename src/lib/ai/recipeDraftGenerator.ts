@@ -10,6 +10,7 @@ import { eq, ilike, inArray } from 'drizzle-orm';
 import { aiGateway } from './gateway';
 import { buildSmartVietnameseRecipeFromTitle } from './mockProvider';
 import { calculateRecipeNutrition } from '../nutrition/calculator';
+import { safeFetchText, UnsafeOutboundUrlError } from '../security/safeUrl';
 
 export interface AiRecipeDraftParams {
   dishTitle?: string;
@@ -178,147 +179,142 @@ async function resolveOrRegisterIngredient(name: string, unit: string): Promise<
 
 /**
  * Tải và trích xuất nội dung kiến thức nấu ăn từ một trang web bất kỳ (URL)
+ * Đã tích hợp lớp bảo vệ SSRF (chặn IP nội bộ/loopback/metadata, kiểm tra redirect, giới hạn dung lượng).
  */
 export async function fetchExternalRecipeContent(url: string): Promise<{
   title: string;
   content: string;
   image?: string;
 }> {
-  let parsedUrl: URL;
+  let fetched: { ok: boolean; status: number; text: string; finalUrl: string };
   try {
-    parsedUrl = new URL(url.trim());
-    if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
-      throw new Error('URL phải bắt đầu bằng http:// hoặc https://');
-    }
-  } catch {
-    throw new Error('Đường dẫn (URL) trang web không hợp lệ.');
-  }
-
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 10000);
-
-  try {
-    const res = await fetch(parsedUrl.toString(), {
+    fetched = await safeFetchText(url, {
+      timeoutMs: 10_000,
+      maxBytes: 1_500_000,
+      maxRedirects: 3,
       headers: {
         'User-Agent':
           'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
         Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept-Language': 'vi-VN,vi;q=0.9,en-US;q=0.8,en;q=0.7',
       },
-      signal: controller.signal,
     });
-
-    if (!res.ok) {
-      throw new Error(`Không thể đọc trang web (HTTP ${res.status})`);
+  } catch (err) {
+    if (err instanceof UnsafeOutboundUrlError) {
+      throw err;
     }
+    throw new Error('Không thể kết nối tới đường dẫn (URL) trang web được cung cấp.');
+  }
 
-    const html = await res.text();
+  if (!fetched.ok) {
+    throw new Error(`Không thể đọc trang web (HTTP ${fetched.status})`);
+  }
 
-    // 1. Trích xuất tiêu đề trang / og:title
-    const ogTitleMatch =
-      html.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i) ||
-      html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:title["']/i);
-    const titleTagMatch = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
-    const rawTitle = (ogTitleMatch?.[1] || titleTagMatch?.[1] || '')
-      .replace(/&amp;/g, '&')
-      .replace(/&quot;/g, '"')
-      .replace(/&#39;/g, "'")
-      .replace(/\s+/g, ' ')
-      .trim();
+  const parsedUrl = new URL(fetched.finalUrl);
+  const html = fetched.text;
 
-    // 2. Trích xuất ảnh đại diện đa tầng (og:image -> twitter:image -> JSON-LD image -> article img)
-    const ogImageMatch =
-      html.match(/<meta[^>]+property=["']og:image(?::secure_url)?["'][^>]+content=["']([^"']+)["']/i) ||
-      html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image(?::secure_url)?["']/i) ||
-      html.match(/<meta[^>]+name=["']twitter:image(?::src)?["'][^>]+content=["']([^"']+)["']/i) ||
-      html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+name=["']twitter:image(?::src)?["']/i);
-    let extractedImage = ogImageMatch?.[1]?.trim();
+  // 1. Trích xuất tiêu đề trang / og:title
+  const ogTitleMatch =
+    html.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i) ||
+    html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:title["']/i);
+  const titleTagMatch = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+  const rawTitle = (ogTitleMatch?.[1] || titleTagMatch?.[1] || '')
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\s+/g, ' ')
+    .trim();
 
-    // 3. Ưu tiên tìm JSON-LD Schema.org Recipe nếu trang web có nhúng (kiêm bóc tách ảnh chuẩn trong JSON-LD)
-    let jsonLdSummary = '';
-    const jsonLdMatches = html.matchAll(/<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi);
-    for (const match of jsonLdMatches) {
-      try {
-        const jsonText = match[1].trim();
-        if (jsonText.includes('Recipe') || jsonText.includes('recipeIngredient')) {
-          jsonLdSummary += `\n[Dữ liệu cấu trúc Recipe từ trang]:\n${jsonText.slice(0, 3500)}\n`;
-          if (!extractedImage) {
-            const imgFieldMatch =
-              jsonText.match(/"image"\s*:\s*"([^"]+)"/i) ||
-              jsonText.match(/"image"\s*:\s*\[\s*"([^"]+)"/i) ||
-              jsonText.match(/"image"\s*:\s*\{[^}]*"url"\s*:\s*"([^"]+)"/i);
-            if (imgFieldMatch?.[1]) {
-              extractedImage = imgFieldMatch[1].trim();
-            }
+  // 2. Trích xuất ảnh đại diện đa tầng (og:image -> twitter:image -> JSON-LD image -> article img)
+  const ogImageMatch =
+    html.match(/<meta[^>]+property=["']og:image(?::secure_url)?["'][^>]+content=["']([^"']+)["']/i) ||
+    html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image(?::secure_url)?["']/i) ||
+    html.match(/<meta[^>]+name=["']twitter:image(?::src)?["'][^>]+content=["']([^"']+)["']/i) ||
+    html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+name=["']twitter:image(?::src)?["']/i);
+  let extractedImage = ogImageMatch?.[1]?.trim();
+
+  // 3. Ưu tiên tìm JSON-LD Schema.org Recipe nếu trang web có nhúng (kiêm bóc tách ảnh chuẩn trong JSON-LD)
+  let jsonLdSummary = '';
+  const jsonLdMatches = html.matchAll(/<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi);
+  for (const match of jsonLdMatches) {
+    try {
+      const jsonText = match[1].trim();
+      if (jsonText.includes('Recipe') || jsonText.includes('recipeIngredient')) {
+        jsonLdSummary += `\n[Dữ liệu cấu trúc Recipe từ trang]:\n${jsonText.slice(0, 3500)}\n`;
+        if (!extractedImage) {
+          const imgFieldMatch =
+            jsonText.match(/"image"\s*:\s*"([^"]+)"/i) ||
+            jsonText.match(/"image"\s*:\s*\[\s*"([^"]+)"/i) ||
+            jsonText.match(/"image"\s*:\s*\{[^}]*"url"\s*:\s*"([^"]+)"/i);
+          if (imgFieldMatch?.[1]) {
+            extractedImage = imgFieldMatch[1].trim();
           }
         }
-      } catch {
-        // ignore
       }
+    } catch {
+      // ignore
     }
-
-    // Tầng 4: Nếu vẫn chưa có ảnh, quét thẻ <img> lớn đầu tiên trong nội dung bài viết
-    if (!extractedImage) {
-      const imgTagMatches = html.matchAll(/<img[^>]+(?:data-src|src)=["']([^"']+)["'][^>]*>/gi);
-      for (const m of imgTagMatches) {
-        const candidate = (m[1] || '').trim();
-        const lowerImg = candidate.toLowerCase();
-        if (
-          candidate &&
-          !lowerImg.startsWith('data:') &&
-          !lowerImg.includes('logo') &&
-          !lowerImg.includes('icon') &&
-          !lowerImg.includes('avatar') &&
-          !lowerImg.includes('banner') &&
-          (lowerImg.endsWith('.jpg') ||
-            lowerImg.endsWith('.jpeg') ||
-            lowerImg.endsWith('.png') ||
-            lowerImg.endsWith('.webp') ||
-            lowerImg.includes('upload') ||
-            lowerImg.includes('images'))
-        ) {
-          extractedImage = candidate;
-          break;
-        }
-      }
-    }
-
-    // Chuẩn hóa đường dẫn ảnh tương đối sang URL tuyệt đối
-    let normalizedImage: string | undefined;
-    if (extractedImage) {
-      try {
-        const resolved = new URL(extractedImage.replace(/&amp;/g, '&'), parsedUrl.toString()).toString();
-        if (resolved.startsWith('http://') || resolved.startsWith('https://')) {
-          normalizedImage = resolved;
-        }
-      } catch {
-        normalizedImage = undefined;
-      }
-    }
-
-    // 4. Làm sạch HTML body để lấy văn bản thuần túy
-    const cleanedText = html
-      .replace(/<script[\s\S]*?<\/script>/gi, ' ')
-      .replace(/<style[\s\S]*?<\/style>/gi, ' ')
-      .replace(/<noscript[\s\S]*?<\/noscript>/gi, ' ')
-      .replace(/<header[\s\S]*?<\/header>/gi, ' ')
-      .replace(/<footer[\s\S]*?<\/footer>/gi, ' ')
-      .replace(/<nav[\s\S]*?<\/nav>/gi, ' ')
-      .replace(/<[^>]+>/g, ' ')
-      .replace(/&nbsp;/gi, ' ')
-      .replace(/&amp;/gi, '&')
-      .replace(/\s+/g, ' ')
-      .trim()
-      .slice(0, 5500);
-
-    return {
-      title: rawTitle,
-      content: `${jsonLdSummary}\n[Nội dung bài viết]:\n${cleanedText}`.trim(),
-      image: normalizedImage,
-    };
-  } finally {
-    clearTimeout(timeout);
   }
+
+  // Tầng 4: Nếu vẫn chưa có ảnh, quét thẻ <img> lớn đầu tiên trong nội dung bài viết
+  if (!extractedImage) {
+    const imgTagMatches = html.matchAll(/<img[^>]+(?:data-src|src)=["']([^"']+)["'][^>]*>/gi);
+    for (const m of imgTagMatches) {
+      const candidate = (m[1] || '').trim();
+      const lowerImg = candidate.toLowerCase();
+      if (
+        candidate &&
+        !lowerImg.startsWith('data:') &&
+        !lowerImg.includes('logo') &&
+        !lowerImg.includes('icon') &&
+        !lowerImg.includes('avatar') &&
+        !lowerImg.includes('banner') &&
+        (lowerImg.endsWith('.jpg') ||
+          lowerImg.endsWith('.jpeg') ||
+          lowerImg.endsWith('.png') ||
+          lowerImg.endsWith('.webp') ||
+          lowerImg.includes('upload') ||
+          lowerImg.includes('images'))
+      ) {
+        extractedImage = candidate;
+        break;
+      }
+    }
+  }
+
+  // Chuẩn hóa đường dẫn ảnh tương đối sang URL tuyệt đối
+  let normalizedImage: string | undefined;
+  if (extractedImage) {
+    try {
+      const resolved = new URL(extractedImage.replace(/&amp;/g, '&'), parsedUrl.toString()).toString();
+      if (resolved.startsWith('http://') || resolved.startsWith('https://')) {
+        normalizedImage = resolved;
+      }
+    } catch {
+      normalizedImage = undefined;
+    }
+  }
+
+  // 4. Làm sạch HTML body để lấy văn bản thuần túy
+  const cleanedText = html
+    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<noscript[\s\S]*?<\/noscript>/gi, ' ')
+    .replace(/<header[\s\S]*?<\/header>/gi, ' ')
+    .replace(/<footer[\s\S]*?<\/footer>/gi, ' ')
+    .replace(/<nav[\s\S]*?<\/nav>/gi, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 5500);
+
+  return {
+    title: rawTitle,
+    content: `${jsonLdSummary}\n[Nội dung bài viết]:\n${cleanedText}`.trim(),
+    image: normalizedImage,
+  };
 }
 
 /**

@@ -1,14 +1,16 @@
 // AG-40: Pantry Management API (Kho thực phẩm / Tủ lạnh gia đình)
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { pantryItems, ingredients } from '@/lib/db/schema';
+import { pantryItems } from '@/lib/db/schema';
 import { getSessionUser } from '@/lib/auth/session';
+import { checkRateLimitShared, getClientIp } from '@/lib/auth/rateLimit';
+import { isCrossSiteRequest } from '@/lib/http/sameOrigin';
 import { eq, and, desc, asc } from 'drizzle-orm';
 import { logger } from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
   try {
-    const user = await getSessionUser();
+    const user = await getSessionUser(request);
     if (!user) {
       return NextResponse.json({ error: 'Yêu cầu đăng nhập để xem kho thực phẩm.' }, { status: 401 });
     }
@@ -76,9 +78,21 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const user = await getSessionUser();
+    if (isCrossSiteRequest(request)) {
+      return NextResponse.json({ error: 'Yêu cầu bị từ chối do khác nguồn gốc (CSRF).' }, { status: 403 });
+    }
+
+    const user = await getSessionUser(request);
     if (!user) {
       return NextResponse.json({ error: 'Yêu cầu đăng nhập để thêm thực phẩm.' }, { status: 401 });
+    }
+
+    const rate = await checkRateLimitShared('pantry-write', `${user.id}:${getClientIp(request)}`, 40, 60_000);
+    if (!rate.allowed) {
+      return NextResponse.json(
+        { error: 'Thao tác quá nhanh. Vui lòng thử lại sau ít phút.' },
+        { status: 429, headers: { 'Retry-After': String(rate.retryAfterSeconds) } }
+      );
     }
 
     const body = await request.json();

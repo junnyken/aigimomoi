@@ -14,14 +14,32 @@ interface RateBucket {
 const buckets = new Map<string, RateBucket>();
 const MAX_BUCKETS = 2000;
 
+function sanitizeIpToken(raw: string | undefined | null): string | null {
+  if (!raw) return null;
+  const cleaned = raw.trim().slice(0, 64);
+  if (!cleaned || !/^[a-fA-F0-9:._-]+$/.test(cleaned)) return null;
+  return cleaned.toLowerCase();
+}
+
 export function getClientIp(request: Request): string {
+  const cfIp = sanitizeIpToken(request.headers.get('cf-connecting-ip'));
+  if (cfIp) return cfIp;
+
+  const realIp = sanitizeIpToken(request.headers.get('x-real-ip'));
+  if (realIp) return realIp;
+
   const forwarded = request.headers.get('x-forwarded-for');
   if (forwarded) {
-    const first = forwarded.split(',')[0]?.trim();
-    if (first) return first;
+    // Lấy phần tử cuối cùng (rightmost hop do reverse proxy biên gắn thêm)
+    // để chống kẻ tấn công giả mạo IP đầu chuỗi X-Forwarded-For nhằm lách Rate Limit.
+    const parts = forwarded
+      .split(',')
+      .map((p) => sanitizeIpToken(p))
+      .filter((p): p is string => Boolean(p));
+    if (parts.length > 0) {
+      return parts[parts.length - 1];
+    }
   }
-  const realIp = request.headers.get('x-real-ip')?.trim();
-  if (realIp) return realIp;
   return 'local';
 }
 
