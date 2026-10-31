@@ -67,115 +67,104 @@ export function StepList({ steps, recipeName }: Props) {
 
   return (
     <section id="recipe-steps-section" aria-labelledby="steps-heading" className="scroll-mt-24">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3.5">
         <h2 id="steps-heading" className="text-xl font-bold text-[var(--color-text-primary)] flex items-center gap-2">
           <ListOrdered className="w-5 h-5 text-[var(--color-brand-primary)]" aria-hidden="true" />
-          <span>Cách làm theo từng giai đoạn</span>
+          <span>Các bước thực hiện</span>
         </h2>
         <span className="text-xs font-semibold text-[var(--color-text-muted)]">
-          {numberedGroups.length} giai đoạn · {steps.length} bước thực hiện
+          {steps.length} bước
         </span>
       </div>
 
-      {/* Pipeline qua mỗi giai đoạn (Phase Pipeline Stepper) */}
-      {numberedGroups.length > 0 && (
+      {/* Thanh nhảy nhanh giai đoạn (chỉ hiện gọn 1 hàng khi có từ 2 giai đoạn trở lên) */}
+      {numberedGroups.length > 1 && (
         <nav
           aria-label="Chuỗi giai đoạn chế biến"
-          className="mb-6 p-3.5 sm:p-4 rounded-2xl bg-[var(--color-surface-white)] border border-[var(--color-border-base)] shadow-2xs"
+          className="mb-5 flex flex-wrap items-center gap-1.5"
         >
-          <div className="text-[11px] font-bold uppercase tracking-wider text-[var(--color-text-muted)] mb-2.5">
-            Lộ trình nấu món này ({numberedGroups.length} giai đoạn)
-          </div>
-          <ol className="flex flex-wrap items-center gap-2">
-            {numberedGroups.map((group, idx) => (
-              <li key={group.anchorId} className="inline-flex items-center gap-2">
-                <a
-                  href={`#${group.anchorId}`}
-                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[var(--color-bg-primary)] hover:bg-[var(--color-brand-light)] border border-[var(--color-border-subtle)] hover:border-[var(--color-brand-border)] transition-colors group"
-                >
-                  <span className="w-5 h-5 rounded-full bg-[var(--color-brand-primary)] text-white text-[11px] font-bold flex items-center justify-center shrink-0">
-                    {group.groupNumber}
+          {numberedGroups.map((group, idx) => (
+            <span key={group.anchorId} className="inline-flex items-center gap-1.5">
+              <a
+                href={`#${group.anchorId}`}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--color-surface-white)] hover:bg-[var(--color-brand-light)] border border-[var(--color-border-base)] hover:border-[var(--color-brand-border)] transition-colors text-xs font-semibold text-[var(--color-text-primary)] hover:text-[var(--color-brand-primary)]"
+              >
+                <span className="w-4 h-4 rounded-full bg-[var(--color-brand-primary)] text-white text-[10px] font-bold flex items-center justify-center shrink-0">
+                  {group.groupNumber}
+                </span>
+                <span>{group.phase}</span>
+                {group.steps.length > 1 && (
+                  <span className="text-[11px] font-normal text-[var(--color-text-muted)]">
+                    ({group.steps.length})
                   </span>
-                  <span className="text-xs font-bold text-[var(--color-text-primary)] group-hover:text-[var(--color-brand-primary)]">
-                    {group.phase}
-                  </span>
-                  <span className="text-[11px] font-medium text-[var(--color-text-muted)]">
-                    ({group.steps.length} bước{group.totalTimerSeconds > 0 ? ` · ${formatTimer(group.totalTimerSeconds)}` : ''})
-                  </span>
-                </a>
-                {idx < numberedGroups.length - 1 && (
-                  <ArrowRight className="w-3.5 h-3.5 text-[var(--color-text-muted)] shrink-0" aria-hidden="true" />
                 )}
-              </li>
-            ))}
-          </ol>
+              </a>
+              {idx < numberedGroups.length - 1 && (
+                <ArrowRight className="w-3 h-3 text-[var(--color-text-muted)] shrink-0" aria-hidden="true" />
+              )}
+            </span>
+          ))}
         </nav>
       )}
 
-      {/* Danh sách các bước theo từng giai đoạn có đường nối Timeline */}
-      <div className="flex flex-col gap-8">
-        {numberedGroups.map((group, gi) => (
-          <div
-            key={`${group.phase}-${gi}`}
-            id={group.anchorId}
-            className="scroll-mt-24 relative"
-          >
-            {/* Header của Giai đoạn */}
-            <div className="flex items-center justify-between gap-2 mb-3.5">
-              <div className="inline-flex items-center gap-2">
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide bg-[var(--color-accent-light)] text-[var(--color-accent-text)] border border-[var(--color-accent-primary)]/20">
-                  <span>Giai đoạn {group.groupNumber}: {group.phase}</span>
-                </span>
-                <span className="text-xs text-[var(--color-text-muted)] font-medium">
-                  {group.steps.length} bước
-                </span>
-              </div>
-              {group.totalTimerSeconds > 0 && (
-                <span className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--color-brand-primary)]">
-                  <Timer className="w-3.5 h-3.5" aria-hidden="true" />
-                  <span>Tổng hẹn giờ: {formatTimer(group.totalTimerSeconds)}</span>
-                </span>
+      {/* Danh sách các bước: tự động gộp tiêu đề khi giai đoạn chỉ có 1 bước để không lặp chữ */}
+      <div className="flex flex-col gap-4">
+        {numberedGroups.map((group, gi) => {
+          const isMultiStepPhase = group.steps.length > 1;
+          return (
+            <div
+              key={`${group.phase}-${gi}`}
+              id={group.anchorId}
+              className="scroll-mt-24 relative"
+            >
+              {isMultiStepPhase && (
+                <div className="flex items-center justify-between gap-2 mb-2.5">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide bg-[var(--color-accent-light)] text-[var(--color-accent-text)] border border-[var(--color-accent-primary)]/20">
+                    <span>Giai đoạn {group.groupNumber}: {group.phase} ({group.steps.length} bước)</span>
+                  </span>
+                  {group.totalTimerSeconds > 0 && (
+                    <span className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--color-brand-primary)]">
+                      <Timer className="w-3.5 h-3.5" aria-hidden="true" />
+                      <span>{formatTimer(group.totalTimerSeconds)}</span>
+                    </span>
+                  )}
+                </div>
               )}
-            </div>
 
-            <ol className="flex flex-col gap-4 relative pl-2 sm:pl-3 before:content-[''] before:absolute before:left-6 sm:before:left-7 before:top-5 before:bottom-5 before:w-0.5 before:bg-[var(--color-border-base)]">
-              {group.steps.map((step) => {
-                return (
+              <ol className="flex flex-col gap-3.5">
+                {group.steps.map((step) => (
                   <li
                     key={step.id}
-                    className="group relative flex gap-3.5 sm:gap-4 rounded-2xl border border-[var(--color-border-base)] bg-[var(--color-surface-white)] p-4 sm:p-5 transition-shadow hover:shadow-md z-10"
+                    className="group relative flex gap-3.5 sm:gap-4 rounded-2xl border border-[var(--color-border-base)] bg-[var(--color-surface-white)] p-4 sm:p-5 transition-shadow hover:shadow-md"
                   >
                     <span
-                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--color-brand-primary)] text-sm font-bold text-white transition-transform group-hover:scale-105 ring-4 ring-[var(--color-surface-white)]"
+                      className="flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-full bg-[var(--color-brand-primary)] text-sm font-bold text-white transition-transform group-hover:scale-105"
                       aria-hidden="true"
                     >
                       {step.stepNumber}
                     </span>
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-center justify-between gap-2 mb-1">
-                        <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
-                          Bước {step.stepNumber} · {group.phase}
+                      <div className="flex flex-wrap items-center justify-between gap-2 mb-1.5">
+                        <span className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-[var(--color-accent-text)]">
+                          {isMultiStepPhase ? `Bước ${step.stepNumber}` : group.phase}
                         </span>
+                        {step.timerSeconds ? (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-[var(--color-info-bg)] px-2.5 py-0.5 text-xs font-semibold text-[var(--color-info-base)]">
+                            <Timer className="w-3 h-3" aria-hidden="true" />
+                            {formatTimer(step.timerSeconds)}
+                          </span>
+                        ) : null}
                       </div>
+
                       <p className="whitespace-pre-line leading-relaxed text-[var(--color-text-primary)]">
                         {renderHighlightedInstruction(step.instruction)}
                       </p>
 
-                      {(step.timerSeconds || step.tipText) && (
-                        <div className="mt-3 flex flex-col gap-2">
-                          {step.timerSeconds ? (
-                            <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-[var(--color-info-bg)] px-2.5 py-1 text-xs font-semibold text-[var(--color-info-base)]">
-                              <Timer className="w-3.5 h-3.5" aria-hidden="true" />
-                              {formatTimer(step.timerSeconds)}
-                            </span>
-                          ) : null}
-                          {step.tipText && (
-                            <p className="flex items-start gap-2 rounded-xl bg-[var(--color-warning-bg)] border border-[var(--color-warning-border)] p-2.5 text-sm text-[var(--color-text-secondary)]">
-                              <Lightbulb className="w-4 h-4 shrink-0 mt-0.5 text-[var(--color-warning-base)]" aria-hidden="true" />
-                              <span>{step.tipText}</span>
-                            </p>
-                          )}
-                        </div>
+                      {step.tipText && (
+                        <p className="mt-2.5 flex items-start gap-2 rounded-xl bg-[var(--color-warning-bg)] border border-[var(--color-warning-border)] p-2.5 text-xs sm:text-sm text-[var(--color-text-secondary)]">
+                          <Lightbulb className="w-4 h-4 shrink-0 mt-0.5 text-[var(--color-warning-base)]" aria-hidden="true" />
+                          <span>{step.tipText}</span>
+                        </p>
                       )}
 
                       {step.image && (
@@ -189,11 +178,11 @@ export function StepList({ steps, recipeName }: Props) {
                       )}
                     </div>
                   </li>
-                );
-              })}
-            </ol>
-          </div>
-        ))}
+                ))}
+              </ol>
+            </div>
+          );
+        })}
       </div>
     </section>
   );

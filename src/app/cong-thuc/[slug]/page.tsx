@@ -587,37 +587,27 @@ function FreshnessAndStorageGuideCard({ recipe }: { recipe: PublicRecipe }) {
   const costEst = estimateDishCostVnd(recipe, recipe.baseServings);
 
   return (
-    <section
-      aria-labelledby="freshness-guide-heading"
-      className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-4 shadow-2xs flex flex-col gap-2.5"
-    >
-      <div className="flex items-center justify-between gap-2">
-        <h2
-          id="freshness-guide-heading"
-          className="text-xs font-bold uppercase tracking-wider text-emerald-900 flex items-center gap-1.5"
-        >
+    <details className="group rounded-2xl border border-emerald-200 bg-emerald-50/60 p-4 shadow-2xs">
+      <summary className="cursor-pointer list-none flex items-center justify-between gap-2 select-none">
+        <span className="text-xs font-bold uppercase tracking-wider text-emerald-900 flex items-center gap-1.5">
           <ShieldCheck className="w-3.5 h-3.5 text-emerald-700" aria-hidden="true" />
-          <span>Mẹo đi chợ &amp; Giữ trọn dinh dưỡng</span>
-        </h2>
-        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white text-emerald-800 border border-emerald-200">
-          Mức giá: {costEst.tierLabel}
+          <span>Mẹo chọn mua &amp; Bảo quản ({costEst.tierLabel})</span>
         </span>
-      </div>
+        <span className="text-[10px] text-emerald-700 group-open:rotate-180 transition-transform">▼</span>
+      </summary>
 
-      <p className="text-xs sm:text-sm font-bold text-[var(--color-text-primary)]">{guide.title}</p>
-
-      <div className="space-y-2 text-xs text-[var(--color-text-secondary)] leading-relaxed">
+      <div className="mt-3 space-y-2 text-xs text-[var(--color-text-secondary)] leading-relaxed">
         <div className="p-2.5 rounded-xl bg-white border border-emerald-200/70">
-          <strong className="text-emerald-900">🛒 Cách chọn tươi ngon:</strong> {guide.selectionTip}
+          <strong className="text-emerald-900">🛒 Chọn mua:</strong> {guide.selectionTip}
         </div>
         <div className="p-2.5 rounded-xl bg-white border border-emerald-200/70">
-          <strong className="text-emerald-900">❄️ Bảo quản an toàn:</strong> {guide.storageTip}
+          <strong className="text-emerald-900">❄️ Bảo quản:</strong> {guide.storageTip}
         </div>
         <div className="p-2.5 rounded-xl bg-white border border-emerald-200/70">
           <strong className="text-emerald-900">🔥 Giữ dưỡng chất:</strong> {guide.nutritionRetentionTip}
         </div>
       </div>
-    </section>
+    </details>
   );
 }
 

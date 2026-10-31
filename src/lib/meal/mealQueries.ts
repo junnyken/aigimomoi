@@ -112,12 +112,17 @@ export async function queryPublishedMealOptions(
             eq(recipes.status, 'PUBLISHED'),
             or(
               sql`${recipes.role}::text = 'DIPPING_SAUCE'`,
-              ilike(recipes.name, '%nước chấm%'),
-              ilike(recipes.name, '%nước mắm%'),
-              ilike(recipes.name, '%kho quẹt%'),
-              ilike(recipes.name, '%mắm nêm%'),
-              ilike(recipes.name, '%muối ớt%'),
-              ilike(recipes.name, '%sốt chấm%')
+              and(
+                sql`${recipes.role}::text NOT IN ('MAIN', 'SOUP', 'ONE_DISH_MEAL', 'DESSERT', 'BEVERAGE')`,
+                or(
+                  ilike(recipes.name, 'nước chấm%'),
+                  ilike(recipes.name, 'nước mắm%'),
+                  ilike(recipes.name, 'kho quẹt%'),
+                  ilike(recipes.name, 'mắm nêm%'),
+                  ilike(recipes.name, 'muối ớt%'),
+                  ilike(recipes.name, 'sốt chấm%')
+                )
+              )
             ),
             options.editorialOnly ? ne(recipes.provenance, COMMUNITY_PROVENANCE) : undefined
           )
@@ -205,15 +210,46 @@ export async function resolveMealSelection(params: {
     queryPublishedMealOptions('SIDE'),
     queryPublishedMealOptions('DIPPING_SAUCE'),
   ]);
-  const firstEditorial = (list: MealDishSummary[]) =>
-    list.find((d) => d.source !== 'COMMUNITY') ?? null;
+  const firstEditorial = (list: MealDishSummary[], slotRole?: MealSlotRole) => {
+    const editorialList = list.filter((d) => d.source !== 'COMMUNITY');
+    if (editorialList.length === 0) return null;
+
+    // Ưu tiên món cơm nhà truyền thống Việt Nam cho mâm cơm mặc định (tránh lấy Bowl yến mạch / Sữa chua Hy Lạp vào mâm cơm tối)
+    const nonWesternBreakfast = editorialList.filter((d) => {
+      const n = d.name.toLowerCase();
+      return (
+        !n.includes('yến mạch') &&
+        !n.includes('hy lạp') &&
+        !n.includes('bowl') &&
+        !n.includes('smoothie') &&
+        !n.includes('granola')
+      );
+    });
+
+    if (slotRole === 'SOUP') {
+      const traditionalSoup = nonWesternBreakfast.find((d) =>
+        d.name.toLowerCase().startsWith('canh ')
+      );
+      if (traditionalSoup) return traditionalSoup;
+    }
+
+    if (slotRole === 'SIDE') {
+      const traditionalSide = nonWesternBreakfast.find((d) => {
+        const n = d.name.toLowerCase();
+        return n.includes('rau ') || n.includes('xào') || n.includes('luộc') || n.includes('gỏi');
+      });
+      if (traditionalSide) return traditionalSide;
+    }
+
+    return nonWesternBreakfast[0] ?? editorialList[0];
+  };
 
   let main: MealDishSummary | null = null;
   if (params.mainSlug) {
     main = mains.find((d) => d.slug === params.mainSlug) || null;
   }
   if (!main) {
-    main = firstEditorial(mains);
+    main = firstEditorial(mains, 'MAIN');
   }
 
   let soup: MealDishSummary | null = null;
@@ -221,7 +257,7 @@ export async function resolveMealSelection(params: {
     soup = soups.find((d) => d.slug === params.soupSlug) || null;
   }
   if (!soup) {
-    soup = firstEditorial(soups);
+    soup = firstEditorial(soups, 'SOUP');
   }
 
   let side: MealDishSummary | null = null;
@@ -229,7 +265,7 @@ export async function resolveMealSelection(params: {
     side = sides.find((d) => d.slug === params.sideSlug) || null;
   }
   if (!side) {
-    side = firstEditorial(sides);
+    side = firstEditorial(sides, 'SIDE');
   }
 
   let sauce: MealDishSummary | null = null;
@@ -237,7 +273,7 @@ export async function resolveMealSelection(params: {
     sauce = sauces.find((d) => d.slug === params.sauceSlug) || null;
   }
   if (!sauce) {
-    sauce = firstEditorial(sauces) ?? BUILT_IN_DIPPING_SAUCES[0];
+    sauce = firstEditorial(sauces, 'DIPPING_SAUCE') ?? BUILT_IN_DIPPING_SAUCES[0];
   }
 
   return { main, soup, side, sauce };

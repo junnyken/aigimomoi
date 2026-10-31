@@ -135,20 +135,18 @@ export function NutritionNotice({ nutritionStatus, caloriesPerServing, isNutriti
           </div>
         )}
 
-        {/* BẢNG CHI TIẾT CALO CHO TỪNG THÀNH PHẦN NGUYÊN LIỆU */}
+        {/* BẢNG CHI TIẾT CALO CHO TỪNG THÀNH PHẦN NGUYÊN LIỆU (Thu gọn mặc định để không lặp với bảng nguyên liệu trên) */}
         {sortedDetails.length > 0 && (
-          <div className="mt-3 pt-3 border-t border-[var(--color-border-base)]">
-            <div className="flex items-center justify-between mb-2.5">
-              <h3 className="text-xs font-bold text-[var(--color-text-primary)] flex items-center gap-1.5">
+          <details className="group mt-3 pt-2.5 border-t border-[var(--color-border-base)]">
+            <summary className="cursor-pointer list-none flex items-center justify-between text-xs font-bold text-[var(--color-brand-primary)] hover:underline select-none">
+              <span className="flex items-center gap-1.5">
                 <PieChart className="w-3.5 h-3.5 text-[var(--color-brand-primary)]" aria-hidden="true" />
-                <span>Thông số Calo từng thành phần (Cả nồi)</span>
-              </h3>
-              <span className="text-[10px] font-semibold text-[var(--color-text-muted)]">
-                {sortedDetails.length} thành phần
+                <span>Xem tỷ lệ Calo từng nguyên liệu ({sortedDetails.length} món)</span>
               </span>
-            </div>
+              <span className="text-[10px] text-[var(--color-text-muted)] group-open:rotate-180 transition-transform">▼</span>
+            </summary>
 
-            <div className="space-y-2.5 max-h-72 overflow-y-auto pr-1">
+            <div className="mt-2.5 space-y-2 max-h-64 overflow-y-auto pr-1">
               {sortedDetails.map((item) => {
                 const kcal = Math.round(item.nutrients?.calories ?? 0);
                 const sharePercent = Math.min(
@@ -197,7 +195,7 @@ export function NutritionNotice({ nutritionStatus, caloriesPerServing, isNutriti
                 );
               })}
             </div>
-          </div>
+          </details>
         )}
 
         {/* Nguồn dữ liệu & Minh bạch Y khoa */}

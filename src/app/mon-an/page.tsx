@@ -103,14 +103,14 @@ export default function SearchPage({ searchParams }: SearchPageProps) {
               className="inline-flex items-center justify-center sm:justify-start gap-1.5 px-3.5 py-2.5 sm:py-2 rounded-2xl bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-200 text-xs font-bold transition-all shadow-2xs"
             >
               <Flame className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-              <span className="truncate">🥗 Giảm cân · Ít Calo (NHS / BBC Good Food)</span>
+              <span className="truncate">🥗 Giảm cân · Ít Calo</span>
             </Link>
             <Link
               href="/mon-an?tax=tap-gym-tang-co"
               className="inline-flex items-center justify-center sm:justify-start gap-1.5 px-3.5 py-2.5 sm:py-2 rounded-2xl bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200 text-xs font-bold transition-all shadow-2xs"
             >
               <Dumbbell className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-              <span className="truncate">💪 Tập Gym · Tăng cơ – Giảm mỡ (High Protein)</span>
+              <span className="truncate">💪 Tập Gym · Giàu Đạm</span>
             </Link>
             <div className="grid grid-cols-2 sm:flex items-center gap-2">
               <Link

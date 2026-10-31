@@ -505,19 +505,16 @@ export function MealView({
         </div>
       </section>
 
-      {/* Gợi ý "Mâm cơm theo thể trạng gia đình" */}
-      <section aria-labelledby="family-profiles-heading" className="flex flex-col gap-3">
+      {/* Gợi ý "Mâm cơm theo thể trạng gia đình" (Thiết kế 1 dòng gọn gàng) */}
+      <section aria-labelledby="family-profiles-heading" className="flex flex-col gap-2.5">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-          <h2 id="family-profiles-heading" className="text-base font-bold text-[var(--color-text-primary)] flex items-center gap-2">
+          <h2 id="family-profiles-heading" className="text-sm sm:text-base font-bold text-[var(--color-text-primary)] flex items-center gap-2">
             <HeartPulse className="w-4 h-4 text-[var(--color-accent-primary)]" />
-            <span>Gợi ý nhanh mâm cơm theo thể trạng gia đình</span>
+            <span>Chọn nhanh theo thể trạng gia đình:</span>
           </h2>
-          <span className="text-xs text-[var(--color-text-muted)]">
-            Chạm vào 1 chế độ để tự động chọn bộ 4 món + nước chấm &amp; định lượng cơm phù hợp
-          </span>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
           {FAMILY_PROFILES.map((prof) => {
             const Icon = prof.icon;
             const isSelected = activeProfile === prof.key;
@@ -528,27 +525,24 @@ export function MealView({
                 type="button"
                 onClick={() => handleSelectFamilyProfile(prof.key)}
                 disabled={Boolean(isApplyingProfile)}
-                className={`text-left p-4 rounded-2xl border transition-all flex flex-col justify-between gap-2.5 ${
+                className={`text-left px-3.5 py-3 rounded-2xl border transition-all flex items-center justify-between gap-2.5 cursor-pointer ${
                   isSelected
                     ? 'bg-[var(--color-brand-light)]/60 border-[var(--color-brand-primary)] ring-1 ring-[var(--color-brand-primary)] shadow-xs'
                     : 'bg-[var(--color-surface-white)] border-[var(--color-border-base)] hover:border-[var(--color-brand-border)] hover:bg-[var(--color-surface-raised)]/50'
                 }`}
               >
-                <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2.5 min-w-0">
                   <div className="w-8 h-8 rounded-xl bg-[var(--color-surface-raised)] text-[var(--color-brand-primary)] flex items-center justify-center shrink-0">
                     <Icon className="w-4 h-4" />
                   </div>
-                  <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-[var(--color-accent-light)] text-[var(--color-accent-text)]">
-                    {isLoadingThis ? 'Đang chọn...' : prof.badge}
-                  </span>
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold text-[var(--color-text-primary)]">
-                    {prof.title}
-                  </h3>
-                  <p className="text-xs text-[var(--color-text-secondary)] mt-0.5 leading-relaxed line-clamp-2">
-                    {prof.subtitle}
-                  </p>
+                  <div className="min-w-0">
+                    <h3 className="text-xs sm:text-sm font-bold text-[var(--color-text-primary)] truncate">
+                      {prof.title.replace('Thực đơn ', '')}
+                    </h3>
+                    <span className="text-[11px] font-semibold text-[var(--color-accent-text)]">
+                      {isLoadingThis ? 'Đang chọn...' : prof.badge}
+                    </span>
+                  </div>
                 </div>
               </button>
             );

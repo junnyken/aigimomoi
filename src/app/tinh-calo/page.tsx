@@ -448,22 +448,18 @@ export default function CalorieCalculatorPage() {
       {/* Top Banner — Full Width */}
       <section className="w-full rounded-3xl bg-gradient-to-br from-[#EEF5EE] via-[#FDF8F2] to-[#FCEEE5] border border-[var(--color-border-base)] p-5 sm:p-8 shadow-xs">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-          <div className="max-w-4xl space-y-2.5">
+          <div className="max-w-3xl space-y-2">
             <div className="flex flex-wrap items-center gap-2">
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-[var(--color-surface-white)] text-[var(--color-brand-primary)] border border-[var(--color-brand-border)]">
                 <Scale className="w-3.5 h-3.5 text-[var(--color-accent-primary)]" />
-                <span>Chuẩn Y Khoa: Mifflin-St Jeor (ADA) • WHO Châu Á (IDI/WPRO) • Viện Dinh Dưỡng Quốc Gia</span>
-              </span>
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                <span>Đã hiệu chỉnh cân nặng tham chiếu (ABW) &amp; quy đổi chén cơm Việt</span>
+                <span>Chuẩn Viện Dinh Dưỡng Quốc Gia &amp; WHO Châu Á</span>
               </span>
             </div>
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[var(--color-text-primary)] tracking-tight leading-tight">
-              Tính TDEE, BMR, BMI &amp; Quy Đổi Định Lượng Bữa Cơm Gia Đình
+            <h1 className="text-2xl sm:text-3xl font-bold text-[var(--color-text-primary)] tracking-tight leading-tight">
+              Tính Calo (TDEE, BMI) &amp; Quy Đổi Chén Cơm Gia Đình
             </h1>
-            <p className="text-xs sm:text-sm lg:text-base text-[var(--color-text-secondary)] leading-relaxed">
-              Không chỉ tính con số lý thuyết — công cụ đối chiếu đồng thời <strong>3 phương trình trao đổi chất y khoa</strong>, phân loại thể trạng theo <strong>chuẩn người Việt (Bộ Y Tế)</strong> và quy đổi trực tiếp ra <strong>số chén cơm, số gram thịt/cá tươi sống &amp; rau xanh</strong> bạn cần nấu mỗi ngày.
+            <p className="text-xs sm:text-sm text-[var(--color-text-secondary)] leading-relaxed">
+              Nhập chiều cao, cân nặng để biết ngay lượng Calo mục tiêu và quy đổi trực tiếp ra <strong>số chén cơm, số gram thịt/cá &amp; rau xanh</strong> cần nấu mỗi ngày.
             </p>
           </div>
 
@@ -1025,120 +1021,120 @@ export default function CalorieCalculatorPage() {
                 </div>
               </div>
 
-              {/* Phần 1.3: Bảng Đối Chiếu Minh Bạch 3 Phương Trình Y Khoa (Verification Table) */}
-              <div className="rounded-3xl bg-[var(--color-surface-white)] border border-[var(--color-border-base)] p-5 sm:p-6 shadow-xs space-y-4">
-                <div className="flex items-center justify-between gap-2">
-                  <h2 className="text-sm sm:text-base font-extrabold text-[var(--color-text-primary)] flex items-center gap-2">
+              {/* Phần 1.3: Bảng Đối Chiếu Minh Bạch 3 Phương Trình Y Khoa (Thu gọn vào Accordion cho gọn giao diện) */}
+              <details className="group rounded-3xl bg-[var(--color-surface-white)] border border-[var(--color-border-base)] p-5 shadow-xs">
+                <summary className="cursor-pointer list-none flex items-center justify-between gap-2 select-none">
+                  <span className="text-xs sm:text-sm font-extrabold text-[var(--color-text-primary)] flex items-center gap-2">
                     <Award className="w-4 h-4 text-[var(--color-accent-primary)]" />
-                    <span>4. Bảng đối chiếu xác thực từ 3 Phương trình Y khoa Quốc tế</span>
-                  </h2>
-                  <span className="text-[11px] font-mono text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
-                    Verified Clinical Formulas
+                    <span>🔬 Xem bảng đối chiếu 3 Phương trình Y khoa Quốc tế (Mifflin-St Jeor, Harris-Benedict, Katch-McArdle)</span>
                   </span>
-                </div>
+                  <span className="text-xs text-[var(--color-text-muted)] group-open:rotate-180 transition-transform">▼</span>
+                </summary>
 
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs border-collapse">
-                    <thead>
-                      <tr className="bg-[var(--color-surface-raised)] border-y border-[var(--color-border-base)] text-[var(--color-text-secondary)] font-bold">
-                        <th className="py-2.5 px-3">Phương trình Y khoa</th>
-                        <th className="py-2.5 px-3">Cơ quan khuyến nghị</th>
-                        <th className="py-2.5 px-3">BMR của bạn</th>
-                        <th className="py-2.5 px-3">TDEE của bạn</th>
-                        <th className="py-2.5 px-3">Trạng thái áp dụng</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-[var(--color-border-subtle)] text-[var(--color-text-primary)]">
-                      <tr>
-                        <td className="py-2.5 px-3 font-bold">Mifflin-St Jeor (1990)</td>
-                        <td className="py-2.5 px-3 text-[var(--color-text-secondary)]">
-                          Hiệp hội Dinh dưỡng Hoa Kỳ (ADA) &amp; Viện Dinh Dưỡng VN
-                        </td>
-                        <td className="py-2.5 px-3 font-mono font-bold text-[var(--color-brand-primary)]">
-                          {metrics.bmrMifflin.toLocaleString('vi-VN')} kcal
-                        </td>
-                        <td className="py-2.5 px-3 font-mono font-bold">
-                          {Math.round(metrics.bmrMifflin * metrics.actObj.multiplier).toLocaleString('vi-VN')} kcal
-                        </td>
-                        <td className="py-2.5 px-3">
-                          {metrics.bmrKatch === null ? (
-                            <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-900 font-bold text-[11px]">
-                              Đang dùng chính (Chuẩn vàng)
-                            </span>
-                          ) : (
-                            <span className="text-[var(--color-text-muted)]">Đối chiếu</span>
-                          )}
-                        </td>
-                      </tr>
+                <div className="mt-4 space-y-4 pt-3 border-t border-[var(--color-border-subtle)]">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr className="bg-[var(--color-surface-raised)] border-y border-[var(--color-border-base)] text-[var(--color-text-secondary)] font-bold">
+                          <th className="py-2.5 px-3">Phương trình Y khoa</th>
+                          <th className="py-2.5 px-3">Cơ quan khuyến nghị</th>
+                          <th className="py-2.5 px-3">BMR của bạn</th>
+                          <th className="py-2.5 px-3">TDEE của bạn</th>
+                          <th className="py-2.5 px-3">Trạng thái áp dụng</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-[var(--color-border-subtle)] text-[var(--color-text-primary)]">
+                        <tr>
+                          <td className="py-2.5 px-3 font-bold">Mifflin-St Jeor (1990)</td>
+                          <td className="py-2.5 px-3 text-[var(--color-text-secondary)]">
+                            Hiệp hội Dinh dưỡng Hoa Kỳ (ADA) &amp; Viện Dinh Dưỡng VN
+                          </td>
+                          <td className="py-2.5 px-3 font-mono font-bold text-[var(--color-brand-primary)]">
+                            {metrics.bmrMifflin.toLocaleString('vi-VN')} kcal
+                          </td>
+                          <td className="py-2.5 px-3 font-mono font-bold">
+                            {Math.round(metrics.bmrMifflin * metrics.actObj.multiplier).toLocaleString('vi-VN')} kcal
+                          </td>
+                          <td className="py-2.5 px-3">
+                            {metrics.bmrKatch === null ? (
+                              <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-900 font-bold text-[11px]">
+                                Đang dùng chính (Chuẩn vàng)
+                              </span>
+                            ) : (
+                              <span className="text-[var(--color-text-muted)]">Đối chiếu</span>
+                            )}
+                          </td>
+                        </tr>
 
-                      <tr>
-                        <td className="py-2.5 px-3 font-bold">Harris-Benedict Revised (1984)</td>
-                        <td className="py-2.5 px-3 text-[var(--color-text-secondary)]">
-                          Roza &amp; Shizgal (Phương trình cổ điển hiệu chỉnh)
-                        </td>
-                        <td className="py-2.5 px-3 font-mono font-bold text-[var(--color-brand-primary)]">
-                          {metrics.bmrHarris.toLocaleString('vi-VN')} kcal
-                        </td>
-                        <td className="py-2.5 px-3 font-mono font-bold">
-                          {Math.round(metrics.bmrHarris * metrics.actObj.multiplier).toLocaleString('vi-VN')} kcal
-                        </td>
-                        <td className="py-2.5 px-3 text-[var(--color-text-muted)]">Đối chiếu tham khảo</td>
-                      </tr>
+                        <tr>
+                          <td className="py-2.5 px-3 font-bold">Harris-Benedict Revised (1984)</td>
+                          <td className="py-2.5 px-3 text-[var(--color-text-secondary)]">
+                            Roza &amp; Shizgal (Phương trình cổ điển hiệu chỉnh)
+                          </td>
+                          <td className="py-2.5 px-3 font-mono font-bold text-[var(--color-brand-primary)]">
+                            {metrics.bmrHarris.toLocaleString('vi-VN')} kcal
+                          </td>
+                          <td className="py-2.5 px-3 font-mono font-bold">
+                            {Math.round(metrics.bmrHarris * metrics.actObj.multiplier).toLocaleString('vi-VN')} kcal
+                          </td>
+                          <td className="py-2.5 px-3 text-[var(--color-text-muted)]">Đối chiếu tham khảo</td>
+                        </tr>
 
-                      <tr>
-                        <td className="py-2.5 px-3 font-bold">Katch-McArdle (Lean Body Mass)</td>
-                        <td className="py-2.5 px-3 text-[var(--color-text-secondary)]">
-                          Dành cho VĐV / Người biết chính xác % Mỡ cơ thể (InBody)
-                        </td>
-                        <td className="py-2.5 px-3 font-mono font-bold text-[var(--color-brand-primary)]">
-                          {metrics.bmrKatch !== null
-                            ? `${metrics.bmrKatch.toLocaleString('vi-VN')} kcal (LBM: ${metrics.lbmKg}kg)`
-                            : 'Nhập % mỡ ở cột trái'}
-                        </td>
-                        <td className="py-2.5 px-3 font-mono font-bold">
-                          {metrics.bmrKatch !== null
-                            ? `${Math.round(metrics.bmrKatch * metrics.actObj.multiplier).toLocaleString('vi-VN')} kcal`
-                            : '—'}
-                        </td>
-                        <td className="py-2.5 px-3">
-                          {metrics.bmrKatch !== null ? (
-                            <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-900 font-bold text-[11px]">
-                              Đang dùng chính (Theo % Mỡ)
-                            </span>
-                          ) : (
-                            <span className="text-[var(--color-text-muted)]">Tùy chọn nâng cao</span>
-                          )}
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
+                        <tr>
+                          <td className="py-2.5 px-3 font-bold">Katch-McArdle (Lean Body Mass)</td>
+                          <td className="py-2.5 px-3 text-[var(--color-text-secondary)]">
+                            Dành cho VĐV / Người biết chính xác % Mỡ cơ thể (InBody)
+                          </td>
+                          <td className="py-2.5 px-3 font-mono font-bold text-[var(--color-brand-primary)]">
+                            {metrics.bmrKatch !== null
+                              ? `${metrics.bmrKatch.toLocaleString('vi-VN')} kcal (LBM: ${metrics.lbmKg}kg)`
+                              : 'Nhập % mỡ ở cột trái'}
+                          </td>
+                          <td className="py-2.5 px-3 font-mono font-bold">
+                            {metrics.bmrKatch !== null
+                              ? `${Math.round(metrics.bmrKatch * metrics.actObj.multiplier).toLocaleString('vi-VN')} kcal`
+                              : '—'}
+                          </td>
+                          <td className="py-2.5 px-3">
+                            {metrics.bmrKatch !== null ? (
+                              <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-900 font-bold text-[11px]">
+                                Đang dùng chính (Theo % Mỡ)
+                              </span>
+                            ) : (
+                              <span className="text-[var(--color-text-muted)]">Tùy chọn nâng cao</span>
+                            )}
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
 
-                <div className="p-3.5 rounded-2xl bg-[var(--color-bg-primary)]/80 border border-[var(--color-border-subtle)] text-[11px] text-[var(--color-text-secondary)] leading-relaxed flex items-start gap-2">
-                  <Info className="w-4 h-4 text-[var(--color-brand-primary)] shrink-0 mt-0.5" />
-                  <div>
-                    <strong>Nguồn tài liệu xác thực:</strong> (1) <em>Nhu cầu Dinh dưỡng Khuyến nghị cho Người Việt Nam</em> — Viện Dinh Dưỡng Quốc Gia (Bộ Y Tế); (2) <em>The Asia-Pacific Perspective: Redefining Obesity and its Treatment</em> — WHO / IASO / IOTF (2000); (3) Mifflin MD, St Jeor ST et al., <em>Am J Clin Nutr</em> (1990); (4) Jäger R et al., <em>International Society of Sports Nutrition (ISSN) Position Stand: Protein and Exercise</em> (2017).
+                  <div className="p-3 rounded-2xl bg-[var(--color-bg-primary)]/80 border border-[var(--color-border-subtle)] text-[11px] text-[var(--color-text-secondary)] leading-relaxed flex items-start gap-2">
+                    <Info className="w-4 h-4 text-[var(--color-brand-primary)] shrink-0 mt-0.5" />
+                    <div>
+                      <strong>Nguồn tài liệu xác thực:</strong> Viện Dinh Dưỡng Quốc Gia (Bộ Y Tế); WHO Châu Á – Thái Bình Dương (2000); Mifflin-St Jeor (1990); ISSN Position Stand (2017).
+                    </div>
                   </div>
                 </div>
+              </details>
 
-                {/* Nút chuyển tiếp sang Tab 2 (Chọn Thực Đơn) hoặc Tab 3 (AI Quét Ảnh Đĩa Ăn) */}
-                <div className="pt-2 flex flex-wrap justify-end gap-2.5 no-print">
-                  <button
-                    type="button"
-                    onClick={() => setActiveStepTab('scan')}
-                    className="inline-flex items-center gap-2 px-4 py-3 rounded-2xl bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] text-white text-xs sm:text-sm font-extrabold shadow-xs transition-all cursor-pointer"
-                  >
-                    <span>📸 Quét Ảnh Đĩa Ăn Tính Kcal</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setActiveStepTab('meals')}
-                    className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-hover)] text-white text-xs sm:text-sm font-extrabold shadow-xs transition-all cursor-pointer"
-                  >
-                    <span>🍱 Tiếp theo: Chọn Thực Đơn &amp; Gắn Món Ăn</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </button>
-                </div>
+              {/* Nút chuyển tiếp sang Tab 2 (Chọn Thực Đơn) hoặc Tab 3 (AI Quét Ảnh Đĩa Ăn) */}
+              <div className="flex flex-wrap justify-end gap-2.5 no-print">
+                <button
+                  type="button"
+                  onClick={() => setActiveStepTab('scan')}
+                  className="inline-flex items-center gap-2 px-4 py-3 rounded-2xl bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] text-white text-xs sm:text-sm font-extrabold shadow-xs transition-all cursor-pointer"
+                >
+                  <span>📸 Quét Ảnh Đĩa Ăn Tính Kcal</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveStepTab('meals')}
+                  className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-hover)] text-white text-xs sm:text-sm font-extrabold shadow-xs transition-all cursor-pointer"
+                >
+                  <span>🍱 Tiếp theo: Chọn Thực Đơn &amp; Gắn Món Ăn</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
               </div>
             </div>
           )}
