@@ -441,7 +441,7 @@ async function callAiGatewayFromTextHint(userHint: string): Promise<FoodScanResp
   if (!userHint || userHint.trim().length < 3) return null;
   try {
     const completion = await aiGateway.complete({
-      systemPrompt: `Bạn là Chuyên gia Dinh dưỡng Viện Dinh Dưỡng Quốc Gia Việt Nam của hệ thống "Ăn Gì Mom".
+      systemInstruction: `Bạn là Chuyên gia Dinh dưỡng Viện Dinh Dưỡng Quốc Gia Việt Nam của hệ thống "Ăn Gì Mom".
 Nhiệm vụ: Khi người dùng mô tả món ăn hoặc bữa cơm của họ, hãy bóc tách thành các thành phần thực phẩm cụ thể, khối lượng gram ước tính, lượng calo/100g chuẩn Việt Nam và đưa ra 3 lời khuyên cải thiện đĩa ăn cụ thể.
 Trả về JSON thuần túy:
 {
@@ -469,7 +469,7 @@ Trả về JSON thuần túy:
       jsonMode: true,
     });
 
-    if (!completion.text || completion.provider === 'mock-heuristic') {
+    if (!completion.text || completion.provider === 'mock') {
       return null;
     }
 
