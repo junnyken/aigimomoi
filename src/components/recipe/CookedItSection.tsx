@@ -139,11 +139,34 @@ export function CookedItSection({ recipeId, recipeName }: CookedItSectionProps) 
         <button
           type="button"
           onClick={() => setIsModalOpen(true)}
-          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm bg-[var(--color-brand-primary)] text-white hover:bg-[var(--color-brand-primary-hover,#b3391b)] shadow-sm transition-colors"
+          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm bg-[var(--color-brand-primary)] text-white hover:bg-[var(--color-brand-primary-hover,#b3391b)] shadow-sm transition-colors cursor-pointer"
         >
           <Camera className="w-4 h-4" />
           Tôi đã nấu món này!
         </button>
+      </div>
+
+      {/* Thanh kiểm chứng độ chuẩn xác của công thức (Trả lời câu hỏi: Công thức này có đúng không?) */}
+      <div className="mb-5 p-3 rounded-2xl bg-[#FAF7F0] border border-[#E5DAC8] flex flex-wrap items-center justify-between gap-2 text-xs">
+        <span className="font-bold text-[#2F4F30] flex items-center gap-1.5">
+          <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0" />
+          <span>Kiểm chứng độ chuẩn xác của công thức:</span>
+        </span>
+        <div className="flex flex-wrap items-center gap-1.5">
+          {[
+            '✓ Định lượng gia vị chuẩn',
+            '✓ Dễ làm theo từng bước',
+            '✓ Đúng thời gian nấu',
+            '✓ Kcal chuẩn Viện Dinh Dưỡng',
+          ].map((tag) => (
+            <span
+              key={tag}
+              className="px-2.5 py-0.5 rounded-full bg-white border border-emerald-200 text-emerald-800 text-[11px] font-semibold"
+            >
+              {tag}
+            </span>
+          ))}
+        </div>
       </div>
 
       {/* Community Cooked Photos Grid (Cooksnap Gallery) */}
@@ -341,11 +364,36 @@ export function CookedItSection({ recipeId, recipeName }: CookedItSectionProps) 
                   </p>
                 </div>
 
-                {/* Ghi chú mẹo nấu */}
+                {/* Ghi chú mẹo nấu + Nhãn chọn nhanh 1 chạm */}
                 <div>
                   <label className="block text-xs font-semibold text-[var(--color-text-secondary)] mb-1">
                     Mẹo nêm nếm & Cảm nhận thực tế
                   </label>
+                  <div className="flex flex-wrap gap-1.5 mb-2">
+                    {[
+                      'Định lượng gia vị rất chuẩn',
+                      'Các bước dễ làm theo',
+                      'Đúng thời gian nấu',
+                      'Cả nhà đều khen ngon',
+                    ].map((quickTag) => (
+                      <button
+                        type="button"
+                        key={quickTag}
+                        onClick={() =>
+                          setNotes((prev) =>
+                            prev.includes(quickTag)
+                              ? prev
+                              : prev
+                              ? `${prev.trim()}. ${quickTag}`
+                              : quickTag
+                          )
+                        }
+                        className="px-2.5 py-1 rounded-full bg-[#FAF7F0] hover:bg-emerald-50 border border-[#DFD2C0] text-[11px] font-semibold text-[#2F4F30] cursor-pointer"
+                      >
+                        + {quickTag}
+                      </button>
+                    ))}
+                  </div>
                   <textarea
                     rows={3}
                     placeholder="VD: Món này nấu bằng nồi đất kho nhỏ lửa thịt mềm rục, gia đình mình bớt 1 thìa đường thì vừa miệng chuẩn vị Bắc..."

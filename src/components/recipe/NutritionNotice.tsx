@@ -1,4 +1,5 @@
-import { Info, Flame, ShieldCheck, AlertCircle, PieChart } from 'lucide-react';
+import Link from 'next/link';
+import { Info, Flame, ShieldCheck, AlertCircle, PieChart, Sparkles } from 'lucide-react';
 import type { PublicRecipe } from '@/lib/recipes/publicQueries';
 
 type Props = Pick<PublicRecipe, 'nutritionStatus' | 'caloriesPerServing' | 'isNutritionVerified' | 'nutritionSnapshot'>;
@@ -134,6 +135,42 @@ export function NutritionNotice({ nutritionStatus, caloriesPerServing, isNutriti
             <span className="font-semibold text-[var(--color-text-primary)]">{perServing.fiber}g / khẩu phần</span>
           </div>
         )}
+
+        {/* Gợi ý cách ăn & điều chỉnh món theo mục tiêu sức khỏe (Trả lời câu hỏi: Người đó cần cải thiện thế nào?) */}
+        <div className="mt-2.5 p-3 rounded-2xl bg-emerald-50/70 border border-emerald-200/80 space-y-1.5 text-xs">
+          <div className="flex items-center justify-between gap-2">
+            <span className="font-extrabold text-emerald-950 flex items-center gap-1">
+              <Sparkles className="w-3.5 h-3.5 text-emerald-700 shrink-0" aria-hidden="true" />
+              <span>🎯 Cách điều chỉnh món này cho bạn:</span>
+            </span>
+            <Link
+              href="/tinh-calo"
+              className="text-[10px] font-bold text-emerald-800 underline hover:text-emerald-950 shrink-0"
+            >
+              Đo TDEE cá nhân →
+            </Link>
+          </div>
+
+          <ul className="space-y-1 text-[11px] text-emerald-950/90 leading-snug">
+            <li>
+              • <strong>🧘 Giảm cân / Eat Clean:</strong>{' '}
+              {perServing.calories > 320 || perServing.fat >= 14
+                ? `Hạn chế chan nước sốt/nước kho béo và giảm ½ muỗng dầu khi nấu sẽ cắt giảm ngay ~${Math.min(110, Math.max(55, Math.round(perServing.fat * 4.5)))} kcal/người.`
+                : `Món này chỉ ~${perServing.calories} kcal, rất nhẹ bụng! Ăn kèm ½ chén cơm gạo lứt (+56 kcal) và 1 đĩa rau luộc là chuẩn bữa giảm cân.`}
+            </li>
+            <li>
+              • <strong>💪 Tập Gym / Giữ cơ:</strong>{' '}
+              {perServing.protein >= 24
+                ? `Đạt chuẩn giàu đạm (${perServing.protein}g Protein/phần), giúp phục hồi cơ bắp và no lâu 4–5 tiếng.`
+                : `Món cung cấp ${perServing.protein}g Đạm — nên ăn kèm thêm 1 quả trứng luộc (+7g đạm) hoặc 100g đậu hũ để đủ ngưỡng 25g đạm/bữa.`}
+            </li>
+            {perServing.sodium !== null && perServing.sodium > 650 && (
+              <li>
+                • <strong>💚 Huyết áp / Giảm mặn:</strong> Giảm 1/3 lượng mắm/muối khi nêm và ăn kèm rau xanh giàu Kali giúp trung hòa ~30% lượng Natri ({perServing.sodium}mg).
+              </li>
+            )}
+          </ul>
+        </div>
 
         {/* BẢNG CHI TIẾT CALO CHO TỪNG THÀNH PHẦN NGUYÊN LIỆU (Thu gọn mặc định để không lặp với bảng nguyên liệu trên) */}
         {sortedDetails.length > 0 && (

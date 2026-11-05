@@ -655,49 +655,49 @@ export function FoodPlateScannerPanel({
     };
   }, [totals, targetSlotPro, targetSlotKcal, kcalDeltaFromTarget]);
 
-  // Gợi ý 3 công thức món ăn Eat Clean / Gym / Yoga tương đồng trên website
+  // Gợi ý 3 công thức món ăn Eat Clean / Gym / Cơm nhà tương đồng trên website
   const matchedWebsiteRecipes = useMemo(() => {
     const joined = items.map((i) => i.name.toLowerCase()).join(' ');
     const list: Array<{ title: string; slug: string; kcal: string; tag: string }> = [];
 
     if (joined.includes('tôm') || joined.includes('mỳ') || joined.includes('bơ')) {
       list.push({
-        title: 'Salad Tôm Hấp Trứng Luộc Bơ Tươi',
-        slug: 'salad-tom-hap-trung-luoc-bo-tuoi',
-        kcal: '360 kcal • 29g Đạm',
+        title: 'Gỏi Cuốn Tôm Thịt Nước Chấm Đậu Phộng',
+        slug: 'goi-cuon-tom-thit',
+        kcal: '290 kcal • 24g Đạm',
         tag: '🧘 Yoga & Eat Clean',
       });
     }
     if (joined.includes('gà') || joined.includes('bông cải') || joined.includes('khoai')) {
       list.push({
-        title: 'Ức Gà Áp Chảo Mè Rang & Bông Cải Xanh Hấp',
-        slug: 'uc-ga-ap-chao-me-rang-bong-cai-xanh',
-        kcal: '390 kcal • 42g Đạm',
+        title: 'Ức Gà Áp Chảo Sốt Cam Mật Ong',
+        slug: 'uc-ga-ap-chao-sot-cam-mat-ong',
+        kcal: '340 kcal • 38g Đạm',
         tag: '💪 Gym Tăng Cơ',
       });
     }
-    if (joined.includes('bò') || joined.includes('khoai tây') || joined.includes('cải')) {
+    if (joined.includes('cá') || joined.includes('cà chua') || joined.includes('canh')) {
       list.push({
-        title: 'Thăn Bò Áp Chảo Lúc Lắc & Đậu Que Luộc',
-        slug: 'than-bo-ap-chao-luc-lac-dau-que-luoc',
-        kcal: '420 kcal • 38g Đạm',
-        tag: '💪 Giàu Sắt & Cơ Bắp',
+        title: 'Canh Chua Cá Lăng Nam Bộ',
+        slug: 'canh-chua-ca-lang',
+        kcal: '210 kcal • 22g Đạm',
+        tag: '🍲 Thanh Nhiệt Ít Béo',
       });
     }
     if (list.length < 3) {
       list.push({
-        title: 'Cơm Gạo Lứt Cá Hồi Áp Chảo & Đậu Nành Edamame',
-        slug: 'com-gao-lut-ca-hoi-ap-chao-edamame',
-        kcal: '460 kcal • 34g Đạm',
-        tag: '🥗 Poke Bowl Chuẩn',
-      });
-    }
-    if (list.length < 3) {
-      list.push({
-        title: 'Đậu Hũ Non Sốt Nấm Đông Cô & Cải Thìa Hấp',
-        slug: 'dau-hu-non-sot-nam-dong-co-cai-thia',
+        title: 'Đậu Hũ Sốt Cà Chua Thịt Bằm',
+        slug: 'dau-hu-sot-ca-chua',
         kcal: '260 kcal • 18g Đạm',
-        tag: '🌿 Thanh Đạm Nhẹ Bụng',
+        tag: '🌿 Đạm Thực Vật Nhẹ Bụng',
+      });
+    }
+    if (list.length < 3) {
+      list.push({
+        title: 'Rau Muống Xào Tỏi Xanh Giòn',
+        slug: 'rau-muong-xao-toi',
+        kcal: '115 kcal • Giàu Chất Xơ',
+        tag: '🥦 Bổ Sung Rau Xanh',
       });
     }
     return list.slice(0, 3);
@@ -1149,47 +1149,52 @@ export function FoodPlateScannerPanel({
             </div>
           </div>
 
-          {/* Thẻ Điểm Đĩa Ăn + Nút Hành Động 1-Chạm (Gọn, nổi bật bằng màu sắc) */}
+          {/* Thẻ Điểm Đĩa Ăn + Chẩn đoán Cải Thiện Tức Thì */}
           <div className="p-3.5 rounded-2xl bg-[#F4F8F4] border border-[var(--color-brand-border)] space-y-2.5">
             <div className="flex items-center justify-between gap-2">
               <span className="text-xs font-extrabold text-[#2F4F30] flex items-center gap-1.5">
                 <ShieldCheck className="w-4 h-4 text-emerald-700 shrink-0" />
-                <span>{plateActionAdvice.badge}</span>
+                <span>🎯 {plateActionAdvice.badge}</span>
               </span>
               <span className="px-2.5 py-0.5 rounded-full bg-amber-500 text-stone-950 text-xs font-black shrink-0">
                 ⭐ {totals.scoreOutOf10}/10
               </span>
             </div>
 
-            {plateActionAdvice.quickSlug && plateActionAdvice.quickLabel ? (
-              <div className="p-2.5 rounded-xl bg-white border border-emerald-300 flex items-center justify-between gap-2">
-                <span className="text-xs font-bold text-[#2F4F30]">
-                  💡 {plateActionAdvice.badge} để đạt chuẩn:
-                </span>
-                <button
-                  type="button"
-                  onClick={() =>
-                    addIngredientBySlugAndGrams(
-                      plateActionAdvice.quickSlug!,
-                      plateActionAdvice.quickGrams
-                    )
-                  }
-                  className="shrink-0 px-3 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-extrabold inline-flex items-center gap-1 cursor-pointer"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>{plateActionAdvice.quickLabel}</span>
-                </button>
-              </div>
-            ) : (
-              <div className="px-3 py-2 rounded-xl bg-white border border-emerald-200 text-xs font-bold text-emerald-800">
-                ✅ Tỷ lệ Đạm ({totals.protein}g) &amp; Rau xanh ({totals.veggiePct}%) đã cân đối chuẩn vàng!
-              </div>
+            <p className="text-xs text-[var(--color-text-primary)] leading-relaxed bg-white/90 rounded-xl p-2.5 border border-emerald-200">
+              {plateActionAdvice.message}
+            </p>
+
+            {plateActionAdvice.quickSlug && plateActionAdvice.quickLabel && (
+              <button
+                type="button"
+                onClick={() =>
+                  addIngredientBySlugAndGrams(
+                    plateActionAdvice.quickSlug!,
+                    plateActionAdvice.quickGrams
+                  )
+                }
+                className="w-full py-2 px-3 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-extrabold inline-flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>{plateActionAdvice.quickLabel}</span>
+              </button>
+            )}
+
+            {scanResult.improvementTips && scanResult.improvementTips.length > 0 && (
+              <ul className="space-y-1 text-[11px] text-[#2F4F30] bg-white/80 rounded-xl p-2.5 border border-emerald-200/70">
+                {scanResult.improvementTips.slice(0, 2).map((tip, i) => (
+                  <li key={i} className="leading-snug">
+                    • {tip}
+                  </li>
+                ))}
+              </ul>
             )}
 
             {/* Thu gọn phần chữ giải thích kỹ thuật vào mục bấm mở để không gây mỏi mắt */}
             <details className="group rounded-xl bg-white/80 border border-emerald-200/80 px-3 py-2 text-xs">
               <summary className="cursor-pointer font-bold text-[#2F4F30] flex items-center justify-between select-none">
-                <span>🔍 Xem cơ sở đo lường AI ({scanResult.overallConfidence || 94}% chuẩn) &amp; lời khuyên</span>
+                <span>🔍 Xem cơ sở đo lường AI ({scanResult.overallConfidence || 94}% chuẩn)</span>
                 <span className="text-[10px] text-emerald-700 group-open:rotate-180 transition-transform">▼</span>
               </summary>
               <div className="mt-2 pt-2 border-t border-emerald-100 space-y-1.5 text-[11px] text-[var(--color-text-secondary)]">
@@ -1507,6 +1512,8 @@ export function FoodPlateScannerPanel({
                     { label: '+80g Bông cải', slug: 'bong-cai-xanh', grams: 80 },
                     { label: '+50g Bơ sáp', slug: 'bo-sap', grams: 50 },
                     { label: '+100g Cơm lứt', slug: 'com-gao-lut-chin', grams: 100 },
+                    { label: '+1 Chén cơm trắng', slug: 'com-trang-chin', grams: 120 },
+                    { label: '+80g Rau muống', slug: 'rau-muong', grams: 80 },
                   ].map((quick) => (
                     <button
                       key={quick.label}
@@ -1568,17 +1575,17 @@ export function FoodPlateScannerPanel({
                   🍲 Công thức tương tự trên web:
                 </span>
                 <Link
-                  href="/mon-an?tax=giam-can-it-calo"
+                  href="/mon-an"
                   className="text-[11px] font-bold text-[var(--color-brand-primary)] hover:underline"
                 >
-                  Xem 49 món →
+                  Xem kho món ăn →
                 </Link>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 {matchedWebsiteRecipes.map((rec) => (
                   <Link
                     key={rec.slug}
-                    href={`/mon-an/${rec.slug}`}
+                    href={`/cong-thuc/${rec.slug}`}
                     className="p-2.5 rounded-xl bg-[#FAF7F0] hover:bg-emerald-50/60 border border-[#E5DAC8] hover:border-emerald-300 transition-colors flex flex-col justify-between gap-1"
                   >
                     <span className="text-[10px] font-extrabold text-emerald-800">{rec.tag}</span>

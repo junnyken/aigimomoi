@@ -1,10 +1,44 @@
-import { Timer, Lightbulb, ListOrdered, CheckCircle2, ArrowRight } from 'lucide-react';
-import type { PublicRecipeStep } from '@/lib/recipes/publicQueries';
+'use client';
+
+import { useState } from 'react';
+import { Timer, Lightbulb, ListOrdered, Check, ArrowRight } from 'lucide-react';
+import type { PublicRecipeStep, PublicRecipeIngredient } from '@/lib/recipes/publicQueries';
 import { formatTimer } from '@/lib/recipes/labels';
+import { formatScaledAmount } from '@/lib/recipes/scaling';
 
 interface Props {
   steps: PublicRecipeStep[];
   recipeName: string;
+  ingredients?: PublicRecipeIngredient[];
+}
+
+/** Tự động tìm các nguyên liệu xuất hiện trong câu hướng dẫn của bước đó để hiển thị định lượng ngay tại bước */
+function matchIngredientsForStep(
+  instruction: string,
+  ingredients?: PublicRecipeIngredient[]
+): PublicRecipeIngredient[] {
+  if (!ingredients || ingredients.length === 0) return [];
+  const lowerInst = instruction.toLowerCase();
+  const matched: PublicRecipeIngredient[] = [];
+
+  for (const ing of ingredients) {
+    const cleanName = ing.name
+      .split('(')[0]
+      .split('/')[0]
+      .toLowerCase()
+      .trim();
+    if (!cleanName || cleanName.length < 2) continue;
+
+    // Khớp tên nguyên liệu hoặc từ khóa chính của nguyên liệu (ví dụ: "cá lăng", "nước mắm", "cà chua")
+    const words = cleanName.split(/\s+/);
+    const shortKey = words.length >= 2 ? words.slice(0, 2).join(' ') : cleanName;
+
+    if (lowerInst.includes(cleanName) || (shortKey.length >= 4 && lowerInst.includes(shortKey))) {
+      matched.push(ing);
+    }
+  }
+
+  return matched.slice(0, 5);
 }
 
 /** Làm nổi bật các thông số quan trọng (thời gian, độ lửa, định lượng) trong câu hướng dẫn nấu */
@@ -51,7 +85,14 @@ function groupByPhase(steps: PublicRecipeStep[]) {
   return groups;
 }
 
-export function StepList({ steps, recipeName }: Props) {
+export function StepList({ steps, recipeName, ingredients }: Props) {
+  const [completedStepIds, setCompletedStepIds] = useState<Record<number, boolean>>({});
+
+  function toggleStepCompleted(id: number) {
+    setCompletedStepIds((prev) => ({ ...prev, [id]: !prev[id] }));
+  }
+
+  const completedCount = Object.values(completedStepIds).filter(Boolean).length;
   const groups = groupByPhase(steps);
   let stepIndex = 0;
   const numberedGroups = groups.map((group, groupIdx) => ({
@@ -72,9 +113,14 @@ export function StepList({ steps, recipeName }: Props) {
           <ListOrdered className="w-5 h-5 text-[var(--color-brand-primary)]" aria-hidden="true" />
           <span>Các bước thực hiện</span>
         </h2>
-        <span className="text-xs font-semibold text-[var(--color-text-muted)]">
-          {steps.length} bước
-        </span>
+        <div className="flex items-center gap-2 text-xs font-semibold text-[var(--color-text-muted)]">
+          {completedCount > 0 && (
+            <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold">
+              ✓ Đã nấu {completedCount}/{steps.length} bước
+            </span>
+          )}
+          <span>{steps.length} bước · Chạm từng bước khi làm xong</span>
+        </div>
       </div>
 
       {/* Thanh nhảy nhanh giai đoạn (chỉ hiện gọn 1 hàng khi có từ 2 giai đoạn trở lên) */}
@@ -132,53 +178,106 @@ export function StepList({ steps, recipeName }: Props) {
               )}
 
               <ol className="flex flex-col gap-3.5">
-                {group.steps.map((step) => (
-                  <li
-                    key={step.id}
-                    className="group relative flex gap-3.5 sm:gap-4 rounded-2xl border border-[var(--color-border-base)] bg-[var(--color-surface-white)] p-4 sm:p-5 transition-shadow hover:shadow-md"
-                  >
-                    <span
-                      className="flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-full bg-[var(--color-brand-primary)] text-sm font-bold text-white transition-transform group-hover:scale-105"
-                      aria-hidden="true"
+                {group.steps.map((step) => {
+                  const isDone = Boolean(completedStepIds[step.id]);
+                  const stepIngredients = matchIngredientsForStep(step.instruction, ingredients);
+
+                  return (
+                    <li
+                      key={step.id}
+                      id={`step-${step.stepNumber}`}
+                      className={`group relative flex gap-3.5 sm:gap-4 rounded-2xl border p-4 sm:p-5 transition-all ${
+                        isDone
+                          ? 'border-emerald-300 bg-emerald-50/35 opacity-80'
+                          : 'border-[var(--color-border-base)] bg-[var(--color-surface-white)] hover:shadow-md'
+                      }`}
                     >
-                      {step.stepNumber}
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center justify-between gap-2 mb-1.5">
-                        <span className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-[var(--color-accent-text)]">
-                          {isMultiStepPhase ? `Bước ${step.stepNumber}` : group.phase}
-                        </span>
-                        {step.timerSeconds ? (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-[var(--color-info-bg)] px-2.5 py-0.5 text-xs font-semibold text-[var(--color-info-base)]">
-                            <Timer className="w-3 h-3" aria-hidden="true" />
-                            {formatTimer(step.timerSeconds)}
+                      <button
+                        type="button"
+                        onClick={() => toggleStepCompleted(step.id)}
+                        title={isDone ? 'Bỏ đánh dấu hoàn thành' : 'Đánh dấu đã làm xong bước này'}
+                        className={`flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white transition-transform cursor-pointer ${
+                          isDone
+                            ? 'bg-emerald-600 scale-95'
+                            : 'bg-[var(--color-brand-primary)] group-hover:scale-105'
+                        }`}
+                      >
+                        {isDone ? <Check className="w-4 h-4 stroke-[3]" /> : step.stepNumber}
+                      </button>
+
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center justify-between gap-2 mb-1.5">
+                          <span className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-[var(--color-accent-text)]">
+                            {isMultiStepPhase ? `Bước ${step.stepNumber}` : group.phase}
                           </span>
-                        ) : null}
-                      </div>
+                          <div className="flex items-center gap-1.5">
+                            {step.timerSeconds ? (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-[var(--color-info-bg)] px-2.5 py-0.5 text-xs font-semibold text-[var(--color-info-base)]">
+                                <Timer className="w-3 h-3" aria-hidden="true" />
+                                {formatTimer(step.timerSeconds)}
+                              </span>
+                            ) : null}
+                            <button
+                              type="button"
+                              onClick={() => toggleStepCompleted(step.id)}
+                              className={`px-2 py-0.5 rounded-full text-[11px] font-bold border cursor-pointer transition-colors ${
+                                isDone
+                                  ? 'bg-emerald-600 text-white border-emerald-600'
+                                  : 'bg-[var(--color-surface-subtle)] text-[var(--color-text-secondary)] border-[var(--color-border-base)] hover:border-emerald-400 hover:text-emerald-700'
+                              }`}
+                            >
+                              {isDone ? '✓ Đã xong' : 'Xong bước này'}
+                            </button>
+                          </div>
+                        </div>
 
-                      <p className="whitespace-pre-line leading-relaxed text-[var(--color-text-primary)]">
-                        {renderHighlightedInstruction(step.instruction)}
-                      </p>
+                        {/* Hiển thị các nguyên liệu cần dùng ngay tại bước này để người nấu không phải liếc sang cột trái */}
+                        {stepIngredients.length > 0 && (
+                          <div className="mb-2 flex flex-wrap items-center gap-1.5">
+                            {stepIngredients.map((ing) => (
+                              <span
+                                key={ing.id}
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-[#FAF7F0] border border-[#E5DAC8] text-[11px] font-semibold text-[var(--color-text-primary)]"
+                              >
+                                <span className="text-[var(--color-brand-primary)] font-bold">
+                                  {ing.name}:
+                                </span>
+                                <span>
+                                  {formatScaledAmount(ing.amount)} {ing.unit}
+                                </span>
+                              </span>
+                            ))}
+                          </div>
+                        )}
 
-                      {step.tipText && (
-                        <p className="mt-2.5 flex items-start gap-2 rounded-xl bg-[var(--color-warning-bg)] border border-[var(--color-warning-border)] p-2.5 text-xs sm:text-sm text-[var(--color-text-secondary)]">
-                          <Lightbulb className="w-4 h-4 shrink-0 mt-0.5 text-[var(--color-warning-base)]" aria-hidden="true" />
-                          <span>{step.tipText}</span>
+                        <p
+                          className={`whitespace-pre-line leading-relaxed text-[var(--color-text-primary)] ${
+                            isDone ? 'line-through text-[var(--color-text-secondary)]' : ''
+                          }`}
+                        >
+                          {renderHighlightedInstruction(step.instruction)}
                         </p>
-                      )}
 
-                      {step.image && (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={step.image}
-                          alt={`${recipeName} — bước ${step.stepNumber}`}
-                          loading="lazy"
-                          className="mt-3 w-full max-h-80 rounded-xl object-cover bg-[var(--color-surface-raised)]"
-                        />
-                      )}
-                    </div>
-                  </li>
-                ))}
+                        {step.tipText && (
+                          <p className="mt-2.5 flex items-start gap-2 rounded-xl bg-[var(--color-warning-bg)] border border-[var(--color-warning-border)] p-2.5 text-xs sm:text-sm text-[var(--color-text-secondary)]">
+                            <Lightbulb className="w-4 h-4 shrink-0 mt-0.5 text-[var(--color-warning-base)]" aria-hidden="true" />
+                            <span>{step.tipText}</span>
+                          </p>
+                        )}
+
+                        {step.image && (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={step.image}
+                            alt={`${recipeName} — bước ${step.stepNumber}`}
+                            loading="lazy"
+                            className="mt-3 w-full max-h-80 rounded-xl object-cover bg-[var(--color-surface-raised)]"
+                          />
+                        )}
+                      </div>
+                    </li>
+                  );
+                })}
               </ol>
             </div>
           );

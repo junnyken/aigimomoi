@@ -85,6 +85,28 @@ const QUICK_HIDDEN_ITEMS: Array<{
     carb100: 23.5,
     fiber100: 1.8,
   },
+  {
+    label: '+1 Chén cơm trắng',
+    name: 'Cơm trắng chín',
+    category: 'CARB',
+    grams: 120,
+    kcal100: 130,
+    pro100: 2.7,
+    fat100: 0.3,
+    carb100: 28.2,
+    fiber100: 0.4,
+  },
+  {
+    label: '+80g Rau muống',
+    name: 'Rau muống luộc/xào',
+    category: 'VEGGIE_FRUIT',
+    grams: 80,
+    kcal100: 25,
+    pro100: 3.2,
+    fat100: 0.4,
+    carb100: 2.5,
+    fiber100: 2.1,
+  },
 ];
 
 interface HeroPreset {
@@ -944,6 +966,12 @@ export function HeroFoodScannerCard() {
                   ✓ Tỷ lệ đĩa chuẩn Harvard
                 </span>
               )}
+            </div>
+
+            {/* Lời khuyên cải thiện đĩa ăn ngay lập tức (1 dòng rõ ràng) */}
+            <div className="px-2.5 py-1.5 rounded-xl bg-emerald-50/70 border border-emerald-200/80 text-[11px] text-emerald-950 font-semibold leading-snug">
+              🎯 <strong>Gợi ý điều chỉnh:</strong>{' '}
+              {scanResult.improvementTips?.[0] || totals.actionTip}
             </div>
           </div>
 

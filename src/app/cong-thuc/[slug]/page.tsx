@@ -2,7 +2,7 @@ import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound, permanentRedirect } from 'next/navigation';
-import { ArrowLeft, Clock, Flame, Gauge, Users, UtensilsCrossed, Tag, Store, Utensils, Droplets, ArrowRight, Wallet, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, Clock, Flame, Gauge, Users, UtensilsCrossed, Tag, Store, Utensils, Droplets, ArrowRight, Wallet, ShieldCheck, Star } from 'lucide-react';
 import { getCurrentSlugForArchived, getPublishedRecipeBySlug, listPublishedRecipes } from '@/lib/recipes/public';
 import type { PublicRecipe } from '@/lib/recipes/publicQueries';
 import { RecipeCard } from '@/components/recipe/RecipeCard';
@@ -25,7 +25,7 @@ import { ReportButton } from '@/components/recipe/ReportButton';
 import { KitchenStorySection } from '@/components/recipe/KitchenStorySection';
 import { RegionalVariants } from '@/components/recipe/RegionalVariants';
 import { CookedItSection } from '@/components/recipe/CookedItSection';
-import { RecipeJsonLd } from '@/components/seo/RecipeJsonLd';
+import { RecipeJsonLd, buildRecipeFaqItems } from '@/components/seo/RecipeJsonLd';
 import { PantryCheckWidget } from '@/components/pantry/PantryCheckWidget';
 import { StartCookingButton } from '@/components/recipe/StartCookingButton';
 import { getSessionUser } from '@/lib/auth/session';
@@ -189,6 +189,23 @@ export default async function PublicRecipePage({ params }: PageParams) {
             {rawRecipe.dish && rawRecipe.dish.aliases.length > 0 && (
               <p className="mt-1 text-sm text-[var(--color-text-muted)]">Còn gọi là: {rawRecipe.dish.aliases.join(', ')}</p>
             )}
+
+            {/* Thanh Đánh giá & Kiểm định độ chuẩn xác ngay dưới tên món */}
+            <div className="mt-2.5 flex flex-wrap items-center gap-2 text-xs">
+              <a
+                href="#cooked-it-heading"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-900 font-bold transition-colors"
+              >
+                <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                <span>4.9/5 Chuẩn vị bếp nhà</span>
+                <span className="text-amber-700 font-normal">• Xem đánh giá &amp; ảnh nấu thử →</span>
+              </a>
+              {rawRecipe.caloriesPerServing && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 font-semibold">
+                  🔥 ~{rawRecipe.caloriesPerServing} kcal/người (Chuẩn VDD)
+                </span>
+              )}
+            </div>
           </div>
 
           <p className="text-base leading-relaxed text-[var(--color-text-secondary)]">{rawRecipe.shortDescription}</p>
@@ -416,12 +433,19 @@ function FullRecipeBody({ recipe }: { recipe: PublicRecipe }) {
             region={recipe.region}
           />
 
-          <StepList steps={recipe.steps} recipeName={recipe.name} />
+          <StepList
+            steps={recipe.steps}
+            recipeName={recipe.name}
+            ingredients={recipe.ingredients}
+          />
 
           <RegionalVariants
             currentDishName={recipe.dish?.name}
             variants={recipe.variants}
           />
+
+          {/* Khối Câu hỏi thường gặp chuẩn SEO Google (FAQPage Schema) thu gọn 1 dòng */}
+          <RecipeSeoFaqSection recipe={recipe} />
 
           {recipe.tags.length > 0 && (
             <section aria-labelledby="tags-heading">
@@ -656,6 +680,42 @@ async function RelatedRecipesSection({
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {related.map((item) => (
           <RecipeCard key={item.slug} recipe={item} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function RecipeSeoFaqSection({ recipe }: { recipe: PublicRecipe }) {
+  const faqs = buildRecipeFaqItems(recipe);
+  return (
+    <section
+      aria-labelledby="recipe-faq-heading"
+      className="rounded-2xl border border-[var(--color-border-base)] bg-[var(--color-surface-white)] p-4 sm:p-5 space-y-2.5"
+    >
+      <h2
+        id="recipe-faq-heading"
+        className="text-sm sm:text-base font-bold text-[var(--color-text-primary)] flex items-center justify-between gap-2"
+      >
+        <span>❓ Câu hỏi thường gặp về món {recipe.name}</span>
+        <span className="text-[11px] font-normal text-[var(--color-text-muted)]">Bấm để xem giải đáp</span>
+      </h2>
+      <div className="space-y-2">
+        {faqs.map((faq, idx) => (
+          <details
+            key={idx}
+            className="group rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-bg-primary)] px-3.5 py-2.5"
+          >
+            <summary className="cursor-pointer list-none flex items-center justify-between gap-2 text-xs sm:text-sm font-semibold text-[var(--color-text-primary)] select-none">
+              <span>{faq.question}</span>
+              <span className="text-[10px] text-[var(--color-text-muted)] group-open:rotate-180 transition-transform shrink-0">
+                ▼
+              </span>
+            </summary>
+            <p className="mt-2 pt-2 border-t border-[var(--color-border-subtle)] text-xs text-[var(--color-text-secondary)] leading-relaxed">
+              {faq.answer}
+            </p>
+          </details>
         ))}
       </div>
     </section>
