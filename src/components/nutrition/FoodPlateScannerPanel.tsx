@@ -1038,23 +1038,42 @@ export function FoodPlateScannerPanel({
           ))}
         </div>
 
-        {/* Ô ghi chú thêm cho AI nếu món có nước sốt đặc biệt */}
+        {/* Ô ghi chú thêm cho AI nếu món có nước sốt đặc biệt hoặc khi khóa Gemini Vision cần cập nhật */}
+        {scanResult.visionStatus === 'KEY_DEAD_OR_MISSING' && (
+          <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-300 text-xs text-amber-950 flex flex-wrap items-center justify-between gap-2">
+            <span>
+              💡 <strong>Mẹo tính Kcal tức thì:</strong> Hãy gõ tên món ăn bạn vừa chụp vào ô bên dưới (VD: <em>Cơm tấm sườn bì chả, Phở bò, Cá kho tộ...</em>) rồi bấm <strong>Phân tích Kcal</strong> để <strong>DeepSeek AI</strong> bóc tách định lượng ngay!
+            </span>
+            <Link
+              href="/editor/ai-settings"
+              className="px-2.5 py-1 rounded-lg bg-white border border-amber-300 text-[11px] font-extrabold text-[#2F4F30] hover:bg-emerald-50 shrink-0"
+            >
+              ⚙️ Admin: Thay Gemini Key mới
+            </Link>
+          </div>
+        )}
         <div className="pt-1 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
           <input
             type="text"
             value={userHint}
             onChange={(e) => setUserHint(e.target.value)}
-            placeholder="Nhập thêm mô tả nếu muốn AI lưu ý (VD: Đĩa của tôi có ức gà, bông cải, 2 quả trứng luộc, sốt mè rang...)"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                handleRescanWithHint();
+              }
+            }}
+            placeholder="Nhập tên món vừa chụp hoặc ghi chú thêm (VD: 1 dĩa cơm tấm sườn nướng bì chả, canh chua cá lóc...)"
             className="flex-1 px-3.5 py-2 rounded-xl bg-white border border-[#D8C7B0] text-xs text-[var(--color-text-primary)] focus:outline-hidden focus:ring-2 focus:ring-[var(--color-brand-primary)]"
           />
           <button
             type="button"
             onClick={handleRescanWithHint}
             disabled={scanning}
-            className="px-3.5 py-2 rounded-xl bg-white hover:bg-stone-50 text-[var(--color-brand-primary)] border border-[var(--color-brand-border)] text-xs font-bold inline-flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
+            className="px-3.5 py-2 rounded-xl bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-hover)] text-white text-xs font-extrabold inline-flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${scanning ? 'animate-spin' : ''}`} />
-            <span>{scanning ? 'Đang quét AI...' : 'Quét / Phân tích lại'}</span>
+            <span>{scanning ? 'Đang tính Kcal...' : '✨ Phân tích Kcal bằng AI'}</span>
           </button>
         </div>
       </div>

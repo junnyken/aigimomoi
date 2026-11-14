@@ -458,6 +458,8 @@ export function HeroFoodScannerCard() {
 
   const [activePresetId, setActivePresetId] = useState<string>(HERO_PRESETS[0].id);
   const [previewImageUrl, setPreviewImageUrl] = useState<string>(HERO_PRESETS[0].imageUrl);
+  const [uploadedBase64, setUploadedBase64] = useState<string>('');
+  const [heroHint, setHeroHint] = useState<string>('');
   const [scanning, setScanning] = useState<boolean>(false);
   const [showPins, setShowPins] = useState<boolean>(true);
   const [scanResult, setScanResult] = useState<FoodScanResponse>(HERO_PRESETS[0].scanData);
@@ -661,6 +663,7 @@ export function HeroFoodScannerCard() {
     try {
       const { dataUrl, base64 } = await compressImageToBase64(file);
       setPreviewImageUrl(dataUrl);
+      setUploadedBase64(base64);
 
       const res = await fetch('/api/ai/food-scanner', {
         method: 'POST',
@@ -668,6 +671,7 @@ export function HeroFoodScannerCard() {
         body: JSON.stringify({
           imageBase64: base64,
           mimeType: 'image/jpeg',
+          userHint: heroHint.trim(),
         }),
       });
 
@@ -676,10 +680,47 @@ export function HeroFoodScannerCard() {
         if (data.result) {
           setScanResult(data.result);
           setItems(data.result.items || []);
+          if (data.result.detectedOilLevel) {
+            setCookingOilMode(data.result.detectedOilLevel);
+          }
         }
       }
     } catch (err) {
       console.error('Lỗi quét ảnh trên trang chủ:', err);
+    } finally {
+      setScanning(false);
+    }
+  }
+
+  async function handleAnalyzeByHint() {
+    if (!heroHint.trim() && !uploadedBase64) return;
+    setActivePresetId('custom');
+    setSavedNotice(null);
+    setScanning(true);
+
+    try {
+      const res = await fetch('/api/ai/food-scanner', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          imageBase64: uploadedBase64 || '',
+          mimeType: 'image/jpeg',
+          userHint: heroHint.trim(),
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.result) {
+          setScanResult(data.result);
+          setItems(data.result.items || []);
+          if (data.result.detectedOilLevel) {
+            setCookingOilMode(data.result.detectedOilLevel);
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Lỗi phân tích món ăn:', err);
     } finally {
       setScanning(false);
     }
@@ -856,6 +897,44 @@ export function HeroFoodScannerCard() {
                 {preset.shortLabel}
               </button>
             ))}
+          </div>
+
+          {/* Thanh nhập tên món nhanh (để DeepSeek AI / Gemini Vision tính Kcal chính xác ngay trên trang chủ) */}
+          <div className="space-y-1.5">
+            {scanResult.visionStatus === 'KEY_DEAD_OR_MISSING' && (
+              <div className="px-2.5 py-1.5 rounded-xl bg-amber-50 border border-amber-300 text-[11px] text-amber-950 flex flex-wrap items-center justify-between gap-1">
+                <span>
+                  💡 <strong>Gõ tên món vừa chụp</strong> vào ô dưới để <strong>DeepSeek AI</strong> tính Kcal ngay (hoặc{' '}
+                  <Link href="/editor/ai-settings" className="underline font-extrabold text-[#2F4F30]">
+                    cập nhật Gemini Key tại Admin
+                  </Link>
+                  ).
+                </span>
+              </div>
+            )}
+            <div className="flex items-center gap-1.5">
+              <input
+                type="text"
+                value={heroHint}
+                onChange={(e) => setHeroHint(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleAnalyzeByHint();
+                  }
+                }}
+                placeholder="Nhập tên món (VD: Cơm tấm sườn bì, Phở bò, Cá kho...) để AI tính Kcal"
+                className="flex-1 min-w-0 px-2.5 py-1.5 rounded-xl bg-white border border-[#D8C7B0] text-[11px] text-[var(--color-text-primary)] focus:outline-hidden focus:border-[var(--color-brand-primary)]"
+              />
+              <button
+                type="button"
+                onClick={handleAnalyzeByHint}
+                disabled={scanning || (!heroHint.trim() && !uploadedBase64)}
+                className="px-2.5 py-1.5 rounded-xl bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-hover)] text-white text-[11px] font-extrabold shrink-0 cursor-pointer disabled:opacity-50"
+              >
+                {scanning ? 'Đang tính...' : '✨ Tính Kcal'}
+              </button>
+            </div>
           </div>
 
           {/* Hàng 2: BIỂU ĐỒ VÒNG TRÒN KCAL + 3 THANH MÀU ĐĨA ĂN HARVARD (Ít chữ, nhìn biểu đồ hiểu ngay) */}

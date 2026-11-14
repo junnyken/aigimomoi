@@ -537,16 +537,30 @@ export default function AdminAiSettingsPage() {
               )}
             </section>
 
-            {/* PHẦN 3: CẤU HÌNH GOOGLE GEMINI & OPENAI DỰ PHÒNG */}
-            <section className="bg-white rounded-2xl border border-[#EADBC8] p-5 sm:p-6 shadow-2xs space-y-5">
+            {/* PHẦN 3: CẤU HÌNH GOOGLE GEMINI (QUÉT ẢNH ĐĨA ĂN & AI ĐỒNG HÀNH) */}
+            <section className="bg-white rounded-2xl border-2 border-emerald-200 p-5 sm:p-6 shadow-xs space-y-5">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <div>
-                  <h3 className="text-base font-extrabold text-[#2F4F30]">
-                    3. Cấu hình Google Gemini & OpenAI (Đồng hành / Dự phòng)
-                  </h3>
-                  <p className="text-xs text-[#7C6A59]">
-                    Nếu máy chủ đã có sẵn biến môi trường <code className="bg-stone-100 px-1 rounded">GEMINI_API_KEY</code>, bạn không cần nhập lại trừ khi muốn thay bằng khóa mới.
-                  </p>
+                <div className="flex items-center gap-2.5">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-700 text-white flex items-center justify-center font-extrabold text-sm shadow-2xs">
+                    GM
+                  </div>
+                  <div>
+                    <h3 className="text-base font-extrabold text-[#2F4F30]">
+                      3. Cấu hình Google Gemini Vision (Chuyên Quét Ảnh Món Ăn &amp; Tính Kcal)
+                    </h3>
+                    <p className="text-xs text-[#7C6A59]">
+                      Dùng để nhận diện hình ảnh khi khách chụp đĩa ăn. Lấy khóa miễn phí tại{' '}
+                      <a
+                        href="https://aistudio.google.com/apikey"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="font-bold text-emerald-700 underline hover:text-emerald-900"
+                      >
+                        aistudio.google.com/apikey
+                      </a>{' '}
+                      (bắt đầu bằng <code className="bg-stone-100 px-1 rounded">AIzaSy...</code>)
+                    </p>
+                  </div>
                 </div>
                 {sourceBadge(providers.gemini.source, providers.gemini.hasKey)}
               </div>
@@ -555,10 +569,13 @@ export default function AdminAiSettingsPage() {
                 <div className="flex flex-wrap items-center justify-between gap-3 bg-emerald-50/60 border border-emerald-200 rounded-xl px-4 py-2.5 text-xs">
                   <div className="flex items-center gap-2 text-emerald-950">
                     <KeyRound className="w-4 h-4 text-emerald-700" />
-                    <span>Khóa Gemini đang hoạt động:</span>
+                    <span>Khóa Gemini đang lưu:</span>
                     <code className="font-mono font-bold bg-white px-2.5 py-0.5 rounded border border-emerald-200">
                       {providers.gemini.maskedKey}
                     </code>
+                    <span className="text-[11px] text-emerald-800">
+                      (Bấm <strong>Test kết nối Gemini</strong> bên dưới để kiểm tra khóa còn sống hay đã hết hạn)
+                    </span>
                   </div>
                   {providers.gemini.source === 'ADMIN_CONFIG' && (
                     <button
@@ -577,21 +594,22 @@ export default function AdminAiSettingsPage() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="md:col-span-2 space-y-1.5">
                   <label className="block text-xs font-bold text-[#2D2A26]">
-                    Ghi đè Google Gemini API Key (Tùy chọn — Để trống nếu dùng khóa mặc định của Server)
+                    Nhập Google Gemini API Key mới (Dán mã AIzaSy... vào đây để thay khóa cũ bị chết)
                   </label>
                   <div className="relative">
                     <input
                       type={showGeminiKey ? 'text' : 'password'}
                       value={geminiInputKey}
                       onChange={(e) => setGeminiInputKey(e.target.value)}
-                      placeholder="AIzaSy..."
+                      placeholder="AIzaSyxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
                       autoComplete="off"
-                      className="w-full px-3.5 py-2 pr-10 rounded-xl border border-[#D8C7B0] bg-[#FAF7F0] text-sm font-mono focus:outline-none focus:border-[#3F6240]"
+                      className="w-full px-3.5 py-2.5 pr-10 rounded-xl border border-[#D8C7B0] bg-[#FAF7F0] text-sm font-mono focus:outline-none focus:border-[#3F6240]"
                     />
                     <button
                       type="button"
                       onClick={() => setShowGeminiKey((v) => !v)}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-[#7C6A59] hover:text-[#2D2A26] cursor-pointer"
+                      title={showGeminiKey ? 'Ẩn khóa' : 'Hiện khóa'}
                     >
                       {showGeminiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
@@ -600,46 +618,84 @@ export default function AdminAiSettingsPage() {
 
                 <div className="space-y-1.5">
                   <label className="block text-xs font-bold text-[#2D2A26]">
-                    Model Gemini
+                    Model Gemini Vision
                   </label>
                   <select
                     value={geminiModel}
                     onChange={(e) => setGeminiModel(e.target.value)}
-                    className="w-full px-3.5 py-2 rounded-xl border border-[#D8C7B0] bg-[#FAF7F0] text-sm font-semibold focus:outline-none focus:border-[#3F6240]"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#D8C7B0] bg-[#FAF7F0] text-sm font-semibold focus:outline-none focus:border-[#3F6240]"
                   >
-                    <option value="gemini-2.5-flash">gemini-2.5-flash (Cân bằng & Mạnh mẽ)</option>
-                    <option value="gemini-2.5-pro">gemini-2.5-pro (Chuyên sâu)</option>
-                    <option value="gemini-3.5-flash-lite">gemini-3.5-flash-lite (Siêu tốc)</option>
+                    <option value="gemini-2.5-flash">gemini-2.5-flash (Chuẩn Quét Ảnh &amp; Nhanh)</option>
+                    <option value="gemini-2.0-flash">gemini-2.0-flash (Ổn định &amp; Tốc độ cao)</option>
+                    <option value="gemini-2.5-flash-lite">gemini-2.5-flash-lite (Siêu tốc, tiết kiệm quota)</option>
+                    <option value="gemini-2.5-pro">gemini-2.5-pro (Phân tích chuyên sâu)</option>
                   </select>
                 </div>
               </div>
 
-              <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
                 <button
                   type="button"
                   onClick={() => handleTestConnection('gemini')}
                   disabled={testingProvider === 'gemini'}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#FAF7F0] hover:bg-emerald-50 text-[#2F4F30] border border-[#D8C7B0] text-xs font-bold transition-colors cursor-pointer"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-[#2F4F30] border border-emerald-200 text-xs font-bold transition-colors cursor-pointer disabled:opacity-60"
                 >
-                  <Zap className="w-3.5 h-3.5 text-emerald-700" />
-                  <span>{testingProvider === 'gemini' ? 'Đang kiểm tra...' : 'Test kết nối Gemini'}</span>
+                  <Zap className="w-4 h-4 text-emerald-700" />
+                  <span>
+                    {testingProvider === 'gemini'
+                      ? 'Đang kiểm tra khóa Gemini...'
+                      : '⚡ Test kết nối Gemini ngay'}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleSave()}
+                  disabled={saving}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#3F6240] hover:bg-[#324f33] text-white text-xs font-extrabold transition-all shadow-xs cursor-pointer disabled:opacity-60"
+                >
+                  <Save className="w-4 h-4" />
+                  <span>{saving ? 'Đang mã hóa & lưu...' : 'Lưu Khóa Gemini & Cấu Hình'}</span>
                 </button>
               </div>
 
               {testResults.gemini && (
                 <div
-                  className={`rounded-xl p-3 border text-xs ${
+                  className={`rounded-xl p-3.5 border text-xs ${
                     testResults.gemini.ok
                       ? 'bg-emerald-50 border-emerald-300 text-emerald-950'
                       : 'bg-rose-50 border-rose-300 text-rose-900'
                   }`}
                 >
                   {testResults.gemini.ok ? (
-                    <span>
-                      ✅ Kết nối Gemini ({testResults.gemini.model}) thành công ({testResults.gemini.latencyMs}ms): &ldquo;{testResults.gemini.sampleReply}&rdquo;
-                    </span>
+                    <div className="space-y-1">
+                      <div className="font-extrabold flex items-center gap-1.5">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-700" />
+                        <span>
+                          Kết nối Gemini ({testResults.gemini.model}) THÀNH CÔNG! ({testResults.gemini.latencyMs}ms) — Tính năng chụp ảnh tính Kcal đã sẵn sàng hoạt động.
+                        </span>
+                      </div>
+                      <p className="italic text-emerald-800">&ldquo;{testResults.gemini.sampleReply}&rdquo;</p>
+                    </div>
                   ) : (
-                    <span>❌ {testResults.gemini.error}</span>
+                    <div className="space-y-1 font-bold">
+                      <div className="flex items-center gap-1.5">
+                        <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+                        <span>Khóa Gemini hiện tại bị lỗi / đã chết: {testResults.gemini.error}</span>
+                      </div>
+                      <p className="text-[11px] font-normal text-rose-800">
+                        👉 Cách khắc phục 30 giây: Truy cập{' '}
+                        <a
+                          href="https://aistudio.google.com/apikey"
+                          target="_blank"
+                          rel="noreferrer"
+                          className="underline font-bold"
+                        >
+                          aistudio.google.com/apikey
+                        </a>
+                        , bấm <strong>Create API key</strong>, dán mã <code className="bg-white px-1 rounded">AIzaSy...</code> vào ô bên trên rồi bấm <strong>Lưu Khóa Gemini &amp; Cấu Hình</strong>.
+                      </p>
+                    </div>
                   )}
                 </div>
               )}

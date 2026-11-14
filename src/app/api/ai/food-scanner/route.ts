@@ -36,18 +36,39 @@ export interface FoodScanResponse {
   visualAnchorNote?: string;
   overallConfidence?: number;
   detectedOilLevel?: 'NONE' | 'LIGHT_OIL' | 'SAUCE_RICH';
+  visionStatus?: 'OK' | 'DEEPSEEK_TEXT_AI' | 'KEY_DEAD_OR_MISSING' | 'QUOTA_LIMIT';
+  visionMessage?: string;
+}
+
+function extractJsonObject(raw: string): string {
+  const cleaned = raw
+    .replace(/^```json\s*/i, '')
+    .replace(/^```\s*/i, '')
+    .replace(/```\s*$/i, '')
+    .trim();
+  const firstBrace = cleaned.indexOf('{');
+  const lastBrace = cleaned.lastIndexOf('}');
+  if (firstBrace !== -1 && lastBrace > firstBrace) {
+    return cleaned.slice(firstBrace, lastBrace + 1);
+  }
+  return cleaned;
 }
 
 const FCT_KEYWORD_SYNONYMS: Array<{ keywords: string[]; slug: string }> = [
   { keywords: ['ức gà', 'gà áp chảo', 'gà luộc', 'gà xé'], slug: 'uc-ga-phi-le' },
-  { keywords: ['đùi gà', 'cánh gà', 'gà kho', 'gà nướng', 'gà chiên', 'thịt gà'], slug: 'thit-ga-ta' },
+  { keywords: ['đùi gà', 'cánh gà', 'gà kho', 'gà nướng', 'gà chiên', 'thịt gà', 'cơm gà'], slug: 'thit-ga-ta' },
   { keywords: ['cá hồi'], slug: 'ca-hoi-phi-le' },
-  { keywords: ['cá lóc', 'cá kho', 'cá basa', 'cá thu', 'cá diêu hồng', 'cá hấp', 'cá chiên'], slug: 'ca-loc-dong' },
+  { keywords: ['cá lóc', 'cá kho', 'cá quả', 'cá đồng'], slug: 'ca-loc' },
+  { keywords: ['cá basa', 'cá hú'], slug: 'ca-basa-phi-le' },
+  { keywords: ['cá thu'], slug: 'ca-thu' },
+  { keywords: ['cá diêu hồng', 'cá hấp', 'cá chiên', 'cá rô'], slug: 'ca-dieu-hong' },
   { keywords: ['tôm', 'tôm cháy tỏi', 'tôm hấp', 'tôm luộc', 'tôm nõn', 'tôm rim'], slug: 'tom-non' },
-  { keywords: ['trứng gà', 'trứng luộc', 'trứng lòng đào', 'trứng ốp la', 'trứng chiên', 'trứng kho'], slug: 'trung-ga' },
+  { keywords: ['trứng gà', 'trứng luộc', 'trứng lòng đào', 'trứng ốp la', 'trứng chiên', 'trứng kho', 'chả trứng'], slug: 'trung-ga' },
   { keywords: ['bò bít tết', 'thăn bò', 'thịt bò', 'bò áp chảo', 'bò xào', 'phở bò', 'bún bò'], slug: 'thit-bo-phi-le' },
-  { keywords: ['thịt kho', 'ba chỉ', 'ba rọi', 'thịt quay', 'bún chả'], slug: 'thit-ba-chi' },
-  { keywords: ['sườn nướng', 'sườn xào', 'sườn cốt lết', 'sườn heo', 'cơm tấm'], slug: 'suon-heo-non' },
+  { keywords: ['thịt kho', 'ba chỉ', 'ba rọi', 'thịt quay', 'bún chả', 'thịt nướng'], slug: 'thit-ba-chi' },
+  { keywords: ['sườn cốt lết', 'cơm tấm', 'cơm sườn', 'sườn nướng'], slug: 'suon-cot-let' },
+  { keywords: ['sườn xào', 'sườn heo', 'sườn non', 'canh sườn'], slug: 'suon-heo' },
+  { keywords: ['bì chả', 'chả lụa', 'giò lụa', 'chả hấp'], slug: 'cha-lua' },
   { keywords: ['thịt heo luộc', 'thịt nạc', 'thịt thăn heo', 'heo luộc', 'thịt băm'], slug: 'thit-heo-nac' },
   { keywords: ['mực', 'mực ống', 'mực hấp', 'mực xào'], slug: 'muc-ong' },
   { keywords: ['đậu phụ', 'đậu hũ', 'đậu hũ sốt cà', 'đậu khuôn'], slug: 'dau-phu' },
@@ -83,8 +104,9 @@ const FCT_KEYWORD_SYNONYMS: Array<{ keywords: string[]; slug: string }> = [
   { keywords: ['đậu nành nhật', 'edamame'], slug: 'dau-nanh-edamame' },
   { keywords: ['đậu hà lan'], slug: 'dau-ha-lan' },
   { keywords: ['cơm gạo lứt', 'gạo lứt', 'cơm lứt'], slug: 'com-gao-lut-chin' },
-  { keywords: ['cơm trắng', 'cơm nóng', 'chén cơm', 'bát cơm', 'cơm tấm'], slug: 'com-trang-chin' },
-  { keywords: ['bún tươi', 'bún bò', 'bún chả', 'bún thịt nướng', 'phở'], slug: 'bun-tuoi' },
+  { keywords: ['cơm trắng', 'cơm nóng', 'chén cơm', 'bát cơm', 'cơm tấm', 'cơm sườn', 'cơm gà'], slug: 'com-trang-chin' },
+  { keywords: ['phở', 'phở bò', 'phở gà', 'bánh phở'], slug: 'banh-pho-tuoi' },
+  { keywords: ['bún tươi', 'bún bò', 'bún chả', 'bún thịt nướng'], slug: 'bun-tuoi' },
   { keywords: ['mỳ ý', 'mì ý', 'spaghetti', 'pasta'], slug: 'mi-y-luoc' },
   { keywords: ['sốt pesto', 'pesto'], slug: 'sot-pesto' },
   { keywords: ['yến mạch'], slug: 'yen-mach' },
@@ -258,12 +280,18 @@ function buildImprovementTipsForPlate(
   return tips;
 }
 
+interface GeminiVisionAttempt {
+  result: FoodScanResponse | null;
+  failureStatus?: 'KEY_DEAD_OR_MISSING' | 'QUOTA_LIMIT';
+  failureDetail?: string;
+}
+
 async function callGeminiVision(
   imageBase64: string,
   mimeType: string,
   userHint: string
-): Promise<FoodScanResponse | null> {
-  const effectiveCfg = await getEffectiveAiConfig();
+): Promise<GeminiVisionAttempt> {
+  const effectiveCfg = await getEffectiveAiConfig(true);
   const apiKey =
     effectiveCfg.gemini.apiKey ||
     process.env.GEMINI_API_KEY ||
@@ -271,19 +299,28 @@ async function callGeminiVision(
     process.env.GOOGLE_GENERATIVE_AI_API_KEY;
 
   if (!apiKey || !apiKey.trim()) {
-    return null;
+    return {
+      result: null,
+      failureStatus: 'KEY_DEAD_OR_MISSING',
+      failureDetail: 'Chưa cấu hình khóa Google Gemini API Key cho tính năng nhận diện ảnh.',
+    };
   }
+
+  const rawConfiguredModel =
+    effectiveCfg.gemini.model === 'gemini-3.5-flash-lite'
+      ? 'gemini-2.5-flash'
+      : effectiveCfg.gemini.model;
 
   const candidateModels = Array.from(
     new Set(
       [
-        effectiveCfg.gemini.model,
+        rawConfiguredModel,
         process.env.GEMINI_MODEL,
         'gemini-2.5-flash',
         'gemini-2.0-flash',
         'gemini-2.5-flash-lite',
         'gemini-1.5-flash',
-      ].filter((m): m is string => Boolean(m && m.trim()))
+      ].filter((m): m is string => Boolean(m && m.trim() && m !== 'gemini-3.5-flash-lite'))
     )
   );
 
@@ -332,12 +369,24 @@ Quy tắc bắt buộc:
     ? `Hãy phân tích chi tiết các thành phần thực phẩm, rau củ, thịt cá và khối lượng gram trong bức ảnh này. Ghi chú thêm từ người dùng: "${userHint}".`
     : `Hãy phân tích chi tiết từng thành phần rau củ quả, đạm, tinh bột và ước tính số gram trên đĩa ăn trong bức ảnh này.`;
 
+  let sawInvalidKey = false;
+  let sawQuotaLimit = false;
+
   for (const modelName of candidateModels) {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 14000);
+    const timeoutId = setTimeout(() => controller.abort(), 16000);
 
     try {
-      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+      const generationConfig: Record<string, unknown> = {
+        temperature: 0.2,
+        maxOutputTokens: 4096,
+        responseMimeType: 'application/json',
+      };
+      if (modelName.startsWith('gemini-2.5') && !modelName.includes('lite')) {
+        generationConfig.thinkingConfig = { thinkingBudget: 0 };
+      }
+
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey.trim()}`;
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -357,11 +406,7 @@ Quy tắc bắt buộc:
               ],
             },
           ],
-          generationConfig: {
-            temperature: 0.2,
-            maxOutputTokens: 1400,
-            responseMimeType: 'application/json',
-          },
+          generationConfig,
         }),
         signal: controller.signal,
       });
@@ -369,20 +414,35 @@ Quy tắc bắt buộc:
       if (!res.ok) {
         const errTxt = await res.text();
         logger.warn(`Gemini Vision model ${modelName} returned ${res.status}`, {
-          error: errTxt.slice(0, 180),
+          error: errTxt.slice(0, 220),
         });
+        if (
+          res.status === 400 ||
+          res.status === 401 ||
+          res.status === 403 ||
+          errTxt.includes('API_KEY_INVALID') ||
+          errTxt.includes('API key expired') ||
+          errTxt.includes('API key not valid')
+        ) {
+          sawInvalidKey = true;
+        } else if (res.status === 429 || errTxt.includes('RESOURCE_EXHAUSTED')) {
+          sawQuotaLimit = true;
+        }
         continue;
       }
 
       const data = await res.json();
-      const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-      if (!rawText) continue;
-
-      const cleanedJson = rawText
-        .replace(/^```json\s*/i, '')
-        .replace(/```\s*$/i, '')
+      const parts: Array<{ text?: string; thought?: boolean }> =
+        data.candidates?.[0]?.content?.parts || [];
+      const nonThoughtParts = parts.filter((p) => !p.thought && typeof p.text === 'string');
+      const rawText = (nonThoughtParts.length > 0 ? nonThoughtParts : parts)
+        .map((p) => p.text || '')
+        .join('')
         .trim();
 
+      if (!rawText) continue;
+
+      const cleanedJson = extractJsonObject(rawText);
       const parsed = JSON.parse(cleanedJson);
       if (!parsed || !Array.isArray(parsed.items) || parsed.items.length === 0) {
         continue;
@@ -404,26 +464,29 @@ Quy tắc bắt buộc:
         : [];
 
       return {
-        dishTitle: String(parsed.dishTitle || 'Đĩa Ăn Dinh Dưỡng Đã Quét'),
-        mealFormat:
-          parsed.mealFormat === 'DAILY_3_MEALS' || parsed.mealFormat === 'FAMILY_TRAY'
-            ? parsed.mealFormat
-            : 'SINGLE_PLATE',
-        healthScore: Math.min(100, Math.max(40, Number(parsed.healthScore) || 88)),
-        overallConfidence: Math.min(98, Math.max(82, Number(parsed.overallConfidence) || 93)),
-        visualAnchorNote: String(
-          parsed.visualAnchorNote ||
-            `Đếm ${enrichedItems.length} thành phần trên đĩa + đối chiếu tỷ lệ lòng đĩa tiêu chuẩn 22cm`
-        ),
-        detectedOilLevel: detectedOil,
-        coachSummary: String(
-          parsed.coachSummary ||
-            'Đĩa ăn có sự kết hợp hài hòa giữa nhóm rau củ giàu chất xơ, đạm nạc và tinh bột tốt.'
-        ),
-        improvementTips:
-          aiTips.length >= 2 ? aiTips.slice(0, 3) : buildImprovementTipsForPlate(enrichedItems, detectedOil),
-        items: enrichedItems,
-        provider: `gemini-vision (${modelName})`,
+        result: {
+          dishTitle: String(parsed.dishTitle || 'Đĩa Ăn Dinh Dưỡng Đã Quét'),
+          mealFormat:
+            parsed.mealFormat === 'DAILY_3_MEALS' || parsed.mealFormat === 'FAMILY_TRAY'
+              ? parsed.mealFormat
+              : 'SINGLE_PLATE',
+          healthScore: Math.min(100, Math.max(40, Number(parsed.healthScore) || 88)),
+          overallConfidence: Math.min(98, Math.max(82, Number(parsed.overallConfidence) || 93)),
+          visualAnchorNote: String(
+            parsed.visualAnchorNote ||
+              `Đếm ${enrichedItems.length} thành phần trên đĩa + đối chiếu tỷ lệ lòng đĩa tiêu chuẩn 22cm`
+          ),
+          detectedOilLevel: detectedOil,
+          coachSummary: String(
+            parsed.coachSummary ||
+              'Đĩa ăn có sự kết hợp hài hòa giữa nhóm rau củ giàu chất xơ, đạm nạc và tinh bột tốt.'
+          ),
+          improvementTips:
+            aiTips.length >= 2 ? aiTips.slice(0, 3) : buildImprovementTipsForPlate(enrichedItems, detectedOil),
+          items: enrichedItems,
+          provider: `gemini-vision (${modelName})`,
+          visionStatus: 'OK',
+        },
       };
     } catch (err) {
       logger.warn(`Gemini Vision model ${modelName} failed, trying next model`, {
@@ -434,11 +497,18 @@ Quy tắc bắt buộc:
     }
   }
 
-  return null;
+  return {
+    result: null,
+    failureStatus: sawQuotaLimit && !sawInvalidKey ? 'QUOTA_LIMIT' : 'KEY_DEAD_OR_MISSING',
+    failureDetail:
+      sawQuotaLimit && !sawInvalidKey
+        ? 'Khóa Gemini Vision đang tạm chạm giới hạn lượt gọi (Quota 429).'
+        : 'Khóa Google Gemini API Key trên máy chủ đã hết hạn hoặc không hợp lệ. Hãy nhập tên món bên dưới để DeepSeek AI tính Kcal ngay, hoặc cập nhật Gemini Key mới trong trang Admin (/editor/ai-settings).',
+  };
 }
 
 async function callAiGatewayFromTextHint(userHint: string): Promise<FoodScanResponse | null> {
-  if (!userHint || userHint.trim().length < 3) return null;
+  if (!userHint || userHint.trim().length < 2) return null;
   try {
     const completion = await aiGateway.complete({
       systemInstruction: `Bạn là Chuyên gia Dinh dưỡng Viện Dinh Dưỡng Quốc Gia Việt Nam của hệ thống "Ăn Gì Mom".
@@ -465,7 +535,7 @@ Trả về JSON thuần túy:
 }`,
       prompt: `Bóc tách dinh dưỡng và gợi ý cải thiện cho bữa ăn: "${userHint}"`,
       temperature: 0.25,
-      maxTokens: 900,
+      maxTokens: 2500,
       jsonMode: true,
     });
 
@@ -473,10 +543,7 @@ Trả về JSON thuần túy:
       return null;
     }
 
-    const cleaned = completion.text
-      .replace(/^```json\s*/i, '')
-      .replace(/```\s*$/i, '')
-      .trim();
+    const cleaned = extractJsonObject(completion.text);
     const parsed = JSON.parse(cleaned);
     if (!parsed || !Array.isArray(parsed.items) || parsed.items.length === 0) {
       return null;
@@ -501,7 +568,7 @@ Trả về JSON thuần túy:
       dishTitle: String(parsed.dishTitle || `Đĩa Ăn: ${userHint}`),
       mealFormat: 'SINGLE_PLATE',
       healthScore: 90,
-      overallConfidence: 93,
+      overallConfidence: 94,
       visualAnchorNote: `Phân tích chuyên sâu bởi AI (${completion.provider}) + Đối chiếu Bảng Thành Phần Thực Phẩm Việt Nam (VDD)`,
       detectedOilLevel: detectedOil,
       coachSummary: String(
@@ -512,13 +579,20 @@ Trả về JSON thuần túy:
         aiTips.length >= 2 ? aiTips.slice(0, 3) : buildImprovementTipsForPlate(enrichedItems, detectedOil),
       items: enrichedItems,
       provider: completion.provider,
+      visionStatus: 'DEEPSEEK_TEXT_AI',
     };
-  } catch {
+  } catch (err) {
+    logger.warn('callAiGatewayFromTextHint failed', {
+      error: err instanceof Error ? err.message : String(err),
+    });
     return null;
   }
 }
 
-function buildHeuristicFallbackFromHint(userHint: string): FoodScanResponse {
+function buildHeuristicFallbackFromHint(
+  userHint: string,
+  visionAttempt?: GeminiVisionAttempt
+): FoodScanResponse {
   const lower = userHint.toLowerCase();
   const matchedItems: ScannedFoodItem[] = [];
 
@@ -533,7 +607,10 @@ function buildHeuristicFallbackFromHint(userHint: string): FoodScanResponse {
               estimatedGrams:
                 fct.slug === 'trung-ga'
                   ? 110
-                  : fct.slug.includes('com-') || fct.slug === 'mi-y-luoc' || fct.slug === 'bun-tuoi'
+                  : fct.slug.includes('com-') ||
+                    fct.slug === 'mi-y-luoc' ||
+                    fct.slug === 'bun-tuoi' ||
+                    fct.slug === 'banh-pho-tuoi'
                   ? 130
                   : 95,
               portionNote:
@@ -597,14 +674,18 @@ function buildHeuristicFallbackFromHint(userHint: string): FoodScanResponse {
   }
 
   return {
-    dishTitle: userHint ? `Đĩa Ăn: ${userHint}` : 'Đĩa Eat Clean Cân Bằng Đạm – Rau Củ – Tinh Bột Chậm',
+    dishTitle: userHint
+      ? `Đĩa Ăn: ${userHint}`
+      : 'Ảnh vừa tải lên — Gõ tên món bên dưới để AI tính Kcal chính xác',
     mealFormat: 'SINGLE_PLATE',
     healthScore: 90,
     coachSummary:
-      'Đã bóc tách các nhóm Đạm nạc, Rau xanh và Tinh bột hấp thu chậm theo chuẩn Bảng Thành Phần Thực Phẩm Việt Nam (VDD). Bạn có thể bấm [+] / [-] bên dưới để tinh chỉnh đúng số gram thực tế trên đĩa.',
+      'Đã bóc tách các nhóm Đạm nạc, Rau xanh và Tinh bột hấp thu chậm theo chuẩn Bảng Thành Phần Thực Phẩm Việt Nam (VDD). Bạn có thể gõ tên món ăn vào ô bên dưới để DeepSeek AI tính chính xác Kcal hoặc bấm [+] / [-] chỉnh gram.',
     improvementTips: buildImprovementTipsForPlate(matchedItems, 'LIGHT_OIL'),
     items: matchedItems,
     provider: 'fct-heuristic-fallback',
+    visionStatus: visionAttempt?.failureStatus || 'KEY_DEAD_OR_MISSING',
+    visionMessage: visionAttempt?.failureDetail,
   };
 }
 
@@ -649,17 +730,19 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    let visionAttempt: GeminiVisionAttempt | undefined;
+
     if (cleanBase64) {
-      const visionResult = await callGeminiVision(cleanBase64, mimeType, userHint);
-      if (visionResult) {
+      visionAttempt = await callGeminiVision(cleanBase64, mimeType, userHint);
+      if (visionAttempt.result) {
         return NextResponse.json({
           success: true,
-          result: visionResult,
+          result: visionAttempt.result,
         });
       }
     }
 
-    // Nếu người dùng nhập mô tả (hoặc chỉ có DeepSeek key), gọi AI Gateway (DeepSeek) để bóc tách chính xác
+    // Nếu người dùng nhập mô tả (hoặc Gemini Vision chết mà có mô tả tên món), gọi AI Gateway (DeepSeek) để bóc tách chính xác 100%
     if (userHint) {
       const aiTextResult = await callAiGatewayFromTextHint(userHint);
       if (aiTextResult) {
@@ -670,8 +753,8 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Fallback thông minh theo từ điển Viện Dinh Dưỡng
-    const fallbackResult = buildHeuristicFallbackFromHint(userHint);
+    // Fallback thông minh theo từ điển Viện Dinh Dưỡng + kèm trạng thái visionStatus để UI nhắc nhập tên món hoặc thay Gemini Key
+    const fallbackResult = buildHeuristicFallbackFromHint(userHint, visionAttempt);
     return NextResponse.json({
       success: true,
       result: fallbackResult,

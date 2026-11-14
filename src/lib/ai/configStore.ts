@@ -247,7 +247,10 @@ export async function getEffectiveAiConfig(forceRefresh = false): Promise<Effect
     },
     gemini: {
       apiKey: geminiKey,
-      model: (stored.geminiModel || process.env.GEMINI_MODEL || 'gemini-2.5-flash').trim(),
+      model: (() => {
+        const raw = (stored.geminiModel || process.env.GEMINI_MODEL || 'gemini-2.5-flash').trim();
+        return raw === 'gemini-3.5-flash-lite' ? 'gemini-2.5-flash' : raw;
+      })(),
       source: adminGeminiKey ? 'ADMIN_CONFIG' : envGeminiKey ? 'ENV' : 'NONE',
     },
     openai: {
