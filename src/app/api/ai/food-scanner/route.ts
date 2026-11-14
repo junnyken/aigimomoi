@@ -497,6 +497,99 @@ Quy tắc bắt buộc:
     }
   }
 
+  // Dự phòng Vision thứ 2: Nếu Admin có cấu hình OpenAI API Key (gpt-4o-mini hỗ trợ đọc ảnh trực tiếp)
+  const openaiKey = (effectiveCfg.openai.apiKey || process.env.OPENAI_API_KEY || '').trim();
+  if (openaiKey) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 16000);
+    try {
+      const openaiModel = effectiveCfg.openai.model || 'gpt-4o-mini';
+      const res = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${openaiKey}`,
+        },
+        body: JSON.stringify({
+          model: openaiModel,
+          temperature: 0.2,
+          max_tokens: 2000,
+          response_format: { type: 'json_object' },
+          messages: [
+            { role: 'system', content: systemInstruction },
+            {
+              role: 'user',
+              content: [
+                { type: 'text', text: userPrompt },
+                {
+                  type: 'image_url',
+                  image_url: {
+                    url: `data:${mimeType || 'image/jpeg'};base64,${imageBase64}`,
+                  },
+                },
+              ],
+            },
+          ],
+        }),
+        signal: controller.signal,
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        const rawText = data.choices?.[0]?.message?.content || '';
+        if (rawText) {
+          const parsed = JSON.parse(extractJsonObject(rawText));
+          if (parsed && Array.isArray(parsed.items) && parsed.items.length > 0) {
+            const enrichedItems = parsed.items
+              .slice(0, 10)
+              .map((it: Partial<ScannedFoodItem>, idx: number) => enrichItemWithFct(it, idx));
+            const detectedOil: 'NONE' | 'LIGHT_OIL' | 'SAUCE_RICH' =
+              parsed.detectedOilLevel === 'NONE' ||
+              parsed.detectedOilLevel === 'LIGHT_OIL' ||
+              parsed.detectedOilLevel === 'SAUCE_RICH'
+                ? parsed.detectedOilLevel
+                : 'LIGHT_OIL';
+            const aiTips = Array.isArray(parsed.improvementTips)
+              ? parsed.improvementTips.map((t: unknown) => String(t).trim()).filter(Boolean)
+              : [];
+
+            return {
+              result: {
+                dishTitle: String(parsed.dishTitle || 'Đĩa Ăn Dinh Dưỡng Đã Quét'),
+                mealFormat:
+                  parsed.mealFormat === 'DAILY_3_MEALS' || parsed.mealFormat === 'FAMILY_TRAY'
+                    ? parsed.mealFormat
+                    : 'SINGLE_PLATE',
+                healthScore: Math.min(100, Math.max(40, Number(parsed.healthScore) || 88)),
+                overallConfidence: Math.min(98, Math.max(82, Number(parsed.overallConfidence) || 93)),
+                visualAnchorNote: String(
+                  parsed.visualAnchorNote ||
+                    `Đếm ${enrichedItems.length} thành phần trên đĩa + đối chiếu chuẩn Viện Dinh Dưỡng`
+                ),
+                detectedOilLevel: detectedOil,
+                coachSummary: String(
+                  parsed.coachSummary ||
+                    'Đĩa ăn có sự kết hợp hài hòa giữa nhóm rau củ giàu chất xơ, đạm nạc và tinh bột tốt.'
+                ),
+                improvementTips:
+                  aiTips.length >= 2
+                    ? aiTips.slice(0, 3)
+                    : buildImprovementTipsForPlate(enrichedItems, detectedOil),
+                items: enrichedItems,
+                provider: `openai-vision (${openaiModel})`,
+                visionStatus: 'OK',
+              },
+            };
+          }
+        }
+      }
+    } catch {
+      // ignore OpenAI fallback error
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  }
+
   return {
     result: null,
     failureStatus: sawQuotaLimit && !sawInvalidKey ? 'QUOTA_LIMIT' : 'KEY_DEAD_OR_MISSING',
