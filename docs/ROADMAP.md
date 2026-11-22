@@ -107,11 +107,23 @@ Gate P7: Mở rộng thể loại món ăn không làm vỡ taxonomy và engine;
 | R7 | Chợ công thức giai đoạn 1 (hồ sơ người nấu, nhãn nguồn, bậc uy tín, lọc nguồn) | R6 | `closed` (21/10/2026 - D65) — Miễn phí |
 | R8 | Khóa nội dung, gói công thức & quyền sở hữu (entitlements, zero-money claim) | R7 | `closed` (21/10/2026 - D66) — R9–R10 (thanh toán thật) chờ pháp nhân |
 
+## Phase U — Competitor Upgrade & Family Nutrition Ecosystem (22/11/2026)
+| ID | Capability | Dependency | Trạng thái |
+|---|---|---|---|
+| U0 | Next.js `16.4.6` Security Upgrade, Real DB `AggregateRating`, 5 Dipping Sauces, Creator Bundles UI & Zero `alert()` | R8 | `closed` (22/11/2026 - D67) |
+| U1 | Kitchen UX: Client-side Cooksnap compression, Household unit switcher (`g/ml ↔ lạng/chén/muỗng`), Multi-pot background timers + WakeLock + Vietnamese TTS | U0, AG-19 | `closed` (22/11/2026 - D68) |
+| U2 | 3-Mode AI Vision Scanner (`MEAL` shared tray + extra rice bowls, `FRIDGE` vision + `/tu-lanh` camera modal, `LABEL` traffic-light OCR) + Vietnamese Voice Input (`vi-VN`) | U1, AG-27 | `closed` (22/11/2026 - D69) |
+| U3 | Visual Food Diary Timeline, Daily Harvard Plate Score (`0–100`), Consecutive Streak, Water Tracker, Adaptive TDEE & 167-item Vietnamese Eating-Out Dictionary | U2, AG-38 | `closed` (22/11/2026 - D70) |
+| U4 | Customizable 2–5 Family Member Profiles, TDEE → Family Sync & 8-Profile Health/Budget Guardrail Scorer (`Đạt chuẩn` / `Cần lưu ý`) | U3, AG-21 | `closed` (22/11/2026 - D71) |
+| U5 | PostgreSQL 24h Live Shared Grocery Session (`0015_live_shared_shopping_sessions`), Automatic Pantry Deduction & AI Recipe Clipper shortcut | U4, AG-23, AG-40 | `closed` (22/11/2026 - D72) |
+
+Gate Phase U: Nâng cấp toàn diện AI Scanner đa chế độ + giọng nói tiếng Việt, Nhật ký trực quan + 167 món hàng quán VN, Chia khẩu phần 1 mâm 2–5 người tùy chỉnh + Guardrail bệnh lý và Giỏ đi chợ đồng bộ PostgreSQL 24h + Trừ đồ Tủ lạnh tự động — **GATE PHASE U ĐÃ ĐẠT (MU0–MU5 COMPLETED)**
+
 ## P8 — Kinh doanh và scale
 Chỉ sau dữ liệu sử dụng thật. Payment/subscription là phạm vi riêng.
 
 ## Mốc
-M1 scope/kiến trúc/prototype duyệt · M2 catalog + nội dung thật · M3 MVP pilot · M4 AI an toàn · M5+ mở rộng theo evidence · MR0 Secret Fail-Closed & Auth Hardening · MR1 Data Honesty & Badges · MR2 Core MVP Flows Verified · MR3 E2E trình duyệt + CI sẵn sàng · MR4 Drizzle Journal 11/11 & Fail-Closed Deploy · MR5 Zero Lint, Registration & VPS Vibe Host Ready · MR6 Password Reset, Mắt Bão SMTP & Profile Ready · MR7 Chợ công thức giai đoạn 1 (miễn phí) · MR8 Khóa nội dung & Gói công thức.
+M1 scope/kiến trúc/prototype duyệt · M2 catalog + nội dung thật · M3 MVP pilot · M4 AI an toàn · M5+ mở rộng theo evidence · MR0 Secret Fail-Closed & Auth Hardening · MR1 Data Honesty & Badges · MR2 Core MVP Flows Verified · MR3 E2E trình duyệt + CI sẵn sàng · MR4 Drizzle Journal 11/11 & Fail-Closed Deploy · MR5 Zero Lint, Registration & VPS Vibe Host Ready · MR6 Password Reset, Mắt Bão SMTP & Profile Ready · MR7 Chợ công thức giai đoạn 1 (miễn phí) · MR8 Khóa nội dung & Gói công thức · MU0 Security `16.4.6` & Zero Mock · MU1 Bếp Việt thực chiến · MU2 AI Scanner 3 chế độ & Giọng nói VN · MU3 Visual Food Diary & 167 Hàng quán VN · MU4 Hồ sơ Gia đình 2–5 người & Guardrail Bệnh lý · MU5 PostgreSQL 24h Live Shopping & Pantry Deduction.
 
 
 

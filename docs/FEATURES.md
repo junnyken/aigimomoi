@@ -16,6 +16,7 @@ Toàn bộ các giai đoạn trong [ROADMAP.md](./ROADMAP.md) từ **P0 → P7 (
 | **P7 — Mở Rộng Thực Đơn & Kho** | `AG-39` → `AG-41` | Mở rộng 60+ món (Cơm nhà, Món nước, Chay, Giảm cân Eat Clean, Tập Gym), Tủ lạnh nhà tôi (`/tu-lanh`), Kế hoạch 7 ngày (`/ke-hoach-tuan`) | ✅ Hoàn thành 100% |
 | **Phase R — Production Hardening** | `R0` → `R8` | Bảo mật phiên `AUTH_SECRET`, Đăng ký / Đăng nhập / Quên mật khẩu qua SMTP, Hồ sơ người nấu & Chợ công thức | ✅ Hoàn thành 100% |
 | **Mở rộng — Song ngữ & Google SEO** | `I18N` + `SEO` | Chuyển đổi ngôn ngữ `VI / EN` tức thì, URL song ngữ, JSON-LD `Recipe` + `NutritionInformation` + `BreadcrumbList` + `FAQPage`, bộ 4 trang E-E-A-T | ✅ Hoàn thành 100% |
+| **Phase U — Nâng cấp Chiến lược** | `U0` → `U5` | Next.js `16.4.6`, Cooksnap nén client & đổi đơn vị bếp (`g/ml ↔ lạng/chén/muỗng`), đa timer + WakeLock + TTS VN, AI Scanner 3 chế độ (`MEAL`/`FRIDGE`/`LABEL`) + giọng nói VN + cơm ăn kèm, Visual Food Diary + Harvard Score + Streak + 167 món hàng quán VN, Hồ sơ gia đình 2–5 người + Guardrail bệnh lý, Giỏ đi chợ live PostgreSQL 24h & Trừ đồ Tủ lạnh | ✅ Hoàn thành 100% |
 
 ## 2. Các Hạng Mục Để Dành Cho Giai Đoạn Tăng Trưởng Thương Mại (`Phase P8 / R9–R10`)
 Theo đúng định hướng tại [ROADMAP.md](./ROADMAP.md), chỉ còn duy nhất nhóm tính năng **Thu phí trực tuyến (Cổng thanh toán VietQR / VNPay / Stripe — `R9–R10`)** được chủ động giữ ở chế độ *Miễn phí 100% cho người dùng* trong giai đoạn ra mắt để thu hút lưu lượng truy cập từ Google trước khi bật thương mại hóa.

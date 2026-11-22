@@ -37,8 +37,10 @@ ENV HOSTNAME="0.0.0.0"
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-# Copy thư mục static assets và standalone build
-COPY --from=builder /app/public ./public
+# Copy thư mục static assets, drizzle migrations và standalone build
+COPY --from=builder --chown=nextjs:nodejs /app/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/drizzle ./drizzle
+RUN mkdir -p /app/public/uploads/recipes /app/public/uploads/feedback /app/public/uploads/diary && chown -R nextjs:nodejs /app/public/uploads
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 

@@ -2,7 +2,15 @@
 
 Website giúp người nấu cơm gia đình tìm món, chuẩn bị nguyên liệu đúng khẩu phần, ghép bữa cơm và làm theo từng bước.
 
-**Trạng thái:** P0 — đang ở AG-00 (Workspace Audit & Skill Bootstrap). Chưa có code ứng dụng, DB hoặc hạ tầng.
+**Trạng thái (cập nhật 22/11/2026):** Đã hoàn thành 100% **P0 → P7 (`AG-00` → `AG-41`)**, **Phase R (`R0` → `R8`)** và **Phase U (`U0` → `U5`: Nâng cấp đối chiếu đối thủ & Hệ sinh thái Dinh dưỡng Gia đình)** trên nền tảng `Next.js 16.4.6` (App Router, Turbopack, Cache Components), `React 19.3`, `PostgreSQL 16`, `Drizzle ORM` (16 migration `0000` → `0015`) và AI Gateway đa tầng (`Gemini Vision + OpenAI Vision + DeepSeek + Vietnam FCT Heuristic`). Repository Git: `https://github.com/junnyken/aigimomoi.git` (`main`).
+
+## Lệnh vận hành & kiểm thử nhanh
+- `npm run dev` — chạy môi trường phát triển cục bộ
+- `npm run build` — build production Next.js 16 (`node ./node_modules/next/dist/bin/next build`)
+- `npm run lint` — kiểm tra ESLint toàn repo (`0 errors`)
+- `npm run test:security` — kiểm thử bảo mật F-01 → F-07 (`66/66 PASS`)
+- `npx tsx src/scripts/test_data_honesty.ts` — kiểm thử trung thực dữ liệu D23 (`38/38 PASS`)
+- `node scripts/migrate_production.js` — áp dụng tuần tự 16 SQL migrations trên PostgreSQL production (ngoài cơ chế tự bootstrap của `autoBootstrap.ts`)
 
 ## Nhãn trạng thái dùng trong docs
 | Nhãn | Nghĩa |

@@ -874,3 +874,18 @@ Kiểm tra tài liệu/skill (script read-only, 8 nhóm):
 | 11 | **ESLint & Typecheck Toàn Repo**: `npx eslint --quiet src e2e` 0 errors; `npx tsc --noEmit` 0 errors | PASS |
 | 12 | **Build Production**: `npm run build` thành công, biên dịch trọn vẹn 68 routes (kèm copy static assets vào standalone) | PASS |
 | 13 | DECISIONS.md ghi nhận D66, ROADMAP.md cập nhật R8 closed | PASS |
+
+## Phase U (U0–U5) — Competitor Upgrade & Live Shared Ecosystem — 22/11/2026
+
+**Môi trường:** Next.js `16.4.6` (Turbopack, Cache Components & Partial Prefetching enabled), React 19.3, Node 22+, Drizzle ORM (`0000` → `0015`).
+
+| # | Kiểm tra | Kết quả |
+|---|---|---|
+| 1 | **Kiểm tra `alert()` trong `src/app` và `src/components`**: Không còn hàm `alert()` chặn UI trình duyệt (`ALERTS: 0`) | PASS |
+| 2 | **Kiểm tra từ điển Hàng quán & Đồ uống Việt (`vietnameseEatingOutCatalog.ts`)**: Đạt `CATALOG_COUNT: 167`, `UNIQUE: 167` ID duy nhất | PASS |
+| 3 | **Kiểm thử Trung thực Dữ liệu (`npx tsx src/scripts/test_data_honesty.ts`)**: Toàn bộ 38/38 ca kiểm thử D23 & R1 đạt chuẩn (`isCookTested: false` cho seed) | PASS (`38/38`) |
+| 4 | **Kiểm thử Bảo mật Webapp (`npm run test:security`)**: Toàn bộ 66/66 ca kiểm thử F-01 → F-07 (SSRF, CSRF, IDOR, Rate Limit, Session Revocation, AES-256-GCM) | PASS (`66/66`) |
+| 5 | **Kiểm tra TypeScript toàn repo (`node ./node_modules/typescript/bin/tsc --noEmit`)**: Không có lỗi kiểu | PASS (exit `0`) |
+| 6 | **ESLint toàn repo (`npm run lint`)**: 0 errors (chỉ còn cảnh báo có sẵn trước đó) | PASS (`0 errors`) |
+| 7 | **Build Production (`node ./node_modules/next/dist/bin/next build`)**: Thành công trên `Next.js 16.4.6`, sinh đủ **87/87 trang tĩnh**, gồm các route mới `/api/shopping/sessions` và `/api/shopping/sessions/[token]` | PASS (exit `0`) |
+| 8 | **Đồng bộ tài liệu & Hạ tầng (`Dockerfile.prod`, `README.md`, `ROADMAP.md`, `FEATURES.md`, `HIEN_TRANG_DU_AN.md`, `DECISIONS.md`, `API.md`, `TEST_LOG.md`)**: Khớp 100% mã nguồn trên nhánh `main` | PASS |

@@ -28,7 +28,7 @@ RUN adduser --system --uid 1001 nextjs
 
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/drizzle ./drizzle
-RUN mkdir -p /app/public/uploads/recipes /app/public/uploads/feedback && chown -R nextjs:nodejs /app/public/uploads
+RUN mkdir -p /app/public/uploads/recipes /app/public/uploads/feedback /app/public/uploads/diary && chown -R nextjs:nodejs /app/public/uploads
 
 # Automatically leverage output traces to reduce image size
 # https://nextjs.org/docs/advanced-features/output-file-tracing
