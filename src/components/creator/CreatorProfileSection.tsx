@@ -121,9 +121,9 @@ export function CreatorProfileSection({ displayName }: { displayName: string }) 
       </div>
 
       <p className="text-sm text-stone-600 mb-4">
-        Chia sẻ công thức của bạn lên <strong>Chợ công thức</strong> qua trang{' '}
-        <Link href="/contribute" className="text-amber-700 font-semibold hover:underline">Đóng góp công thức</Link>.
-        Hiện tại mọi công thức đều <strong>miễn phí</strong> cho người xem.
+        Chia sẻ công thức và bộ thực đơn của bạn lên <strong>Chợ công thức</strong> qua trang{' '}
+        <Link href="/contribute" className="text-amber-700 font-semibold hover:underline">Đóng góp công thức</Link>{' '}
+        (hỗ trợ chia sẻ miễn phí hoặc đặt mức phí mở khóa dùng thử khi đạt bậc uy tín).
       </p>
 
       {data && (

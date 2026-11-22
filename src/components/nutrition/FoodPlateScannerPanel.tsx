@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import {
   Camera,
@@ -18,9 +18,87 @@ import {
   ShieldCheck,
   Flame,
   Info,
+  Mic,
+  Refrigerator,
+  ScanBarcode,
 } from 'lucide-react';
 import { VIETNAMESE_STANDARD_FCT } from '@/lib/nutrition/seedData';
-import type { ScannedFoodItem, FoodScanResponse } from '@/app/api/ai/food-scanner/route';
+import { useVietnameseVoiceInput } from '@/lib/speech/useVietnameseVoiceInput';
+import type {
+  ScannedFoodItem,
+  FoodScanResponse,
+  FridgeScanResponse,
+  NutritionLabelScanResponse,
+} from '@/app/api/ai/food-scanner/route';
+
+interface CatalogRecipeApiItem {
+  slug: string;
+  name: string;
+  role: string;
+  caloriesPerServing: number | null;
+  prepTimeMinutes: number;
+  cookTimeMinutes: number;
+  nutritionSnapshot?: {
+    perServing?: {
+      protein?: number;
+    };
+  } | null;
+  tags?: Array<{ taxonomy?: { name: string; slug: string } | null }>;
+}
+
+const VALID_FALLBACK_SCAN_RECIPES: Array<{
+  title: string;
+  slug: string;
+  kcal: string;
+  tag: string;
+  keywords: string[];
+}> = [
+  {
+    title: 'Gỏi Cuốn Tôm Thịt Ức Gà & Rau Xanh Eat Clean',
+    slug: 'goi-cuon-tom-thit-uc-ga-rau-xanh-eat-clean',
+    kcal: '235 kcal • 24g Đạm',
+    tag: '🧘 Yoga & Eat Clean',
+    keywords: ['tôm', 'mỳ', 'bơ', 'gỏi', 'cuốn', 'xà lách'],
+  },
+  {
+    title: 'Ức Gà Áp Chảo Mật Ong Tỏi Chanh (Ít Calo)',
+    slug: 'uc-ga-ap-chao-mat-ong-toi-it-calo',
+    kcal: '185 kcal • 29g Đạm',
+    tag: '💪 Gym Tăng Cơ · Ít Calo',
+    keywords: ['gà', 'ức', 'bông cải', 'khoai', 'áp chảo'],
+  },
+  {
+    title: 'Canh Chua Cá Lóc Nam Bộ Thanh Nhiệt',
+    slug: 'canh-chua-ca-loc',
+    kcal: '155 kcal • 17g Đạm',
+    tag: '🍲 Thanh Nhiệt Ít Béo',
+    keywords: ['cá', 'cà chua', 'canh', 'bún'],
+  },
+  {
+    title: 'Đậu Hũ Sốt Cà Chua Thịt Bằm',
+    slug: 'dau-hu-sot-ca-chua',
+    kcal: '220 kcal • 15g Đạm',
+    tag: '🌿 Đạm Thực Vật Nhẹ Bụng',
+    keywords: ['đậu hũ', 'đậu phụ', 'cà chua', 'nấm'],
+  },
+  {
+    title: 'Rau Muống Xào Tỏi Xanh Giòn',
+    slug: 'rau-muong-xao-toi',
+    kcal: '95 kcal • Giàu Chất Xơ',
+    tag: '🥦 Bổ Sung Rau Xanh',
+    keywords: ['rau', 'xà lách', 'cải', 'dưa leo'],
+  },
+];
+
+let cachedCatalogRecipes: CatalogRecipeApiItem[] | null = null;
+
+function normalizeViSearchText(input: string): string {
+  return input
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd');
+}
 
 interface FoodPlateScannerPanelProps {
   targetCalories: number;
@@ -493,13 +571,26 @@ export function FoodPlateScannerPanel({
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const [activePresetId, setActivePresetId] = useState<string>(SAMPLE_PRESETS[0].id);
+  const [scanMode, setScanMode] = useState<'MEAL' | 'FRIDGE' | 'LABEL'>('MEAL');
+  const [portionShare, setPortionShare] = useState<1 | 0.5 | 0.25 | 0.17>(1);
   const [previewImageUrl, setPreviewImageUrl] = useState<string>(SAMPLE_PRESETS[0].imageUrl);
   const [uploadedBase64, setUploadedBase64] = useState<string | null>(null);
   const [userHint, setUserHint] = useState<string>('');
+  const {
+    supported: voiceSupported,
+    listening: voiceListening,
+    startVoiceInput,
+  } = useVietnameseVoiceInput((text) =>
+    setUserHint((prev) => (prev.trim() ? `${prev.trim()}, ${text}` : text))
+  );
   const [scanning, setScanning] = useState<boolean>(false);
   const [showPinsOnImage, setShowPinsOnImage] = useState<boolean>(true);
 
   const [scanResult, setScanResult] = useState<FoodScanResponse>(SAMPLE_PRESETS[0].scanData);
+  const [fridgeResult, setFridgeResult] = useState<FridgeScanResponse | null>(null);
+  const [labelResult, setLabelResult] = useState<NutritionLabelScanResponse | null>(null);
+  const [syncingPantry, setSyncingPantry] = useState(false);
+  const [pantrySyncNotice, setPantrySyncNotice] = useState<string | null>(null);
   const [items, setItems] = useState<ScannedFoodItem[]>(SAMPLE_PRESETS[0].scanData.items);
   const [cookingOilMode, setCookingOilMode] = useState<'NONE' | 'LIGHT_OIL' | 'SAUCE_RICH'>('LIGHT_OIL');
   const [focusedItemId, setFocusedItemId] = useState<string | null>(null);
@@ -507,6 +598,29 @@ export function FoodPlateScannerPanel({
   // Thêm nguyên liệu thủ công từ từ điển Viện Dinh Dưỡng
   const [selectedQuickSlug, setSelectedQuickSlug] = useState<string>('trung-ga');
   const [selectedQuickGrams, setSelectedQuickGrams] = useState<number>(60);
+
+  // Danh sách công thức thật đã xuất bản trên website để gợi ý link sống 100% (không 404)
+  const [catalogRecipes, setCatalogRecipes] = useState<CatalogRecipeApiItem[]>(
+    cachedCatalogRecipes ?? []
+  );
+
+  useEffect(() => {
+    if (cachedCatalogRecipes && cachedCatalogRecipes.length > 0) return;
+    let active = true;
+    fetch('/api/recipes')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!active || !data || !Array.isArray(data.recipes)) return;
+        cachedCatalogRecipes = data.recipes as CatalogRecipeApiItem[];
+        setCatalogRecipes(cachedCatalogRecipes);
+      })
+      .catch(() => {
+        // Giữ fallback slug hợp lệ nếu offline
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   // Chọn bữa ăn để đối chiếu & lưu vào Nhật ký (/nhat-ky)
   const [selectedMealSlot, setSelectedMealSlot] = useState<'LUNCH' | 'DINNER' | 'BREAKFAST'>('LUNCH');
@@ -554,9 +668,11 @@ export function FoodPlateScannerPanel({
     const carbPct = Math.round((carbFoodGrams / safeTotal) * 100);
     const fatPct = Math.max(0, 100 - veggiePct - proteinPct - carbPct);
 
-    const finalKcal = Math.round(kcal + oilExtraKcal);
-    const finalProtein = Math.round(protein * 10) / 10;
-    const finalFiber = Math.round(fiber * 10) / 10;
+    const finalKcal = Math.round((kcal + oilExtraKcal) * portionShare);
+    const finalProtein = Math.round(protein * portionShare * 10) / 10;
+    const finalFat = Math.round((fat + oilExtraFat) * portionShare * 10) / 10;
+    const finalCarbs = Math.round(carbs * portionShare * 10) / 10;
+    const finalFiber = Math.round(fiber * portionShare * 10) / 10;
 
     let rawScore = 8.5;
     if (finalProtein >= 25) rawScore += 0.6;
@@ -572,22 +688,23 @@ export function FoodPlateScannerPanel({
 
     return {
       kcal: finalKcal,
+      plateTotalKcal: Math.round(kcal + oilExtraKcal),
       protein: finalProtein,
-      fat: Math.round((fat + oilExtraFat) * 10) / 10,
-      carbs: Math.round(carbs * 10) / 10,
+      fat: finalFat,
+      carbs: finalCarbs,
       fiber: finalFiber,
-      totalGrams: Math.round(totalGrams),
-      veggieGrams,
-      proteinFoodGrams,
-      carbFoodGrams,
-      healthyFatGrams,
+      totalGrams: Math.round(totalGrams * portionShare),
+      veggieGrams: Math.round(veggieGrams * portionShare),
+      proteinFoodGrams: Math.round(proteinFoodGrams * portionShare),
+      carbFoodGrams: Math.round(carbFoodGrams * portionShare),
+      healthyFatGrams: Math.round(healthyFatGrams * portionShare),
       veggiePct,
       proteinPct,
       carbPct,
       fatPct,
       scoreOutOf10,
     };
-  }, [items, oilExtraKcal, oilExtraFat, cookingOilMode]);
+  }, [items, oilExtraKcal, oilExtraFat, cookingOilMode, portionShare]);
 
   const targetSlotKcal =
     scanResult.mealFormat === 'DAILY_3_MEALS'
@@ -655,53 +772,76 @@ export function FoodPlateScannerPanel({
     };
   }, [totals, targetSlotPro, targetSlotKcal, kcalDeltaFromTarget]);
 
-  // Gợi ý 3 công thức món ăn Eat Clean / Gym / Cơm nhà tương đồng trên website
+  // Gợi ý 3 công thức thật đã xuất bản trên website (khớp tên món, đạm & ngân sách calo)
   const matchedWebsiteRecipes = useMemo(() => {
-    const joined = items.map((i) => i.name.toLowerCase()).join(' ');
-    const list: Array<{ title: string; slug: string; kcal: string; tag: string }> = [];
+    const tokens = normalizeViSearchText(
+      [scanResult.dishTitle, ...items.map((i) => i.name)].join(' ')
+    )
+      .split(/[^a-z0-9]+/)
+      .filter((t) => t.length >= 2);
 
-    if (joined.includes('tôm') || joined.includes('mỳ') || joined.includes('bơ')) {
-      list.push({
-        title: 'Gỏi Cuốn Tôm Thịt Nước Chấm Đậu Phộng',
-        slug: 'goi-cuon-tom-thit',
-        kcal: '290 kcal • 24g Đạm',
-        tag: '🧘 Yoga & Eat Clean',
-      });
+    const preferLowCal = totals.kcal > targetSlotKcal * 1.1;
+    const preferHighPro = totals.protein < targetSlotPro - 6;
+
+    if (catalogRecipes.length > 0) {
+      const scored = catalogRecipes
+        .filter((rec) => rec.slug && rec.role !== 'DIPPING_SAUCE')
+        .map((rec) => {
+          const normName = normalizeViSearchText(rec.name);
+          const tagSlugs = (rec.tags ?? [])
+            .map((t) => t.taxonomy?.slug ?? '')
+            .filter(Boolean);
+          const tagNames = (rec.tags ?? [])
+            .map((t) => t.taxonomy?.name ?? '')
+            .filter(Boolean);
+
+          let score = 0;
+          for (const tk of tokens) {
+            if (normName.includes(tk)) score += 4;
+          }
+
+          const proteinVal = rec.nutritionSnapshot?.perServing?.protein;
+          if (preferLowCal && rec.caloriesPerServing && rec.caloriesPerServing <= 260) {
+            score += 3;
+          }
+          if (preferHighPro && typeof proteinVal === 'number' && proteinVal >= 22) {
+            score += 3;
+          }
+          if (tagSlugs.includes('giam-can-it-calo') || tagSlugs.includes('yoga-thanh-loc')) {
+            score += 1;
+          }
+
+          const kcalText = rec.caloriesPerServing ? `${rec.caloriesPerServing} kcal` : 'Chuẩn VDD';
+          const proText =
+            typeof proteinVal === 'number' && proteinVal > 0
+              ? ` • ${Math.round(proteinVal)}g Đạm`
+              : '';
+          const totalMins = (rec.prepTimeMinutes || 0) + (rec.cookTimeMinutes || 0);
+          const firstTag = tagNames[0] || (totalMins > 0 ? `⏱ ${totalMins} phút` : '🍲 Cơm nhà');
+
+          return {
+            score,
+            title: rec.name,
+            slug: rec.slug,
+            kcal: `${kcalText}${proText}`,
+            tag: firstTag,
+          };
+        })
+        .sort((a, b) => b.score - a.score);
+
+      if (scored.length > 0) {
+        return scored.slice(0, 3);
+      }
     }
-    if (joined.includes('gà') || joined.includes('bông cải') || joined.includes('khoai')) {
-      list.push({
-        title: 'Ức Gà Áp Chảo Sốt Cam Mật Ong',
-        slug: 'uc-ga-ap-chao-sot-cam-mat-ong',
-        kcal: '340 kcal • 38g Đạm',
-        tag: '💪 Gym Tăng Cơ',
-      });
-    }
-    if (joined.includes('cá') || joined.includes('cà chua') || joined.includes('canh')) {
-      list.push({
-        title: 'Canh Chua Cá Lăng Nam Bộ',
-        slug: 'canh-chua-ca-lang',
-        kcal: '210 kcal • 22g Đạm',
-        tag: '🍲 Thanh Nhiệt Ít Béo',
-      });
-    }
-    if (list.length < 3) {
-      list.push({
-        title: 'Đậu Hũ Sốt Cà Chua Thịt Bằm',
-        slug: 'dau-hu-sot-ca-chua',
-        kcal: '260 kcal • 18g Đạm',
-        tag: '🌿 Đạm Thực Vật Nhẹ Bụng',
-      });
-    }
-    if (list.length < 3) {
-      list.push({
-        title: 'Rau Muống Xào Tỏi Xanh Giòn',
-        slug: 'rau-muong-xao-toi',
-        kcal: '115 kcal • Giàu Chất Xơ',
-        tag: '🥦 Bổ Sung Rau Xanh',
-      });
-    }
-    return list.slice(0, 3);
-  }, [items]);
+
+    const joined = items.map((i) => i.name.toLowerCase()).join(' ');
+    const matchedFallback = [...VALID_FALLBACK_SCAN_RECIPES].sort((a, b) => {
+      const aScore = a.keywords.filter((kw) => joined.includes(kw)).length;
+      const bScore = b.keywords.filter((kw) => joined.includes(kw)).length;
+      return bScore - aScore;
+    });
+    return matchedFallback.slice(0, 3);
+  }, [items, scanResult.dishTitle, catalogRecipes, totals.kcal, totals.protein, targetSlotKcal, targetSlotPro]);
 
   function handleSelectPreset(preset: SamplePreset) {
     setActivePresetId(preset.id);
@@ -839,12 +979,18 @@ export function FoodPlateScannerPanel({
           imageBase64: base64,
           mimeType: 'image/jpeg',
           userHint,
+          scanMode,
         }),
       });
 
       if (res.ok) {
         const data = await res.json();
-        if (data.result) {
+        if (data.fridgeResult) {
+          setFridgeResult(data.fridgeResult);
+          setPantrySyncNotice(null);
+        } else if (data.labelResult) {
+          setLabelResult(data.labelResult);
+        } else if (data.result) {
           setScanResult(data.result);
           setItems(data.result.items || []);
           if (data.result.detectedOilLevel) {
@@ -882,12 +1028,18 @@ export function FoodPlateScannerPanel({
           imageBase64: base64ToSend || '',
           mimeType: 'image/jpeg',
           userHint,
+          scanMode,
         }),
       });
 
       if (res.ok) {
         const data = await res.json();
-        if (data.result) {
+        if (data.fridgeResult) {
+          setFridgeResult(data.fridgeResult);
+          setPantrySyncNotice(null);
+        } else if (data.labelResult) {
+          setLabelResult(data.labelResult);
+        } else if (data.result) {
           setScanResult(data.result);
           setItems(data.result.items || []);
           if (data.result.detectedOilLevel) {
@@ -899,6 +1051,87 @@ export function FoodPlateScannerPanel({
       console.error('Lỗi khi quét lại:', err);
     } finally {
       setScanning(false);
+    }
+  }
+
+  async function handleSyncFridgeToPantry() {
+    if (!fridgeResult || fridgeResult.pantryItems.length === 0) return;
+    setSyncingPantry(true);
+    setPantrySyncNotice(null);
+    try {
+      const res = await fetch('/api/pantry/sync-from-shopping', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          items: fridgeResult.pantryItems.map((it) => ({
+            name: it.name,
+            quantity: it.quantity,
+            unit: it.unit,
+            category: it.category,
+          })),
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.status === 401) {
+        setPantrySyncNotice('Vui lòng đăng nhập tài khoản để lưu nguyên liệu vào Tủ lạnh của bạn.');
+        return;
+      }
+      if (res.ok) {
+        setPantrySyncNotice(data.message || 'Đã cất nguyên liệu vào Tủ lạnh gia đình!');
+      } else {
+        setPantrySyncNotice(data.error || 'Không thể lưu vào Tủ lạnh lúc này.');
+      }
+    } catch {
+      setPantrySyncNotice('Lỗi kết nối khi lưu vào Tủ lạnh.');
+    } finally {
+      setSyncingPantry(false);
+    }
+  }
+
+  async function handleSaveLabelToDiary() {
+    if (!labelResult) return;
+    setSavingDiary(true);
+    setDiaryFeedback(null);
+    const todayStr = new Date().toISOString().split('T')[0];
+    try {
+      const res = await fetch('/api/diary', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          recipeName: `🏷️ ${labelResult.productName} (${labelResult.servingSize})`,
+          diaryDate: todayStr,
+          mealType: selectedMealSlot,
+          memberName: 'Tôi',
+          consumedPortion: 1,
+          customCalories: labelResult.calories,
+          customProtein: labelResult.protein,
+          customFat: labelResult.fat,
+          customCarbs: labelResult.carbs,
+          customSodium: labelResult.sodiumMg ?? undefined,
+        }),
+      });
+      if (res.status === 401) {
+        setDiaryFeedback({
+          type: 'auth',
+          message: 'Vui lòng đăng nhập để ghi sản phẩm này vào Nhật ký hôm nay.',
+        });
+        return;
+      }
+      if (res.ok) {
+        setDiaryFeedback({
+          type: 'success',
+          message: `Đã lưu "${labelResult.productName}" (${labelResult.calories} kcal) vào Nhật ký!`,
+        });
+      } else {
+        setDiaryFeedback({
+          type: 'error',
+          message: 'Không thể lưu sản phẩm vào Nhật ký lúc này, vui lòng thử lại.',
+        });
+      }
+    } catch {
+      setDiaryFeedback({ type: 'error', message: 'Không thể lưu sản phẩm lúc này.' });
+    } finally {
+      setSavingDiary(false);
     }
   }
 
@@ -959,6 +1192,43 @@ export function FoodPlateScannerPanel({
     }
   }
 
+  const renderDiaryFeedbackBanner = () =>
+    diaryFeedback ? (
+      <div
+        className={`p-3 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs font-semibold ${
+          diaryFeedback.type === 'success'
+            ? 'bg-emerald-50 border-emerald-300 text-emerald-950'
+            : diaryFeedback.type === 'auth'
+            ? 'bg-amber-50 border-amber-300 text-amber-950'
+            : 'bg-red-50 border-red-300 text-red-950'
+        }`}
+      >
+        <div className="flex items-center gap-2">
+          {diaryFeedback.type === 'success' ? (
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+          ) : (
+            <LogIn className="w-4 h-4 text-amber-700 shrink-0" />
+          )}
+          <span>{diaryFeedback.message}</span>
+        </div>
+        {diaryFeedback.type === 'success' ? (
+          <Link
+            href="/nhat-ky"
+            className="shrink-0 px-3 py-1 rounded-lg bg-[var(--color-brand-primary)] text-white text-xs font-bold"
+          >
+            Mở Nhật ký Bữa ăn →
+          </Link>
+        ) : diaryFeedback.type === 'auth' ? (
+          <Link
+            href="/login?from=/tinh-calo"
+            className="shrink-0 px-3 py-1 rounded-lg bg-[var(--color-brand-primary)] text-white text-xs font-bold"
+          >
+            Đăng nhập ngay
+          </Link>
+        ) : null}
+      </div>
+    ) : null;
+
   return (
     <div className="rounded-3xl bg-[var(--color-surface-white)] border border-[var(--color-border-base)] p-5 sm:p-6 shadow-xs space-y-6 animate-fade-in">
       {/* Header + Nút Chụp / Tải Ảnh */}
@@ -991,19 +1261,65 @@ export function FoodPlateScannerPanel({
             className="min-h-11 inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-hover)] text-white text-xs sm:text-sm font-extrabold shadow-sm transition-all cursor-pointer"
           >
             <Camera className="w-4 h-4" />
-            <span>{scanning ? 'Đang phân tích ảnh...' : '📸 Chụp / Tải ảnh món ăn của bạn'}</span>
+            <span>
+              {scanning
+                ? 'Đang phân tích ảnh...'
+                : scanMode === 'FRIDGE'
+                ? '🧊 Chụp / Tải ảnh Tủ lạnh'
+                : scanMode === 'LABEL'
+                ? '🏷️ Chụp / Tải ảnh Nhãn Dinh Dưỡng'
+                : '📸 Chụp / Tải ảnh món ăn của bạn'}
+            </span>
           </button>
         </div>
+      </div>
+
+      {/* Thanh chọn 3 Chế độ Camera AI: Mâm cơm · Tủ lạnh · Nhãn bao bì */}
+      <div className="flex flex-wrap items-center gap-2 no-print" role="tablist" aria-label="Chế độ quét Camera AI">
+        {[
+          {
+            id: 'MEAL' as const,
+            label: '🍽️ Quét Mâm Cơm / Đĩa Ăn',
+            icon: Camera,
+          },
+          {
+            id: 'FRIDGE' as const,
+            label: '🧊 Quét Tủ Lạnh → Nhập Kho',
+            icon: Refrigerator,
+          },
+          {
+            id: 'LABEL' as const,
+            label: '🏷️ Quét Nhãn Bao Bì (Đường · Muối)',
+            icon: ScanBarcode,
+          },
+        ].map((modeTab) => (
+          <button
+            key={modeTab.id}
+            type="button"
+            role="tab"
+            aria-selected={scanMode === modeTab.id}
+            onClick={() => setScanMode(modeTab.id)}
+            className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-2xl text-xs font-extrabold border transition-all cursor-pointer ${
+              scanMode === modeTab.id
+                ? 'bg-[var(--color-brand-primary)] text-white border-[var(--color-brand-primary)] shadow-2xs'
+                : 'bg-[#FAF7F0] text-[var(--color-text-secondary)] border-[#E5DAC8] hover:border-[var(--color-brand-primary)]'
+            }`}
+          >
+            <span>{modeTab.label}</span>
+          </button>
+        ))}
       </div>
 
       {/* Thanh chọn nhanh 4 Mẫu Đĩa Ăn Thực Tế (từ bộ ảnh Eat Clean / Gym / Yoga) */}
       <div className="p-3.5 rounded-2xl bg-[#FAF7F0] border border-[#E5DAC8] space-y-2.5 no-print">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <span className="text-xs font-extrabold text-[#3F6240]">
-            ✨ Hoặc bấm thử ngay với 4 mẫu đĩa ăn Eat Clean / Gym thực tế:
+            ✨ Ảnh mẫu thử nhanh (Demo đối chiếu chuẩn VDD):
           </span>
           <span className="text-[11px] text-[#6B5A48]">
-            (Bạn có thể chỉnh số gram từng loại rau củ/thịt cá sau khi quét)
+            {activePresetId !== 'custom'
+              ? 'Đang xem kết quả mẫu — Tải ảnh đĩa ăn của bạn để AI phân tích trực tiếp'
+              : 'Đang hiển thị kết quả phân tích AI cho đĩa ăn của bạn'}
           </span>
         </div>
 
@@ -1063,9 +1379,30 @@ export function FoodPlateScannerPanel({
                 handleRescanWithHint();
               }
             }}
-            placeholder="Nhập tên món vừa chụp hoặc ghi chú thêm (VD: 1 dĩa cơm tấm sườn nướng bì chả, canh chua cá lóc...)"
+            placeholder={
+              scanMode === 'FRIDGE'
+                ? 'Hoặc gõ / nói nguyên liệu đang có trong tủ (VD: 300g thịt ba chỉ, bó rau muống, 4 quả trứng...)'
+                : scanMode === 'LABEL'
+                ? 'Nhập tên sản phẩm hoặc chỉ số trên vỏ hộp (VD: Sữa hộp ít đường 180ml, 110 kcal...)'
+                : 'Nhập tên món vừa chụp hoặc bấm Micro nói (VD: 1 dĩa cơm tấm sườn bì chả...)'
+            }
             className="flex-1 px-3.5 py-2 rounded-xl bg-white border border-[#D8C7B0] text-xs text-[var(--color-text-primary)] focus:outline-hidden focus:ring-2 focus:ring-[var(--color-brand-primary)]"
           />
+          {voiceSupported && (
+            <button
+              type="button"
+              onClick={startVoiceInput}
+              title="Nhập bằng giọng nói Tiếng Việt (Web Speech)"
+              className={`px-3 py-2 rounded-xl border text-xs font-extrabold inline-flex items-center justify-center gap-1.5 cursor-pointer shrink-0 transition-colors ${
+                voiceListening
+                  ? 'bg-rose-600 text-white border-rose-600 animate-pulse'
+                  : 'bg-white hover:bg-emerald-50 text-[#2F4F30] border-[#D8C7B0]'
+              }`}
+            >
+              <Mic className="w-3.5 h-3.5" />
+              <span>{voiceListening ? 'Đang nghe...' : 'Nói 3 giây'}</span>
+            </button>
+          )}
           <button
             type="button"
             onClick={handleRescanWithHint}
@@ -1073,12 +1410,194 @@ export function FoodPlateScannerPanel({
             className="px-3.5 py-2 rounded-xl bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-hover)] text-white text-xs font-extrabold inline-flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${scanning ? 'animate-spin' : ''}`} />
-            <span>{scanning ? 'Đang tính Kcal...' : '✨ Phân tích Kcal bằng AI'}</span>
+            <span>
+              {scanning
+                ? 'Đang phân tích...'
+                : scanMode === 'FRIDGE'
+                ? '🧊 Đọc đồ Tủ lạnh bằng AI'
+                : scanMode === 'LABEL'
+                ? '🏷️ Kiểm tra Nhãn Bao Bì'
+                : '✨ Phân tích Kcal bằng AI'}
+            </span>
           </button>
         </div>
       </div>
 
-      {/* Bố cục 2 Cột: Cột Trái (Ảnh Đĩa Ăn Gắn Nhãn Trực Quan) + Cột Phải (Bảng Bóc Tách Thành Phần & Chỉnh Gram) */}
+      {/* Kết quả Quét Tủ Lạnh */}
+      {scanMode === 'FRIDGE' && (
+        <div className="p-5 rounded-3xl bg-[#F4F8F4] border border-emerald-200 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <h3 className="text-base font-extrabold text-[#2F4F30] flex items-center gap-2">
+                <Refrigerator className="w-5 h-5 text-emerald-700" />
+                <span>Trợ lý Quét Tủ Lạnh → Gợi ý Mâm Cơm</span>
+              </h3>
+              <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">
+                {fridgeResult
+                  ? fridgeResult.summary
+                  : 'Tải ảnh ngăn mát tủ lạnh hoặc bấm nút Nói / Đọc đồ Tủ lạnh ở trên để AI tự liệt kê nguyên liệu và đồng bộ sang kho Tủ lạnh.'}
+              </p>
+            </div>
+            {fridgeResult && (
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={handleSyncFridgeToPantry}
+                  disabled={syncingPantry}
+                  className="px-3.5 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold cursor-pointer disabled:opacity-50"
+                >
+                  {syncingPantry ? 'Đang cất vào tủ...' : '🧊 Cất tất cả vào Tủ lạnh (/tu-lanh)'}
+                </button>
+                <Link
+                  href="/meal"
+                  className="px-3.5 py-2 rounded-xl bg-[var(--color-brand-primary)] text-white text-xs font-bold hover:opacity-95"
+                >
+                  🍲 Ghép mâm cơm ngay →
+                </Link>
+              </div>
+            )}
+          </div>
+
+          {pantrySyncNotice && (
+            <div className="p-3 rounded-xl bg-white border border-emerald-300 text-xs font-semibold text-emerald-950 flex items-center justify-between gap-2">
+              <span>{pantrySyncNotice}</span>
+              <Link href="/tu-lanh" className="underline font-bold text-emerald-700">
+                Mở Tủ lạnh →
+              </Link>
+            </div>
+          )}
+
+          {fridgeResult && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="bg-white rounded-2xl border border-emerald-200 p-4 space-y-2">
+                <h4 className="text-xs font-extrabold text-emerald-900 uppercase">
+                  Nguyên liệu nhận diện ({fridgeResult.pantryItems.length} món)
+                </h4>
+                <ul className="divide-y divide-stone-100 text-xs">
+                  {fridgeResult.pantryItems.map((p, idx) => (
+                    <li key={idx} className="py-2 flex items-center justify-between gap-2">
+                      <div>
+                        <span className="font-bold text-[var(--color-text-primary)]">{p.name}</span>
+                        <span className="block text-[11px] text-[var(--color-text-muted)]">{p.shelfNote}</span>
+                      </div>
+                      <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 font-bold shrink-0">
+                        {p.quantity} {p.unit}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div className="bg-white rounded-2xl border border-emerald-200 p-4 space-y-2.5">
+                <h4 className="text-xs font-extrabold text-emerald-900 uppercase">
+                  Món cơm nhà nên nấu trước khi héo
+                </h4>
+                <ul className="space-y-2">
+                  {fridgeResult.suggestedDishes.map((dish, i) => (
+                    <li key={i} className="p-2.5 rounded-xl bg-[#FAF7F0] border border-[#E5DAC8] flex items-center justify-between gap-2 text-xs font-bold">
+                      <span>🍲 {dish}</span>
+                      <Link
+                        href={`/mon-an?q=${encodeURIComponent(dish)}`}
+                        className="text-[11px] text-[var(--color-brand-primary)] hover:underline shrink-0"
+                      >
+                        Tìm công thức →
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Kết quả Quét Nhãn Bao Bì */}
+      {scanMode === 'LABEL' && (
+        <div className="p-5 rounded-3xl bg-[#FAF7F0] border border-[#E5DAC8] space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <h3 className="text-base font-extrabold text-[var(--color-text-primary)] flex items-center gap-2">
+                <ScanBarcode className="w-5 h-5 text-amber-700" />
+                <span>Kiểm Định Nhãn Dinh Dưỡng (Đường · Muối · Calo)</span>
+              </h3>
+              <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">
+                {labelResult
+                  ? `${labelResult.productName} — ${labelResult.servingSize}`
+                  : 'Chụp bảng Nutrition Facts phía sau hộp sữa, bánh, mì gói hoặc đồ hộp để kiểm tra lượng Đường & Natri cho cả gia đình.'}
+              </p>
+            </div>
+            {labelResult && (
+              <span
+                className={`px-3 py-1 rounded-full text-xs font-extrabold border shrink-0 ${
+                  labelResult.trafficLight === 'GREEN'
+                    ? 'bg-emerald-100 text-emerald-900 border-emerald-300'
+                    : labelResult.trafficLight === 'RED'
+                    ? 'bg-red-100 text-red-900 border-red-300'
+                    : 'bg-amber-100 text-amber-900 border-amber-300'
+                }`}
+              >
+                {labelResult.trafficLight === 'GREEN'
+                  ? '🟢 Lành mạnh · Dùng tốt'
+                  : labelResult.trafficLight === 'RED'
+                  ? '🔴 Cao Đường/Muối · Hạn chế'
+                  : '🟡 Mức trung bình · Dùng vừa phải'}
+              </span>
+            )}
+          </div>
+
+          {labelResult && (
+            <div className="space-y-3">
+              <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 text-center">
+                <div className="p-2.5 rounded-xl bg-white border border-[#E5DAC8]">
+                  <span className="text-[10px] font-bold text-stone-500 block">Năng lượng</span>
+                  <strong className="text-sm font-black text-[var(--color-accent-primary)]">{labelResult.calories} kcal</strong>
+                </div>
+                <div className="p-2.5 rounded-xl bg-white border border-[#E5DAC8]">
+                  <span className="text-[10px] font-bold text-stone-500 block">Đạm</span>
+                  <strong className="text-sm font-black text-rose-700">{labelResult.protein}g</strong>
+                </div>
+                <div className="p-2.5 rounded-xl bg-white border border-[#E5DAC8]">
+                  <span className="text-[10px] font-bold text-stone-500 block">Béo</span>
+                  <strong className="text-sm font-black text-teal-700">{labelResult.fat}g</strong>
+                </div>
+                <div className="p-2.5 rounded-xl bg-white border border-[#E5DAC8]">
+                  <span className="text-[10px] font-bold text-stone-500 block">Tinh bột</span>
+                  <strong className="text-sm font-black text-amber-700">{labelResult.carbs}g</strong>
+                </div>
+                <div className="p-2.5 rounded-xl bg-white border border-[#E5DAC8]">
+                  <span className="text-[10px] font-bold text-stone-500 block">Đường</span>
+                  <strong className="text-sm font-black text-orange-700">
+                    {labelResult.sugarGrams !== null ? `${labelResult.sugarGrams}g` : '—'}
+                  </strong>
+                </div>
+                <div className="p-2.5 rounded-xl bg-white border border-[#E5DAC8]">
+                  <span className="text-[10px] font-bold text-stone-500 block">Natri (Muối)</span>
+                  <strong className="text-sm font-black text-indigo-700">
+                    {labelResult.sodiumMg !== null ? `${labelResult.sodiumMg}mg` : '—'}
+                  </strong>
+                </div>
+              </div>
+              <ul className="p-3 rounded-2xl bg-white border border-[#E5DAC8] space-y-1 text-xs text-[var(--color-text-secondary)]">
+                {labelResult.familyAdvice.map((adv, idx) => (
+                  <li key={idx}>• {adv}</li>
+                ))}
+              </ul>
+              <button
+                type="button"
+                onClick={handleSaveLabelToDiary}
+                disabled={savingDiary}
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[var(--color-brand-primary)] text-white text-xs font-extrabold hover:opacity-95 cursor-pointer"
+              >
+                <HeartPulse className="w-4 h-4" />
+                <span>{savingDiary ? 'Đang lưu...' : `Ghi 1 khẩu phần (${labelResult.calories} kcal) vào Nhật ký`}</span>
+              </button>
+              {renderDiaryFeedbackBanner()}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Bố cục 2 Cột cho Chế độ Quét Mâm Cơm */}
+      {scanMode === 'MEAL' && (
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* CỘT TRÁI (5/12): BẢN ĐỒ ĐĨA ĂN GẮN NHÃN THÔNG MINH */}
         <div className="lg:col-span-5 space-y-4">
@@ -1264,6 +1783,36 @@ export function FoodPlateScannerPanel({
               )}
             </div>
 
+            {/* Thanh chọn Khẩu phần Mâm Cơm Chung Gia Đình (chia 1/2, 1/4, 1/6 bàn ăn) */}
+            <div className="px-3 py-2 rounded-xl bg-white border border-[#E5DAC8] flex flex-wrap items-center justify-between gap-2 no-print">
+              <span className="text-xs font-extrabold text-[#3F6240]">
+                👨‍👩‍👧‍👦 Chụp đĩa riêng hay mâm chung?
+              </span>
+              <div className="flex flex-wrap items-center gap-1.5">
+                {(
+                  [
+                    { val: 1 as const, label: 'Đĩa riêng (100%)' },
+                    { val: 0.5 as const, label: 'Mâm 2 người (1/2)' },
+                    { val: 0.25 as const, label: 'Mâm 4 người (1/4)' },
+                    { val: 0.17 as const, label: 'Mâm 6 người (1/6)' },
+                  ]
+                ).map((opt) => (
+                  <button
+                    key={opt.val}
+                    type="button"
+                    onClick={() => setPortionShare(opt.val)}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border transition-colors cursor-pointer ${
+                      portionShare === opt.val
+                        ? 'bg-[var(--color-accent-primary)] text-white border-[var(--color-accent-primary)]'
+                        : 'bg-[#FAF7F0] text-[var(--color-text-secondary)] border-[#D8C7B0]'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* Khối Infographic chính: Trái (Biểu đồ Vòng tròn Kcal) + Phải (Thanh Đĩa Harvard 4 màu) */}
             <div className="p-3.5 rounded-2xl bg-white border border-[#E5DAC8] grid grid-cols-1 sm:grid-cols-12 gap-4 items-center">
               {/* Vòng Tròn SVG Kcal so với Ngân sách Bữa */}
@@ -1316,7 +1865,7 @@ export function FoodPlateScannerPanel({
               <div className="sm:col-span-8 space-y-2.5">
                 <div className="flex items-center justify-between text-xs">
                   <span className="font-extrabold text-[#2F4F30]">
-                    📊 Tỷ lệ Đĩa Ăn ({totals.totalGrams}g)
+                    📊 Tỷ lệ Đĩa Ăn ({totals.totalGrams}g{portionShare < 1 ? ' · phần của bạn' : ''})
                   </span>
                   <span className="text-[10px] font-semibold text-stone-500">
                     Chuẩn Harvard: 50% Rau • 25% Đạm • 25% Tinh bột
@@ -1642,44 +2191,11 @@ export function FoodPlateScannerPanel({
               </button>
             </div>
 
-            {diaryFeedback && (
-              <div
-                className={`p-3 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs font-semibold ${
-                  diaryFeedback.type === 'success'
-                    ? 'bg-emerald-50 border-emerald-300 text-emerald-950'
-                    : diaryFeedback.type === 'auth'
-                    ? 'bg-amber-50 border-amber-300 text-amber-950'
-                    : 'bg-red-50 border-red-300 text-red-950'
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  {diaryFeedback.type === 'success' ? (
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                  ) : (
-                    <LogIn className="w-4 h-4 text-amber-700 shrink-0" />
-                  )}
-                  <span>{diaryFeedback.message}</span>
-                </div>
-                {diaryFeedback.type === 'success' ? (
-                  <Link
-                    href="/nhat-ky"
-                    className="shrink-0 px-3 py-1 rounded-lg bg-[var(--color-brand-primary)] text-white text-xs font-bold"
-                  >
-                    Mở Nhật ký Bữa ăn →
-                  </Link>
-                ) : diaryFeedback.type === 'auth' ? (
-                  <Link
-                    href="/login?from=/tinh-calo"
-                    className="shrink-0 px-3 py-1 rounded-lg bg-[var(--color-brand-primary)] text-white text-xs font-bold"
-                  >
-                    Đăng nhập ngay
-                  </Link>
-                ) : null}
-              </div>
-            )}
+            {renderDiaryFeedbackBanner()}
           </div>
         </div>
       </div>
+      )}
     </div>
   );
 }

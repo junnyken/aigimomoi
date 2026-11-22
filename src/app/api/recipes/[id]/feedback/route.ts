@@ -6,10 +6,13 @@
 // - Chỉ công thức PUBLISHED mới nhận feedback
 
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { db } from '@/lib/db';
 import { recipes, recipeCookedFeedbacks } from '@/lib/db/schema';
 import { getSessionUser } from '@/lib/auth/session';
-import { eq, and, desc, sql } from 'drizzle-orm';
+import { isCrossSiteRequest } from '@/lib/http/sameOrigin';
+import { PUBLIC_RECIPES_TAG } from '@/lib/recipes/public';
+import { eq, and, desc } from 'drizzle-orm';
 import { logger } from '@/lib/logger';
 import { isUniqueViolation } from '@/lib/db/errors';
 import { safeImageSrc } from '@/lib/recipes/publicQueries';
@@ -79,6 +82,13 @@ export async function GET(request: NextRequest, context: RouteContext) {
 
 export async function POST(request: NextRequest, context: RouteContext) {
   try {
+    if (isCrossSiteRequest(request)) {
+      return NextResponse.json(
+        { error: 'Yêu cầu bị từ chối do khác nguồn gốc (CSRF).' },
+        { status: 403 }
+      );
+    }
+
     const { id } = await context.params;
     const recipeId = Number(id);
 
@@ -140,7 +150,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     const cleanPhotoUrl = rawPhotoUrl ? safeImageSrc(rawPhotoUrl) : null;
     if (rawPhotoUrl && !cleanPhotoUrl) {
       return NextResponse.json(
-        { error: 'Link ảnh phải bắt đầu bằng https://' },
+        { error: 'Đường dẫn ảnh không hợp lệ (chỉ nhận ảnh tải lên hệ thống hoặc https://).' },
         { status: 400 }
       );
     }
@@ -235,6 +245,14 @@ export async function POST(request: NextRequest, context: RouteContext) {
         })
         .returning();
       resultFeedback = inserted;
+    }
+
+    if (initialStatus === 'APPROVED') {
+      try {
+        revalidateTag(PUBLIC_RECIPES_TAG, { expire: 0 });
+      } catch {
+        // Ngoài Next runtime (test script)
+      }
     }
 
     return NextResponse.json({

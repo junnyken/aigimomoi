@@ -16,7 +16,9 @@ import {
   CheckCircle2,
   ShieldCheck,
   Trash2,
+  Mic,
 } from 'lucide-react';
+import { useVietnameseVoiceInput } from '@/lib/speech/useVietnameseVoiceInput';
 import type { ScannedFoodItem, FoodScanResponse } from '@/app/api/ai/food-scanner/route';
 
 const QUICK_HIDDEN_ITEMS: Array<{
@@ -460,6 +462,13 @@ export function HeroFoodScannerCard() {
   const [previewImageUrl, setPreviewImageUrl] = useState<string>(HERO_PRESETS[0].imageUrl);
   const [uploadedBase64, setUploadedBase64] = useState<string>('');
   const [heroHint, setHeroHint] = useState<string>('');
+  const {
+    supported: voiceSupported,
+    listening: voiceListening,
+    startVoiceInput,
+  } = useVietnameseVoiceInput((text) =>
+    setHeroHint((prev) => (prev.trim() ? `${prev.trim()}, ${text}` : text))
+  );
   const [scanning, setScanning] = useState<boolean>(false);
   const [showPins, setShowPins] = useState<boolean>(true);
   const [scanResult, setScanResult] = useState<FoodScanResponse>(HERO_PRESETS[0].scanData);
@@ -881,8 +890,11 @@ export function HeroFoodScannerCard() {
 
         {/* Bảng Điều Khiển Thị Giác Gọn Gàng (Visual Donut + Thanh Màu Sắc + Danh Sách Món) */}
         <div className="p-3 sm:p-3.5 bg-[#FAF7F0] border-t border-[#E5DAC8] space-y-2.5">
-          {/* Hàng 1: 4 Mẫu đĩa thực tế */}
+          {/* Hàng 1: 4 Mẫu đĩa thử nhanh */}
           <div className="flex items-center justify-between gap-1.5 overflow-x-auto pb-0.5">
+            <span className="text-[10px] font-bold text-[#6B5A48] whitespace-nowrap shrink-0">
+              Mẫu thử:
+            </span>
             {HERO_PRESETS.map((preset) => (
               <button
                 key={preset.id}
@@ -923,9 +935,24 @@ export function HeroFoodScannerCard() {
                     handleAnalyzeByHint();
                   }
                 }}
-                placeholder="Nhập tên món (VD: Cơm tấm sườn bì, Phở bò, Cá kho...) để AI tính Kcal"
+                placeholder="Nhập hoặc bấm Micro nói món (VD: Phở bò, Cơm tấm...)"
                 className="flex-1 min-w-0 px-2.5 py-1.5 rounded-xl bg-white border border-[#D8C7B0] text-[11px] text-[var(--color-text-primary)] focus:outline-hidden focus:border-[var(--color-brand-primary)]"
               />
+              {voiceSupported && (
+                <button
+                  type="button"
+                  onClick={startVoiceInput}
+                  title="Nói tên món bằng giọng nói Tiếng Việt (3 giây)"
+                  className={`p-1.5 rounded-xl border transition-colors shrink-0 cursor-pointer ${
+                    voiceListening
+                      ? 'bg-rose-600 text-white border-rose-600 animate-pulse'
+                      : 'bg-white hover:bg-emerald-50 text-[#2F4F30] border-[#D8C7B0]'
+                  }`}
+                  aria-label="Nhập món ăn bằng giọng nói Tiếng Việt"
+                >
+                  <Mic className="w-3.5 h-3.5" />
+                </button>
+              )}
               <button
                 type="button"
                 onClick={handleAnalyzeByHint}

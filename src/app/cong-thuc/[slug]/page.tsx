@@ -190,15 +190,32 @@ export default async function PublicRecipePage({ params }: PageParams) {
               <p className="mt-1 text-sm text-[var(--color-text-muted)]">Còn gọi là: {rawRecipe.dish.aliases.join(', ')}</p>
             )}
 
-            {/* Thanh Đánh giá & Kiểm định độ chuẩn xác ngay dưới tên món */}
+            {/* Thanh Đánh giá & Kiểm định thực tế từ cộng đồng ngay dưới tên món */}
             <div className="mt-2.5 flex flex-wrap items-center gap-2 text-xs">
               <a
                 href="#cooked-it-heading"
                 className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-900 font-bold transition-colors"
               >
-                <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                <span>4.9/5 Chuẩn vị bếp nhà</span>
-                <span className="text-amber-700 font-normal">• Xem đánh giá &amp; ảnh nấu thử →</span>
+                <Star
+                  className={`w-3.5 h-3.5 ${
+                    (rawRecipe.ratingCount ?? 0) > 0
+                      ? 'fill-amber-400 text-amber-400'
+                      : 'text-amber-500'
+                  }`}
+                />
+                {(rawRecipe.ratingCount ?? 0) > 0 && rawRecipe.ratingAverage != null ? (
+                  <>
+                    <span>
+                      {rawRecipe.ratingAverage}/5 ({rawRecipe.ratingCount} đánh giá)
+                    </span>
+                    <span className="text-amber-700 font-normal">• Xem ảnh nấu thử →</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Chưa có đánh giá</span>
+                    <span className="text-amber-700 font-normal">• Nấu thử &amp; chấm điểm đầu tiên →</span>
+                  </>
+                )}
               </a>
               {rawRecipe.caloriesPerServing && (
                 <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 font-semibold">

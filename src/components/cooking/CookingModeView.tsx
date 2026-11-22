@@ -16,6 +16,10 @@ import {
   VolumeX,
   Square,
   Sun,
+  Pin,
+  Timer,
+  Play,
+  Pause,
 } from 'lucide-react';
 import type { PublicRecipe, PublicRecipeStep } from '@/lib/recipes/publicQueries';
 import { scaleRecipeIngredients, clampServings } from '@/lib/recipes/scaling';
@@ -50,6 +54,85 @@ export function CookingModeView({
   const [speechSupported, setSpeechSupported] = useState(false);
   const [keepScreenAwake, setKeepScreenAwake] = useState(true);
   const [wakeLockActive, setWakeLockActive] = useState(false);
+  const [pinnedTimers, setPinnedTimers] = useState<
+    Array<{
+      id: string;
+      stepNumber: number;
+      label: string;
+      remainingSec: number;
+      running: boolean;
+    }>
+  >([]);
+
+  const playTimerChime = () => {
+    try {
+      const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(880, ctx.currentTime);
+      gain.gain.setValueAtTime(0.15, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.65);
+    } catch {
+      // Ignore audio errors when blocked by browser
+    }
+  };
+
+  useEffect(() => {
+    const hasRunning = pinnedTimers.some((t) => t.running && t.remainingSec > 0);
+    if (!hasRunning) return;
+
+    const timer = window.setInterval(() => {
+      let finishedNow = false;
+      setPinnedTimers((prev) =>
+        prev.map((t) => {
+          if (!t.running || t.remainingSec <= 0) return t;
+          const nextSec = t.remainingSec - 1;
+          if (nextSec === 0) finishedNow = true;
+          return {
+            ...t,
+            remainingSec: nextSec,
+            running: nextSec > 0,
+          };
+        })
+      );
+      if (finishedNow) {
+        playTimerChime();
+      }
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, [pinnedTimers]);
+
+  const pinCurrentStepTimer = () => {
+    if (!currentStep || !currentStep.timerSeconds || currentStep.timerSeconds <= 0) return;
+    const id = `step-${currentStep.id}-${currentStep.stepNumber}`;
+    setPinnedTimers((prev) => {
+      if (prev.some((t) => t.id === id)) return prev;
+      return [
+        ...prev,
+        {
+          id,
+          stepNumber: currentStep.stepNumber,
+          label: currentStep.phaseName || `Bước ${currentStep.stepNumber}`,
+          remainingSec: currentStep.timerSeconds ?? 0,
+          running: true,
+        },
+      ];
+    });
+  };
+
+  const formatTimerClock = (sec: number) => {
+    const mins = Math.floor(sec / 60);
+    const rem = sec % 60;
+    return `${String(mins).padStart(2, '0')}:${String(rem).padStart(2, '0')}`;
+  };
 
   const currentStep: PublicRecipeStep | undefined = steps[currentIdx];
 
@@ -365,6 +448,55 @@ export function CookingModeView({
       )}
 
       {/* Main Focus Step Area */}
+      {pinnedTimers.length > 0 && (
+        <div className="bg-amber-50 border-b border-amber-200 px-4 py-2 shrink-0 overflow-x-auto">
+          <div className="max-w-3xl mx-auto flex items-center gap-2 whitespace-nowrap">
+            <span className="text-[11px] font-bold text-amber-900 flex items-center gap-1 shrink-0">
+              <Timer className="w-3.5 h-3.5 text-amber-700" />
+              Bếp đang chạy song song:
+            </span>
+            {pinnedTimers.map((t) => (
+              <div
+                key={t.id}
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border ${
+                  t.remainingSec === 0
+                    ? 'bg-emerald-600 text-white border-emerald-700 animate-pulse'
+                    : 'bg-white text-amber-950 border-amber-300'
+                }`}
+              >
+                <span>
+                  B{t.stepNumber} ({t.label}): {t.remainingSec === 0 ? 'XONG!' : formatTimerClock(t.remainingSec)}
+                </span>
+                {t.remainingSec > 0 && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setPinnedTimers((prev) =>
+                        prev.map((item) =>
+                          item.id === t.id ? { ...item, running: !item.running } : item
+                        )
+                      )
+                    }
+                    className="p-0.5 rounded hover:bg-amber-100 cursor-pointer"
+                    aria-label={t.running ? 'Tạm dừng' : 'Tiếp tục'}
+                  >
+                    {t.running ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setPinnedTimers((prev) => prev.filter((item) => item.id !== t.id))}
+                  className="p-0.5 rounded hover:bg-black/10 cursor-pointer"
+                  aria-label="Xóa đồng hồ ghim"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <main className="flex-1 overflow-y-auto p-4 sm:p-8 flex flex-col justify-between max-w-3xl w-full mx-auto">
         {currentStep ? (
           <div className="flex flex-col gap-6 my-auto">
@@ -436,11 +568,21 @@ export function CookingModeView({
 
               {/* Cooking Timer if available (Invariants §6.7) */}
               {(currentStep.timerSeconds ?? 0) > 0 && (
-                <StepTimer
-                  key={`${currentStep.id}-${currentIdx}`}
-                  initialSeconds={currentStep.timerSeconds ?? 0}
-                  stepNumber={currentStep.stepNumber}
-                />
+                <div className="space-y-2">
+                  <StepTimer
+                    key={`${currentStep.id}-${currentIdx}`}
+                    initialSeconds={currentStep.timerSeconds ?? 0}
+                    stepNumber={currentStep.stepNumber}
+                  />
+                  <button
+                    type="button"
+                    onClick={pinCurrentStepTimer}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-900 text-xs font-bold transition-colors cursor-pointer"
+                  >
+                    <Pin className="w-3.5 h-3.5 text-amber-700" />
+                    <span>Ghim đồng hồ chạy nền khi sang bước tiếp</span>
+                  </button>
+                </div>
               )}
             </div>
           </div>

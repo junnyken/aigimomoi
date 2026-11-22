@@ -199,13 +199,13 @@ export default function EditorIngredientsPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        alert(data.error || 'Không thể đồng bộ từ điển nguyên liệu');
+        setSyncNotice(data.error || 'Không thể đồng bộ từ điển nguyên liệu');
         return;
       }
       setSyncNotice(data.message || 'Đã đồng bộ đầy đủ kho nguyên liệu chuẩn Việt Nam!');
       await fetchIngredients();
     } catch {
-      alert('Lỗi kết nối khi đồng bộ kho nguyên liệu');
+      setSyncNotice('Lỗi kết nối khi đồng bộ kho nguyên liệu');
     } finally {
       setSyncing(false);
     }
@@ -275,12 +275,12 @@ export default function EditorIngredientsPage() {
       const res = await fetch(`/api/ingredients/${id}`, { method: 'DELETE' });
       const data = await res.json();
       if (!res.ok) {
-        alert(data.error || 'Lỗi xóa nguyên liệu');
+        setSyncNotice(data.error || 'Lỗi xóa nguyên liệu');
         return;
       }
       fetchIngredients();
     } catch {
-      alert('Đã có lỗi xảy ra');
+      setSyncNotice('Đã có lỗi xảy ra khi xóa nguyên liệu.');
     }
   };
 

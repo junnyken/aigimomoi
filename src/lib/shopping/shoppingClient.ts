@@ -26,6 +26,29 @@ export function saveLocalCheckedKeys(keys: string[]) {
   }
 }
 
+/** Mã hóa danh sách các món đã tick thành chuỗi chỉ mục gọn nhẹ để gửi URL cho người nhà. */
+export function encodeCheckedIndices(allKeys: string[], checkedKeys: string[]): string {
+  const checkedSet = new Set(checkedKeys);
+  const indices: number[] = [];
+  allKeys.forEach((key, idx) => {
+    if (checkedSet.has(key)) indices.push(idx);
+  });
+  return indices.join(',');
+}
+
+/** Giải mã tham số ?checked=0,2,5 từ URL thành danh sách item key hợp lệ. */
+export function decodeCheckedParam(rawParam: string | null, allKeys: string[]): string[] {
+  if (!rawParam) return [];
+  const keys: string[] = [];
+  for (const part of rawParam.split(',')) {
+    const idx = Number.parseInt(part.trim(), 10);
+    if (Number.isInteger(idx) && idx >= 0 && idx < allKeys.length) {
+      keys.push(allKeys[idx]);
+    }
+  }
+  return keys;
+}
+
 function subscribeChecklist(onChange: () => void) {
   window.addEventListener(SHOPPING_EVENT_NAME, onChange);
   window.addEventListener('storage', onChange);

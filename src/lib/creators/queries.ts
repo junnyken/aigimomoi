@@ -1,8 +1,15 @@
 // R7 — Truy vấn hồ sơ người nấu & thống kê uy tín (server-only, thuần DB).
 // Chỉ trả về trường công khai: KHÔNG email, KHÔNG id người xác minh, KHÔNG mốc xác minh chi tiết.
-import { and, avg, countDistinct, count, desc, eq, inArray, ne, sql } from 'drizzle-orm';
+import { and, asc, avg, countDistinct, count, desc, eq, inArray, ne, sql } from 'drizzle-orm';
 import { db } from '@/lib/db';
-import { creatorProfiles, recipeCookedFeedbacks, recipes, users } from '@/lib/db/schema';
+import {
+  creatorProfiles,
+  recipeBundles,
+  recipeBundleItems,
+  recipeCookedFeedbacks,
+  recipes,
+  users,
+} from '@/lib/db/schema';
 import { mapPublicCardRow, selectPublicCards, type PublicRecipeCard } from '@/lib/recipes/publicQueries';
 import { COMMUNITY_PROVENANCE } from '@/lib/recipes/source';
 import { computeCreatorTier, isValidCreatorSlug, type CreatorTier, type CreatorTierResult } from './tier';
@@ -11,6 +18,20 @@ export interface CreatorStats {
   publishedCommunityRecipes: number;
   distinctRaters: number;
   averageRating: number | null;
+}
+
+export interface PublicCreatorBundle {
+  id: number;
+  slug: string;
+  title: string;
+  description: string | null;
+  price: number;
+  recipes: Array<{
+    id: number;
+    slug: string;
+    name: string;
+    caloriesPerServing: number | null;
+  }>;
 }
 
 export interface PublicCreatorProfile {
@@ -23,6 +44,7 @@ export interface PublicCreatorProfile {
   stats: CreatorStats;
   joinedAt: string;
   recipes: PublicRecipeCard[];
+  bundles: PublicCreatorBundle[];
 }
 
 /**
@@ -127,6 +149,63 @@ export async function getPublicCreatorBySlug(slug: string): Promise<PublicCreato
     .orderBy(desc(recipes.publishedAt), desc(recipes.id))
     .limit(48);
 
+  const rawBundles = await db
+    .select({
+      id: recipeBundles.id,
+      slug: recipeBundles.slug,
+      title: recipeBundles.title,
+      description: recipeBundles.description,
+      price: recipeBundles.price,
+    })
+    .from(recipeBundles)
+    .where(and(eq(recipeBundles.creatorId, row.userId), eq(recipeBundles.status, 'PUBLISHED')))
+    .orderBy(desc(recipeBundles.createdAt))
+    .limit(12);
+
+  const bundles: PublicCreatorBundle[] = [];
+  if (rawBundles.length > 0) {
+    const bundleIds = rawBundles.map((b) => b.id);
+    const itemRows = await db
+      .select({
+        bundleId: recipeBundleItems.bundleId,
+        recipeId: recipes.id,
+        slug: recipes.slug,
+        name: recipes.name,
+        caloriesPerServing: recipes.caloriesPerServing,
+      })
+      .from(recipeBundleItems)
+      .innerJoin(recipes, eq(recipeBundleItems.recipeId, recipes.id))
+      .where(
+        and(
+          inArray(recipeBundleItems.bundleId, bundleIds),
+          eq(recipes.status, 'PUBLISHED')
+        )
+      )
+      .orderBy(asc(recipeBundleItems.orderIndex));
+
+    const itemsByBundle = new Map<number, PublicCreatorBundle['recipes']>();
+    for (const item of itemRows) {
+      const list = itemsByBundle.get(item.bundleId) ?? [];
+      list.push({
+        id: item.recipeId,
+        slug: item.slug,
+        name: item.name,
+        caloriesPerServing: item.caloriesPerServing ?? null,
+      });
+      itemsByBundle.set(item.bundleId, list);
+    }
+
+    for (const b of rawBundles) {
+      const bundleRecipes = itemsByBundle.get(b.id) ?? [];
+      if (bundleRecipes.length >= 1) {
+        bundles.push({
+          ...b,
+          recipes: bundleRecipes,
+        });
+      }
+    }
+  }
+
   return {
     slug: row.slug,
     displayName: row.displayName,
@@ -137,6 +216,7 @@ export async function getPublicCreatorBySlug(slug: string): Promise<PublicCreato
     stats,
     joinedAt: row.createdAt.toISOString(),
     recipes: recipeRows.map(mapPublicCardRow),
+    bundles,
   };
 }
 

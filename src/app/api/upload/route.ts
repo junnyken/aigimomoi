@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
     if (isCrossSiteRequest(request)) {
       return NextResponse.json({ error: 'Yêu cầu bị từ chối do khác nguồn gốc (CSRF).' }, { status: 403 });
     }
-    const user = await getSessionUser();
+    const user = await getSessionUser(request);
     if (!user) {
       return NextResponse.json(
         { error: 'Vui lòng đăng nhập để tải ảnh món ăn lên hệ thống.' },
@@ -64,7 +64,7 @@ export async function DELETE(request: NextRequest) {
     if (isCrossSiteRequest(request)) {
       return NextResponse.json({ error: 'Yêu cầu bị từ chối do khác nguồn gốc (CSRF).' }, { status: 403 });
     }
-    const user = await getSessionUser();
+    const user = await getSessionUser(request);
     if (!user || (user.role !== 'ADMIN' && user.role !== 'EDITOR')) {
       return NextResponse.json(
         { error: 'Yêu cầu quyền Biên tập viên (EDITOR) hoặc Quản trị viên (ADMIN).' },

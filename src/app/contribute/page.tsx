@@ -86,6 +86,7 @@ export default function ContributorDashboardPage() {
   const [bundles, setBundles] = useState<CreatorBundle[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
 
   // State cho Modal đặt giá món lẻ (R8)
@@ -219,16 +220,17 @@ export default function ContributorDashboardPage() {
 
   const handleDeleteDraft = async (id: number) => {
     if (!confirm('Bạn có chắc chắn muốn xóa bản nháp công thức này?')) return;
+    setActionError(null);
     try {
       const res = await fetch(`/api/contribute/recipes/${id}`, { method: 'DELETE' });
       if (!res.ok) {
         const data = await res.json();
-        alert(data.error || 'Lỗi khi xóa bản nháp.');
+        setActionError(data.error || 'Lỗi khi xóa bản nháp.');
         return;
       }
       setRecipes((prev) => prev.filter((r) => r.id !== id));
     } catch {
-      alert('Không thể kết nối đến máy chủ.');
+      setActionError('Không thể kết nối đến máy chủ.');
     }
   };
 
@@ -265,6 +267,21 @@ export default function ContributorDashboardPage() {
       </header>
 
       <main className="w-full mx-auto px-4 pt-6 space-y-6">
+        {actionError && (
+          <div className="p-4 rounded-2xl bg-red-50 border border-red-200 text-red-900 text-xs sm:text-sm font-semibold flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+              <span>{actionError}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setActionError(null)}
+              className="text-xs underline font-bold cursor-pointer"
+            >
+              Đóng
+            </button>
+          </div>
+        )}
         {toastMsg && (
           <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs sm:text-sm font-semibold flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0" />

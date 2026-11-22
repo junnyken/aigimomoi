@@ -1,9 +1,16 @@
 // AG-16 — Truy vấn công thức công khai (thuần DB, không phụ thuộc Next.js runtime).
 // Chỉ trả về bản PUBLISHED với tập cột tường minh: không email tác giả, không ghi chú duyệt,
 // không id người duyệt (D35). Lớp cache Next.js nằm ở `public.ts`.
-import { and, asc, desc, eq, inArray } from 'drizzle-orm';
+import { and, asc, avg, count, desc, eq, inArray } from 'drizzle-orm';
 import { db } from '@/lib/db';
-import { recipes, recipeIngredients, cookingSteps, users, creatorProfiles } from '@/lib/db/schema';
+import {
+  recipes,
+  recipeIngredients,
+  cookingSteps,
+  users,
+  creatorProfiles,
+  recipeCookedFeedbacks,
+} from '@/lib/db/schema';
 import { isIllustrationImage } from './labels';
 import { recipeSourceFromProvenance, type RecipeSource } from './source';
 import type { RecipeNutritionSnapshot } from '@/lib/nutrition/types';
@@ -92,6 +99,8 @@ export interface PublicRecipe {
   isEditorialReviewed: boolean;
   isCookTested: boolean;
   isNutritionVerified: boolean;
+  ratingAverage?: number | null;
+  ratingCount?: number;
   versionNumber: number;
   publishedAt: string | null;
   dish: { name: string; aliases: string[] } | null;
@@ -305,6 +314,26 @@ export async function queryPublishedRecipeBySlug(slug: string): Promise<PublicRe
     const source = recipeSourceFromProvenance(row.provenance);
     const creatorProfile = row.author?.creatorProfile;
 
+    // Thống kê đánh giá thực tế đã duyệt (APPROVED) từ cộng đồng nấu thử
+    const [feedbackAgg] = await db
+      .select({
+        total: count(),
+        average: avg(recipeCookedFeedbacks.rating),
+      })
+      .from(recipeCookedFeedbacks)
+      .where(
+        and(
+          eq(recipeCookedFeedbacks.recipeId, row.id),
+          eq(recipeCookedFeedbacks.status, 'APPROVED')
+        )
+      );
+
+    const ratingCount = Number(feedbackAgg?.total ?? 0);
+    const ratingAverage =
+      ratingCount > 0 && feedbackAgg?.average !== null && feedbackAgg?.average !== undefined
+        ? Math.round(Number(feedbackAgg.average) * 10) / 10
+        : null;
+
     return {
       id: row.id,
       slug: row.slug,
@@ -328,6 +357,8 @@ export async function queryPublishedRecipeBySlug(slug: string): Promise<PublicRe
       isEditorialReviewed: row.isEditorialReviewed,
       isCookTested: source === 'EDITORIAL' ? row.isCookTested : false,
       isNutritionVerified: row.isNutritionVerified,
+      ratingAverage,
+      ratingCount,
       versionNumber: row.versionNumber,
       publishedAt: row.publishedAt ? row.publishedAt.toISOString() : null,
       dish: row.dish ? { name: row.dish.name, aliases: row.dish.aliases.map((a) => a.aliasName) } : null,

@@ -11,6 +11,7 @@ import {
   formatVndCurrency,
   formatVndRounded1k,
 } from '@/lib/recipes/priceDictionary';
+import { formatHouseholdMeasure } from '@/lib/recipes/kitchenUnits';
 import { ServingSelector } from './ServingSelector';
 
 interface IngredientListProps {
@@ -55,6 +56,7 @@ export function IngredientList({
   }, [servings, safeBase]);
 
   const [showKitchenGuide, setShowKitchenGuide] = useState(false);
+  const [useHouseholdUnits, setUseHouseholdUnits] = useState(false);
   const [showItemDetails, setShowItemDetails] = useState(false);
   const [checkedIds, setCheckedIds] = useState<Record<number, boolean>>({});
   const scaledList = scaleRecipeIngredients(ingredients, safeBase, servings);
@@ -97,13 +99,44 @@ export function IngredientList({
             </span>
           )}
         </div>
-        <button
-          type="button"
-          onClick={() => setShowKitchenGuide((v) => !v)}
-          className="text-xs font-semibold text-[var(--color-brand-primary)] hover:underline cursor-pointer"
-        >
-          {showKitchenGuide ? 'Ẩn mẹo đong' : '🥄 Mẹo đong'}
-        </button>
+        <div className="flex items-center gap-1.5 shrink-0">
+          <div
+            className="inline-flex rounded-xl border border-[var(--color-border-base)] bg-[var(--color-surface-raised)] p-0.5 text-[11px] font-bold"
+            role="group"
+            aria-label="Chế độ đơn vị đo"
+          >
+            <button
+              type="button"
+              onClick={() => setUseHouseholdUnits(false)}
+              className={`px-2 py-1 rounded-lg transition-colors cursor-pointer ${
+                !useHouseholdUnits
+                  ? 'bg-white text-[var(--color-text-primary)] shadow-2xs'
+                  : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]'
+              }`}
+            >
+              ⚖️ g/ml
+            </button>
+            <button
+              type="button"
+              onClick={() => setUseHouseholdUnits(true)}
+              className={`px-2 py-1 rounded-lg transition-colors cursor-pointer ${
+                useHouseholdUnits
+                  ? 'bg-[var(--color-brand-primary)] text-white shadow-2xs'
+                  : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]'
+              }`}
+            >
+              🥄 Bếp nhà
+            </button>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setShowKitchenGuide((v) => !v)}
+            className="text-xs font-semibold text-[var(--color-brand-primary)] hover:underline cursor-pointer px-1"
+          >
+            {showKitchenGuide ? 'Ẩn mẹo' : 'Mẹo đong'}
+          </button>
+        </div>
       </div>
 
       {showKitchenGuide && (
@@ -163,6 +196,7 @@ export function IngredientList({
           detailByName={detailByName}
           scaleFactor={scaleFactor}
           showItemDetails={showItemDetails}
+          useHouseholdUnits={useHouseholdUnits}
           checkedIds={checkedIds}
           onToggle={toggleChecked}
         />
@@ -178,6 +212,7 @@ export function IngredientList({
               detailByName={detailByName}
               scaleFactor={scaleFactor}
               showItemDetails={showItemDetails}
+              useHouseholdUnits={useHouseholdUnits}
               checkedIds={checkedIds}
               onToggle={toggleChecked}
             />
@@ -210,6 +245,7 @@ function IngredientRows({
   detailByName,
   scaleFactor,
   showItemDetails,
+  useHouseholdUnits,
   checkedIds,
   onToggle,
 }: {
@@ -218,6 +254,7 @@ function IngredientRows({
   detailByName: Map<string, IngredientNutritionDetail>;
   scaleFactor: number;
   showItemDetails: boolean;
+  useHouseholdUnits: boolean;
   checkedIds: Record<number, boolean>;
   onToggle: (id: number) => void;
 }) {
@@ -324,15 +361,26 @@ function IngredientRows({
             </div>
 
             <div className="shrink-0 text-right flex flex-col items-end">
-              <span
-                className={`tabular-nums text-sm font-bold transition-colors ${
-                  ing.isScaled
-                    ? 'text-[var(--color-brand-primary)]'
-                    : 'text-[var(--color-text-primary)]'
-                }`}
-              >
-                {ing.formattedAmount} {ing.unit}
-              </span>
+              {useHouseholdUnits ? (
+                <>
+                  <span className="tabular-nums text-sm font-bold text-[var(--color-brand-primary)]">
+                    {formatHouseholdMeasure(ing.scaledAmount, ing.unit, ing.name)}
+                  </span>
+                  <span className="text-[10px] text-[var(--color-text-muted)] tabular-nums">
+                    ({ing.formattedAmount} {ing.unit})
+                  </span>
+                </>
+              ) : (
+                <span
+                  className={`tabular-nums text-sm font-bold transition-colors ${
+                    ing.isScaled
+                      ? 'text-[var(--color-brand-primary)]'
+                      : 'text-[var(--color-text-primary)]'
+                  }`}
+                >
+                  {ing.formattedAmount} {ing.unit}
+                </span>
+              )}
               {showItemDetails && !costInfo.isPantrySeasoning && costInfo.pricePer100gVnd > 0 && (
                 <span className="text-[10px] text-[var(--color-text-muted)]">
                   {(costInfo.pricePer100gVnd / 1000).toFixed(1).replace('.0', '')}k/100g

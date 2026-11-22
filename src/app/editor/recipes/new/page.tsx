@@ -168,7 +168,8 @@ export default function NewRecipePage() {
 
   const removeIngredientRow = (index: number) => {
     if (ingredientRows.length <= 1) {
-      alert('Công thức cần ít nhất một nguyên liệu');
+      setErrorMsg('Công thức cần ít nhất một nguyên liệu.');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
     setIngredientRows((prev) => prev.filter((_, i) => i !== index));
@@ -202,7 +203,8 @@ export default function NewRecipePage() {
 
   const removeStepRow = (index: number) => {
     if (stepRows.length <= 1) {
-      alert('Công thức cần ít nhất một bước thực hiện');
+      setErrorMsg('Công thức cần ít nhất một bước thực hiện.');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
     setStepRows((prev) => prev.filter((_, i) => i !== index));

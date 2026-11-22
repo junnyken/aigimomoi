@@ -3,12 +3,20 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { pantryItems, ingredients } from '@/lib/db/schema';
 import { getSessionUser } from '@/lib/auth/session';
+import { isCrossSiteRequest } from '@/lib/http/sameOrigin';
 import { ilike } from 'drizzle-orm';
 import { logger } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
-    const user = await getSessionUser();
+    if (isCrossSiteRequest(request)) {
+      return NextResponse.json(
+        { error: 'Yêu cầu bị từ chối do khác nguồn gốc (CSRF).' },
+        { status: 403 }
+      );
+    }
+
+    const user = await getSessionUser(request);
     if (!user) {
       return NextResponse.json({ error: 'Yêu cầu đăng nhập để đồng bộ vào tủ lạnh.' }, { status: 401 });
     }

@@ -77,13 +77,13 @@ export default function EditorTaxonomiesPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        alert(data.error || 'Không thể đồng bộ bộ nhãn phân loại');
+        setError(data.error || 'Không thể đồng bộ bộ nhãn phân loại');
         return;
       }
       setSyncNotice(data.message || 'Đã đồng bộ 44 nhãn phân loại chuẩn Việt Nam!');
       await fetchTaxonomies();
     } catch {
-      alert('Lỗi kết nối máy chủ khi đồng bộ nhãn');
+      setError('Lỗi kết nối máy chủ khi đồng bộ nhãn');
     } finally {
       setSyncing(false);
     }
@@ -125,12 +125,12 @@ export default function EditorTaxonomiesPage() {
       const res = await fetch(`/api/taxonomies/${id}`, { method: 'DELETE' });
       const data = await res.json();
       if (!res.ok) {
-        alert(data.error || 'Lỗi xóa phân loại');
+        setError(data.error || 'Lỗi xóa phân loại');
         return;
       }
       fetchTaxonomies();
     } catch {
-      alert('Đã có lỗi xảy ra');
+      setError('Đã có lỗi xảy ra khi xóa phân loại');
     }
   };
 

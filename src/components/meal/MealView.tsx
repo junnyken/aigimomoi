@@ -15,6 +15,7 @@ import {
   Baby,
   ShieldCheck,
   AlertCircle,
+  Wallet,
 } from 'lucide-react';
 import {
   BUILT_IN_DIPPING_SAUCES,
@@ -26,6 +27,7 @@ import { MealServingsSelector } from './MealServingsSelector';
 import { MealSlotCard } from './MealSlotCard';
 import { SwapDishModal } from './SwapDishModal';
 import { MealSummaryBar } from './MealSummaryBar';
+import { FamilyPortionSplitter } from './FamilyPortionSplitter';
 import { saveStoredMeal, getStoredMeal } from '@/lib/meal/mealClient';
 import { AiMealSuggestionModal } from './AiMealSuggestionModal';
 import { useRouter } from 'next/navigation';
@@ -33,7 +35,15 @@ import { buildMealQuery } from '@/lib/meal/flowUrls';
 
 type HealthGoalKey = 'weight_loss' | 'balanced' | 'muscle_gain';
 type RiceTypeKey = 'white' | 'brown';
-type FamilyProfileKey = 'eat-clean' | 'me-bau' | 'nguoi-lon-tuoi' | 'cho-be';
+type FamilyProfileKey =
+  | 'eat-clean'
+  | 'me-bau'
+  | 'nguoi-lon-tuoi'
+  | 'cho-be'
+  | 'tieu-duong'
+  | 'mo-mau'
+  | 'gout'
+  | 'tiet-kiem';
 
 interface HealthGoalConfig {
   key: HealthGoalKey;
@@ -134,6 +144,54 @@ const FAMILY_PROFILES: {
     riceType: 'white',
     preferredSauceSlug: 'nuoc-mam-toi-ot-chua-ngot',
     keywords: ['trứng', 'thịt', 'tôm', 'kho', 'canh', 'xào'],
+  },
+  {
+    key: 'tieu-duong',
+    title: 'Thực đơn Tiểu đường • Low-GI',
+    subtitle: 'Giàu xơ, ưu tiên hấp/luộc và cơm gạo lứt giúp đường huyết sau ăn ổn định',
+    badge: 'Ổn định đường huyết',
+    icon: Droplets,
+    goalKey: 'weight_loss',
+    riceBowls: 0.5,
+    riceType: 'brown',
+    preferredSauceSlug: 'xi-dau-toi-ot-me-rang',
+    keywords: ['cá', 'đậu', 'luộc', 'hấp', 'rau', 'canh'],
+  },
+  {
+    key: 'mo-mau',
+    title: 'Thực đơn Mỡ máu • Tim mạch',
+    subtitle: 'Ít chất béo bão hòa, giảm chiên xào dầu mỡ, bổ sung omega tự nhiên & rau xanh',
+    badge: 'Ít chất béo bão hòa',
+    icon: HeartPulse,
+    goalKey: 'weight_loss',
+    riceBowls: 1,
+    riceType: 'brown',
+    preferredSauceSlug: 'muoi-ot-xanh-chanh-day',
+    keywords: ['cá', 'đậu hũ', 'luộc', 'hấp', 'chua', 'rau'],
+  },
+  {
+    key: 'gout',
+    title: 'Thực đơn Kiểm soát Gout (Ít Purin)',
+    subtitle: 'Ưu tiên trứng, đậu hũ, thịt trắng và rau củ thanh mát, hạn chế thịt đỏ/hải sản',
+    badge: 'Hạn chế đạm đỏ/hải sản',
+    icon: Scale,
+    goalKey: 'balanced',
+    riceBowls: 1,
+    riceType: 'white',
+    preferredSauceSlug: 'xi-dau-toi-ot-me-rang',
+    keywords: ['trứng', 'đậu', 'gà', 'rau', 'bầu', 'bí'],
+  },
+  {
+    key: 'tiet-kiem',
+    title: 'Mâm cơm Tiết kiệm < 65k',
+    subtitle: 'Nguyên liệu phổ thông dễ mua, đủ đạm – canh – rau ngon trọn bữa cuối tháng',
+    badge: 'Ngon rẻ cuối tháng',
+    icon: Wallet,
+    goalKey: 'balanced',
+    riceBowls: 1.5,
+    riceType: 'white',
+    preferredSauceSlug: 'nuoc-mam-toi-ot-chua-ngot',
+    keywords: ['trứng', 'đậu', 'thịt băm', 'rau muống', 'cải', 'canh'],
   },
 ];
 
@@ -332,23 +390,31 @@ export function MealView({
 
         const pickBestDish = (list: MealDishSummary[]): MealDishSummary | null => {
           if (list.length === 0) return null;
-          if (profileKey === 'eat-clean' || profileKey === 'nguoi-lon-tuoi') {
-            const withCalories = [...list].filter(
-              (d) => typeof d.caloriesPerServing === 'number' && d.caloriesPerServing > 0
-            );
-            if (withCalories.length > 0) {
-              withCalories.sort((a, b) => (a.caloriesPerServing ?? 999) - (b.caloriesPerServing ?? 999));
-              return withCalories[0];
-            }
-          }
-          const matchedKeyword = list.find((d) =>
+          const keywordMatches = list.filter((d) =>
             profile.keywords.some(
               (kw) =>
                 d.name.toLowerCase().includes(kw) ||
                 d.shortDescription.toLowerCase().includes(kw)
             )
           );
-          return matchedKeyword ?? list[0];
+          const preferLowCal =
+            profileKey === 'eat-clean' ||
+            profileKey === 'nguoi-lon-tuoi' ||
+            profileKey === 'tieu-duong' ||
+            profileKey === 'mo-mau';
+
+          if (preferLowCal) {
+            const pool = keywordMatches.length > 0 ? keywordMatches : list;
+            const withCalories = pool.filter(
+              (d) => typeof d.caloriesPerServing === 'number' && d.caloriesPerServing > 0
+            );
+            if (withCalories.length > 0) {
+              return [...withCalories].sort(
+                (a, b) => (a.caloriesPerServing ?? 999) - (b.caloriesPerServing ?? 999)
+              )[0];
+            }
+          }
+          return keywordMatches[0] ?? list[0];
         };
 
         const nextMain = pickBestDish(mains) ?? main;
@@ -599,6 +665,15 @@ export function MealView({
         onRiceBowlsChange={setRiceBowls}
         onRiceTypeChange={setRiceType}
         onGoalChange={handleGoalChange}
+      />
+
+      {/* Chia khẩu phần từ 1 mâm cơm cho từng thành viên trong gia đình */}
+      <FamilyPortionSplitter
+        main={main}
+        soup={soup}
+        side={side}
+        sauce={sauce}
+        servings={servings}
       />
 
       {/* Gói C: Gợi ý thứ tự đứng bếp nhàn tênh */}

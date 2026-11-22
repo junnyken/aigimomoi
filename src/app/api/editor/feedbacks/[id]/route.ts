@@ -2,9 +2,13 @@
 // Cho phép EDITOR hoặc ADMIN duyệt hoặc từ chối phản hồi/ảnh của người nấu
 
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { db } from '@/lib/db';
 import { recipeCookedFeedbacks } from '@/lib/db/schema';
 import { getSessionUser } from '@/lib/auth/session';
+import { isCrossSiteRequest } from '@/lib/http/sameOrigin';
+import { PUBLIC_RECIPES_TAG } from '@/lib/recipes/public';
+import { CREATOR_PROFILES_TAG } from '@/lib/creators/public';
 import { eq } from 'drizzle-orm';
 import { logger } from '@/lib/logger';
 
@@ -14,7 +18,14 @@ interface RouteContext {
 
 export async function PATCH(request: NextRequest, context: RouteContext) {
   try {
-    const user = await getSessionUser();
+    if (isCrossSiteRequest(request)) {
+      return NextResponse.json(
+        { error: 'Yêu cầu bị từ chối do khác nguồn gốc (CSRF).' },
+        { status: 403 }
+      );
+    }
+
+    const user = await getSessionUser(request);
     if (!user) {
       return NextResponse.json({ error: 'Yêu cầu đăng nhập.' }, { status: 401 });
     }
@@ -62,6 +73,13 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       })
       .where(eq(recipeCookedFeedbacks.id, feedbackId))
       .returning();
+
+    try {
+      revalidateTag(PUBLIC_RECIPES_TAG, { expire: 0 });
+      revalidateTag(CREATOR_PROFILES_TAG, { expire: 0 });
+    } catch {
+      // Ngoài Next runtime (test script): không có cache để làm mới
+    }
 
     return NextResponse.json({
       success: true,

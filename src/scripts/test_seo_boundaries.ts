@@ -228,6 +228,20 @@ async function runTests() {
   assert(jsonLd.recipeIngredient[0] === 'Thịt ba chỉ 500 g (thái vuông)', 'Định dạng nguyên liệu chi tiết');
   assert(jsonLd.recipeInstructions.length === 2, 'Có 2 bước HowToStep');
   assert(jsonLd.recipeInstructions[0]['@type'] === 'HowToStep', 'Bước 1 là HowToStep');
+  assert(
+    !('aggregateRating' in jsonLd) || jsonLd.aggregateRating === undefined,
+    'Trung thực SEO: Không bịa aggregateRating giả khi chưa có đánh giá thực tế (ratingCount = 0/undefined)'
+  );
+
+  const ratedJsonLd = buildRecipeJsonLd(
+    { ...mockPublicRecipe, ratingAverage: 4.8, ratingCount: 5 },
+    'https://angimom.vn'
+  );
+  assert(
+    ratedJsonLd.aggregateRating?.ratingValue === '4.8' &&
+      ratedJsonLd.aggregateRating?.ratingCount === '5',
+    'Có aggregateRating chuẩn Schema.org khi có đánh giá thực tế từ cộng đồng'
+  );
 
   // Kiểm tra chuỗi JSON an toàn không bị XSS
   const serialized = JSON.stringify(jsonLd).replace(/</g, '\\u003c');

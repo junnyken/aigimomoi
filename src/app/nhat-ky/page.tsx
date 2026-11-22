@@ -26,11 +26,99 @@ import {
   X,
   Check,
   Scale,
+  Droplets,
+  TrendingDown,
+  Search,
 } from 'lucide-react';
 import {
   loadPersonalNutritionTarget,
   type PersonalNutritionTarget,
 } from '@/lib/nutrition/personalTarget';
+import {
+  VIETNAMESE_EATING_OUT_CATALOG,
+  type VietnameseEatingOutItem,
+} from '@/lib/nutrition/vietnameseEatingOutCatalog';
+
+interface WeightLog {
+  date: string;
+  weightKg: number;
+}
+
+const WATER_STORAGE_PREFIX = 'angimom_water_';
+const WEIGHT_LOGS_STORAGE_KEY = 'angimom_weight_logs';
+
+function readWaterCups(dateStr: string): number {
+  if (typeof window === 'undefined' || !dateStr) return 0;
+  try {
+    const raw = localStorage.getItem(`${WATER_STORAGE_PREFIX}${dateStr}`);
+    const parsed = raw ? Number(raw) : 0;
+    return Number.isFinite(parsed) && parsed >= 0 ? Math.min(16, Math.round(parsed)) : 0;
+  } catch {
+    return 0;
+  }
+}
+
+function saveWaterCups(dateStr: string, cups: number) {
+  if (typeof window === 'undefined' || !dateStr) return;
+  try {
+    localStorage.setItem(`${WATER_STORAGE_PREFIX}${dateStr}`, String(cups));
+  } catch {
+    // Ignore storage quota errors
+  }
+}
+
+function readWeightLogs(): WeightLog[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(WEIGHT_LOGS_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .filter(
+        (item): item is WeightLog =>
+          Boolean(item) &&
+          typeof item.date === 'string' &&
+          typeof item.weightKg === 'number' &&
+          item.weightKg >= 25 &&
+          item.weightKg <= 200
+      )
+      .sort((a, b) => a.date.localeCompare(b.date));
+  } catch {
+    return [];
+  }
+}
+
+function saveWeightLogs(logs: WeightLog[]) {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(WEIGHT_LOGS_STORAGE_KEY, JSON.stringify(logs.slice(-60)));
+  } catch {
+    // Ignore storage quota errors
+  }
+}
+
+function computeAdjustedEatingOut(
+  item: VietnameseEatingOutItem,
+  selectedModifierIds: string[]
+) {
+  const chosenMods = item.modifiers.filter((m) => selectedModifierIds.includes(m.id));
+  const deltaCalories = chosenMods.reduce((acc, m) => acc + m.deltaCalories, 0);
+  const deltaProtein = chosenMods.reduce((acc, m) => acc + (m.deltaProtein ?? 0), 0);
+  const deltaFat = chosenMods.reduce((acc, m) => acc + (m.deltaFat ?? 0), 0);
+  const deltaCarbs = chosenMods.reduce((acc, m) => acc + (m.deltaCarbs ?? 0), 0);
+  const deltaSodium = chosenMods.reduce((acc, m) => acc + (m.deltaSodium ?? 0), 0);
+
+  return {
+    chosenMods,
+    calories: Math.max(0, Math.round(item.calories + deltaCalories)),
+    protein: Math.max(0, Math.round((item.protein + deltaProtein) * 10) / 10),
+    fat: Math.max(0, Math.round((item.fat + deltaFat) * 10) / 10),
+    carbs: Math.max(0, Math.round((item.carbs + deltaCarbs) * 10) / 10),
+    fiber: Math.max(0, item.fiber),
+    sodium: Math.max(0, Math.round(item.sodium + deltaSodium)),
+  };
+}
 
 interface DiaryEntry {
   id: number;
@@ -125,6 +213,10 @@ function MealDiaryContent() {
   const [authError, setAuthError] = useState(false);
   const [targetCalories, setTargetCalories] = useState(2000);
   const [personalTarget, setPersonalTarget] = useState<PersonalNutritionTarget | null>(null);
+  const [waterCups, setWaterCups] = useState(0);
+  const [weightLogs, setWeightLogs] = useState<WeightLog[]>([]);
+  const [weightInput, setWeightInput] = useState('');
+  const [weightNotice, setWeightNotice] = useState<string | null>(null);
 
   // Modal Add Entry
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -133,10 +225,20 @@ function MealDiaryContent() {
   const [memberName, setMemberName] = useState('Cả nhà');
   const [portion, setPortion] = useState(1.0);
   const [submitting, setSubmitting] = useState(false);
+  const [eatingOutQuery, setEatingOutQuery] = useState('');
+  const [selectedEatingOut, setSelectedEatingOut] = useState<VietnameseEatingOutItem | null>(null);
+  const [selectedModifierIds, setSelectedModifierIds] = useState<string[]>([]);
 
   useEffect(() => {
     const today = new Date().toISOString().split('T')[0];
     setSelectedDate(today);
+    setWaterCups(readWaterCups(today));
+
+    const logs = readWeightLogs();
+    setWeightLogs(logs);
+    if (logs.length > 0) {
+      setWeightInput(String(logs[logs.length - 1].weightKg));
+    }
 
     const saved = loadPersonalNutritionTarget();
     if (saved) {
@@ -173,6 +275,7 @@ function MealDiaryContent() {
   useEffect(() => {
     if (selectedDate) {
       loadDiary(selectedDate);
+      setWaterCups(readWaterCups(selectedDate));
     }
   }, [selectedDate]);
 
@@ -180,6 +283,57 @@ function MealDiaryContent() {
     const current = new Date(selectedDate);
     current.setDate(current.getDate() + delta);
     setSelectedDate(current.toISOString().split('T')[0]);
+  }
+
+  function updateWaterCups(next: number) {
+    const clamped = Math.max(0, Math.min(16, next));
+    setWaterCups(clamped);
+    saveWaterCups(selectedDate, clamped);
+  }
+
+  function handleSaveWeight() {
+    const parsed = Number(weightInput.replace(',', '.'));
+    if (!Number.isFinite(parsed) || parsed < 25 || parsed > 200) {
+      setWeightNotice('Vui lòng nhập cân nặng hợp lệ từ 25 đến 200 kg.');
+      return;
+    }
+    const rounded = Math.round(parsed * 10) / 10;
+    const logDate = selectedDate || new Date().toISOString().split('T')[0];
+    const nextLogs = [
+      ...weightLogs.filter((l) => l.date !== logDate),
+      { date: logDate, weightKg: rounded },
+    ].sort((a, b) => a.date.localeCompare(b.date));
+    setWeightLogs(nextLogs);
+    saveWeightLogs(nextLogs);
+    setWeightInput(String(rounded));
+    setWeightNotice(`Đã lưu cân nặng ${rounded} kg cho ngày ${logDate}.`);
+  }
+
+  function openAddModal(mealType: 'BREAKFAST' | 'LUNCH' | 'DINNER' | 'SNACK') {
+    setAddMealType(mealType);
+    setEatingOutQuery('');
+    setSelectedEatingOut(null);
+    setSelectedModifierIds([]);
+    setIsModalOpen(true);
+  }
+
+  function closeAddModal() {
+    setIsModalOpen(false);
+    setEatingOutQuery('');
+    setSelectedEatingOut(null);
+    setSelectedModifierIds([]);
+  }
+
+  function handleSelectEatingOut(item: VietnameseEatingOutItem) {
+    setSelectedEatingOut(item);
+    setSelectedModifierIds([]);
+    setRecipeName(item.name);
+  }
+
+  function handleToggleModifier(modId: string) {
+    setSelectedModifierIds((prev) =>
+      prev.includes(modId) ? prev.filter((id) => id !== modId) : [...prev, modId]
+    );
   }
 
   async function handleDeleteEntry(id: number) {
@@ -197,22 +351,43 @@ function MealDiaryContent() {
     e.preventDefault();
     if (!recipeName.trim()) return;
 
+    const adjusted = selectedEatingOut
+      ? computeAdjustedEatingOut(selectedEatingOut, selectedModifierIds)
+      : null;
+    const modSuffix =
+      adjusted && adjusted.chosenMods.length > 0
+        ? ` (${adjusted.chosenMods.map((m) => m.label).join(', ')})`
+        : '';
+    const finalRecipeName = `${recipeName.trim()}${
+      modSuffix && !recipeName.includes('(') ? modSuffix : ''
+    }`;
+
     setSubmitting(true);
     try {
       const res = await fetch('/api/diary', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          recipeName: recipeName.trim(),
+          recipeName: finalRecipeName,
           diaryDate: selectedDate,
           mealType: addMealType,
           memberName: memberName.trim() || 'Cả nhà',
           consumedPortion: portion,
+          ...(adjusted
+            ? {
+                customCalories: adjusted.calories,
+                customProtein: adjusted.protein,
+                customFat: adjusted.fat,
+                customCarbs: adjusted.carbs,
+                customFiber: adjusted.fiber,
+                customSodium: adjusted.sodium,
+              }
+            : {}),
         }),
       });
 
       if (res.ok) {
-        setIsModalOpen(false);
+        closeAddModal();
         setRecipeName('');
         setPortion(1.0);
         loadDiary(selectedDate);
@@ -223,6 +398,61 @@ function MealDiaryContent() {
       setSubmitting(false);
     }
   }
+
+  const waterTargetCups = personalTarget?.waterLiters
+    ? Math.max(6, Math.round((personalTarget.waterLiters * 1000) / 250))
+    : 8;
+  const waterPct = Math.min(100, Math.round((waterCups / waterTargetCups) * 100));
+
+  const latestWeightLog = weightLogs.length > 0 ? weightLogs[weightLogs.length - 1] : null;
+  const recentBaselineLog = (() => {
+    if (weightLogs.length < 2 || !latestWeightLog) return null;
+    const latestTs = new Date(latestWeightLog.date).getTime();
+    const candidates = weightLogs.filter((l) => {
+      const diffDays = (latestTs - new Date(l.date).getTime()) / (1000 * 60 * 60 * 24);
+      return diffDays >= 1 && diffDays <= 14;
+    });
+    return candidates.length > 0 ? candidates[0] : weightLogs[weightLogs.length - 2];
+  })();
+  const weightDeltaKg =
+    latestWeightLog && recentBaselineLog
+      ? Math.round((latestWeightLog.weightKg - recentBaselineLog.weightKg) * 10) / 10
+      : null;
+  const adaptiveTdeeRecommendation = (() => {
+    if (weightDeltaKg === null) {
+      return 'Ghi nhận cân nặng ít nhất 2 ngày để AI theo dõi xu hướng 7 ngày và tinh chỉnh mức Kcal mục tiêu.';
+    }
+    if (weightDeltaKg <= -0.9) {
+      return `Đang giảm nhanh (${weightDeltaKg} kg) • Gợi ý cộng thêm +100 kcal từ thịt nạc/cá/rau để giữ cơ & tránh mệt.`;
+    }
+    if (weightDeltaKg <= -0.2) {
+      return `Đúng nhịp chuẩn (${weightDeltaKg} kg) • Tiếp tục giữ mức ${targetCalories} kcal/ngày rất tốt.`;
+    }
+    return `Cân nặng chững (${weightDeltaKg >= 0 ? `+${weightDeltaKg}` : weightDeltaKg} kg) • Gợi ý giảm nhẹ về ${Math.max(
+      1200,
+      targetCalories - 100
+    )} kcal/ngày hoặc bớt ½ chén cơm tối.`;
+  })();
+
+  const filteredEatingOutItems = (() => {
+    const q = eatingOutQuery.trim().toLowerCase();
+    if (q) {
+      return VIETNAMESE_EATING_OUT_CATALOG.filter((item) =>
+        item.name.toLowerCase().includes(q)
+      ).slice(0, 8);
+    }
+    const preferred = VIETNAMESE_EATING_OUT_CATALOG.filter(
+      (item) => item.defaultMealType === addMealType
+    );
+    const others = VIETNAMESE_EATING_OUT_CATALOG.filter(
+      (item) => item.defaultMealType !== addMealType
+    );
+    return [...preferred, ...others].slice(0, 8);
+  })();
+
+  const adjustedEatingOut = selectedEatingOut
+    ? computeAdjustedEatingOut(selectedEatingOut, selectedModifierIds)
+    : null;
 
   const caloriePercent = Math.min(100, Math.round((summary.totalCalories / targetCalories) * 100));
 
@@ -489,6 +719,123 @@ function MealDiaryContent() {
               )}
             </div>
 
+            {/* Thanh Theo Dõi Nước Uống & Cân Nặng / Adaptive TDEE */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Card Nước uống hôm nay */}
+              <div className="bg-[var(--color-surface-white)] border border-[var(--color-border-base)] rounded-2xl p-5 shadow-sm flex flex-col justify-between gap-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-2.5">
+                    <span className="p-2 rounded-xl bg-sky-50 border border-sky-200 text-sky-600">
+                      <Droplets className="w-4 h-4" />
+                    </span>
+                    <div>
+                      <h2 className="text-sm font-bold text-[var(--color-text-primary)]">
+                        Nước uống hôm nay
+                      </h2>
+                      <p className="text-xs text-[var(--color-text-secondary)]">
+                        <strong className="text-sky-700">{waterCups}/{waterTargetCups} cốc</strong> ({waterCups * 250}ml / {waterTargetCups * 250}ml)
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => updateWaterCups(waterCups - 1)}
+                      className="px-2.5 py-1 rounded-lg border border-[var(--color-border-base)] text-xs font-bold text-[var(--color-text-secondary)] hover:bg-neutral-100 cursor-pointer"
+                    >
+                      -1 cốc
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => updateWaterCups(waterCups + 1)}
+                      className="px-2.5 py-1 rounded-lg bg-sky-600 text-white text-xs font-bold hover:bg-sky-700 cursor-pointer"
+                    >
+                      +1 cốc
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="w-full h-2 rounded-full bg-neutral-100 overflow-hidden">
+                    <div
+                      className="h-full bg-sky-500 rounded-full transition-all duration-300"
+                      style={{ width: `${waterPct}%` }}
+                    />
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {Array.from({ length: waterTargetCups }, (_, idx) => {
+                      const cupNum = idx + 1;
+                      const filled = waterCups >= cupNum;
+                      return (
+                        <button
+                          key={cupNum}
+                          type="button"
+                          onClick={() => updateWaterCups(waterCups === cupNum ? cupNum - 1 : cupNum)}
+                          title={`Cốc ${cupNum} (${cupNum * 250}ml)`}
+                          className={`px-2 py-1 rounded-lg text-[11px] font-bold border transition-colors cursor-pointer ${
+                            filled
+                              ? 'bg-sky-100 border-sky-300 text-sky-900'
+                              : 'bg-[var(--color-surface-subtle)] border-[var(--color-border-subtle)] text-[var(--color-text-muted)]'
+                          }`}
+                        >
+                          💧 {cupNum}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {/* Card Cân nặng tuần & Adaptive TDEE */}
+              <div className="bg-[var(--color-surface-white)] border border-[var(--color-border-base)] rounded-2xl p-5 shadow-sm flex flex-col justify-between gap-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2.5">
+                    <span className="p-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700">
+                      <TrendingDown className="w-4 h-4" />
+                    </span>
+                    <div>
+                      <h2 className="text-sm font-bold text-[var(--color-text-primary)]">
+                        Cân nặng &amp; Adaptive TDEE
+                      </h2>
+                      <p className="text-xs text-[var(--color-text-secondary)]">
+                        {latestWeightLog
+                          ? `Mới nhất: ${latestWeightLog.weightKg} kg (${latestWeightLog.date})`
+                          : 'Chưa có mốc cân nặng'}
+                        {weightLogs.length > 0 && ` • Chuỗi ${weightLogs.length} lần ghi`}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="25"
+                    max="200"
+                    placeholder="VD: 56.5"
+                    value={weightInput}
+                    onChange={(e) => setWeightInput(e.target.value)}
+                    className="w-full px-3 py-1.5 text-sm rounded-lg border border-[var(--color-border-base)] bg-[var(--color-surface-white)] text-[var(--color-text-primary)]"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleSaveWeight}
+                    className="shrink-0 px-3 py-1.5 rounded-lg bg-[var(--color-brand-primary)] text-white text-xs font-bold hover:opacity-95 cursor-pointer"
+                  >
+                    Lưu cân nặng
+                  </button>
+                </div>
+
+                {weightNotice && (
+                  <p className="text-[11px] font-semibold text-emerald-700">{weightNotice}</p>
+                )}
+                <p className="text-xs text-[var(--color-text-secondary)] bg-[var(--color-surface-subtle)] border border-[var(--color-border-subtle)] rounded-xl px-3 py-2 leading-relaxed">
+                  {adaptiveTdeeRecommendation}
+                </p>
+              </div>
+            </div>
+
             {/* 4 Bữa Ăn Trong Ngày */}
             {(['BREAKFAST', 'LUNCH', 'DINNER', 'SNACK'] as const).map((type) => {
               const conf = MEAL_CONFIG[type];
@@ -516,10 +863,7 @@ function MealDiaryContent() {
 
                     <button
                       type="button"
-                      onClick={() => {
-                        setAddMealType(type);
-                        setIsModalOpen(true);
-                      }}
+                      onClick={() => openAddModal(type)}
                       className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-[var(--color-border-base)] text-xs font-semibold text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-subtle)] transition-colors"
                     >
                       <Plus className="w-3.5 h-3.5" />
@@ -586,10 +930,10 @@ function MealDiaryContent() {
       {/* Modal Thêm món vào nhật ký */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
-          <div className="bg-[var(--color-surface-white)] border border-[var(--color-border-base)] rounded-2xl max-w-md w-full p-6 shadow-2xl relative">
+          <div className="bg-[var(--color-surface-white)] border border-[var(--color-border-base)] rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6 shadow-2xl relative">
             <button
               type="button"
-              onClick={() => setIsModalOpen(false)}
+              onClick={closeAddModal}
               className="absolute top-4 right-4 p-1.5 rounded-lg text-[var(--color-text-muted)] hover:bg-neutral-100 dark:hover:bg-neutral-800"
             >
               <X className="w-5 h-5" />
@@ -604,6 +948,102 @@ function MealDiaryContent() {
             </p>
 
             <form onSubmit={handleAddEntry} className="space-y-4">
+              {/* Chọn nhanh món ăn sáng / hàng quán / trà sữa Việt Nam */}
+              <div className="p-3 rounded-xl bg-[var(--color-surface-subtle)] border border-[var(--color-border-subtle)] space-y-2.5">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs font-bold text-[var(--color-text-primary)]">
+                    🍜 Chọn nhanh hàng quán, ăn sáng &amp; đồ uống VN
+                  </span>
+                  {selectedEatingOut && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedEatingOut(null);
+                        setSelectedModifierIds([]);
+                      }}
+                      className="text-[11px] font-semibold text-red-600 hover:underline cursor-pointer"
+                    >
+                      Bỏ chọn món chuẩn
+                    </button>
+                  )}
+                </div>
+
+                <div className="relative">
+                  <Search className="w-3.5 h-3.5 text-[var(--color-text-muted)] absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    placeholder="Tìm nhanh: Phở, Bún chả, Cơm tấm, Bánh mì, Trà sữa..."
+                    value={eatingOutQuery}
+                    onChange={(e) => setEatingOutQuery(e.target.value)}
+                    className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-[var(--color-border-base)] bg-[var(--color-surface-white)] text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-primary)]"
+                  />
+                </div>
+
+                <div className="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto">
+                  {filteredEatingOutItems.map((item) => {
+                    const active = selectedEatingOut?.id === item.id;
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => handleSelectEatingOut(item)}
+                        className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition-colors cursor-pointer ${
+                          active
+                            ? 'bg-[var(--color-brand-primary)] text-white border-[var(--color-brand-primary)]'
+                            : 'bg-[var(--color-surface-white)] text-[var(--color-text-secondary)] border-[var(--color-border-subtle)] hover:border-[var(--color-brand-primary)]'
+                        }`}
+                      >
+                        {item.name} · {item.calories} kcal
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {selectedEatingOut && adjustedEatingOut && (
+                  <div className="p-2.5 rounded-xl bg-[var(--color-surface-white)] border border-emerald-200 space-y-2">
+                    <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                      <span className="font-bold text-[var(--color-text-primary)]">
+                        {selectedEatingOut.name} ({selectedEatingOut.servingLabel})
+                      </span>
+                      <span className="font-extrabold text-[var(--color-accent-primary)]">
+                        {adjustedEatingOut.calories} kcal/phần
+                      </span>
+                    </div>
+                    <div className="text-[11px] text-[var(--color-text-secondary)]">
+                      Đạm {adjustedEatingOut.protein}g • Béo {adjustedEatingOut.fat}g • Tinh bột{' '}
+                      {adjustedEatingOut.carbs}g • Natri {adjustedEatingOut.sodium}mg
+                    </div>
+                    {selectedEatingOut.modifiers.length > 0 && (
+                      <div className="space-y-1">
+                        <span className="block text-[11px] font-bold text-emerald-800">
+                          🎛️ Nút gạt khử bớt Calo / Natri:
+                        </span>
+                        <div className="flex flex-wrap gap-1.5">
+                          {selectedEatingOut.modifiers.map((mod) => {
+                            const checked = selectedModifierIds.includes(mod.id);
+                            return (
+                              <button
+                                key={mod.id}
+                                type="button"
+                                onClick={() => handleToggleModifier(mod.id)}
+                                className={`px-2 py-1 rounded-lg text-[11px] font-semibold border transition-colors cursor-pointer ${
+                                  checked
+                                    ? 'bg-emerald-600 text-white border-emerald-600'
+                                    : 'bg-emerald-50 text-emerald-900 border-emerald-200 hover:bg-emerald-100'
+                                }`}
+                              >
+                                {checked ? '✓ ' : '+ '}
+                                {mod.label} ({mod.deltaCalories} kcal)
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
               <div>
                 <label className="block text-xs font-semibold text-[var(--color-text-secondary)] mb-1">
                   Tên món ăn <span className="text-red-500">*</span>
@@ -613,7 +1053,14 @@ function MealDiaryContent() {
                   required
                   placeholder="VD: Canh cua mồng tơi, Thịt luộc cà pháo"
                   value={recipeName}
-                  onChange={(e) => setRecipeName(e.target.value)}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setRecipeName(val);
+                    if (selectedEatingOut && val.trim() !== selectedEatingOut.name) {
+                      setSelectedEatingOut(null);
+                      setSelectedModifierIds([]);
+                    }
+                  }}
                   className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--color-border-base)] bg-[var(--color-surface-white)] text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-primary)]"
                 />
                 <div className="mt-2 flex flex-wrap gap-1.5">
@@ -621,7 +1068,11 @@ function MealDiaryContent() {
                     <button
                       key={preset}
                       type="button"
-                      onClick={() => setRecipeName(preset)}
+                      onClick={() => {
+                        setSelectedEatingOut(null);
+                        setSelectedModifierIds([]);
+                        setRecipeName(preset);
+                      }}
                       className="px-2 py-1 rounded-lg text-[11px] font-medium bg-[var(--color-surface-raised)] hover:bg-[var(--color-brand-light)] text-[var(--color-text-secondary)] hover:text-[var(--color-brand-primary)] border border-[var(--color-border-subtle)] transition-colors"
                     >
                       + {preset}
@@ -664,7 +1115,7 @@ function MealDiaryContent() {
               <div className="flex justify-end gap-2 pt-2">
                 <button
                   type="button"
-                  onClick={() => setIsModalOpen(false)}
+                  onClick={closeAddModal}
                   className="px-4 py-2 text-xs font-medium rounded-lg border border-[var(--color-border-base)] text-[var(--color-text-secondary)] hover:bg-neutral-100 dark:hover:bg-neutral-800"
                 >
                   Hủy

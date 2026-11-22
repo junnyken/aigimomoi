@@ -22,6 +22,7 @@ import {
   BarChart3,
   UserPlus,
   Award,
+  AlertCircle,
 } from 'lucide-react';
 import { AiDraftModal } from '@/components/editor/AiDraftModal';
 import { AdminTopNav } from '@/components/editor/AdminTopNav';
@@ -77,6 +78,7 @@ export default function EditorRecipesPage() {
   const [selectedRole, setSelectedRole] = useState('ALL');
   const [selectedStatus, setSelectedStatus] = useState('ALL');
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const fetchRecipes = async () => {
     try {
@@ -111,16 +113,17 @@ export default function EditorRecipesPage() {
     }
 
     try {
+      setActionError(null);
       setDeletingId(id);
       const res = await fetch(`/api/recipes/${id}`, { method: 'DELETE' });
       if (res.ok) {
         setRecipes((prev) => prev.filter((r) => r.id !== id));
       } else {
         const data = await res.json();
-        alert(data.error || 'Không thể xóa công thức');
+        setActionError(data.error || 'Không thể xóa công thức.');
       }
-    } catch (e) {
-      alert('Đã xảy ra lỗi khi kết nối máy chủ');
+    } catch {
+      setActionError('Đã xảy ra lỗi khi kết nối máy chủ.');
     } finally {
       setDeletingId(null);
     }
@@ -131,6 +134,7 @@ export default function EditorRecipesPage() {
 
   const handleCalculateNutrition = async (id: number) => {
     try {
+      setActionError(null);
       setCalculatingNutId(id);
       const res = await fetch(`/api/recipes/${id}/nutrition`, { method: 'POST' });
       const data = await res.json();
@@ -147,10 +151,10 @@ export default function EditorRecipesPage() {
           )
         );
       } else {
-        alert(data.error || 'Không thể tính toán dinh dưỡng cho công thức này.');
+        setActionError(data.error || 'Không thể tính toán dinh dưỡng cho công thức này.');
       }
     } catch {
-      alert('Lỗi kết nối khi tính toán dinh dưỡng.');
+      setActionError('Lỗi kết nối khi tính toán dinh dưỡng.');
     } finally {
       setCalculatingNutId(null);
     }
@@ -178,6 +182,7 @@ export default function EditorRecipesPage() {
   ) => {
     const key = `${id}-${field}`;
     try {
+      setActionError(null);
       setTogglingBadgeKey(key);
       const res = await fetch(`/api/editor/recipes/${id}/quick-badges`, {
         method: 'PATCH',
@@ -202,7 +207,7 @@ export default function EditorRecipesPage() {
         }
       }
     } catch {
-      alert('Không thể cập nhật huy hiệu kiểm định.');
+      setActionError('Không thể cập nhật huy hiệu kiểm định.');
     } finally {
       setTogglingBadgeKey(null);
     }
@@ -241,6 +246,21 @@ export default function EditorRecipesPage() {
       />
 
       <main className="w-full mx-auto px-4 sm:px-6 pt-6 space-y-6">
+        {actionError && (
+          <div className="p-3.5 rounded-2xl bg-red-50 border border-red-200 text-red-900 text-xs sm:text-sm font-semibold flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+              <span>{actionError}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setActionError(null)}
+              className="text-xs underline font-bold cursor-pointer"
+            >
+              Đóng
+            </button>
+          </div>
+        )}
         {/* Quick Admin Modules Spotlight Banner */}
         <div className="bg-gradient-to-r from-[#2D482E] via-[#3F6240] to-[#4E7550] rounded-2xl p-4 sm:p-5 text-white shadow-sm flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
           <div className="space-y-1">

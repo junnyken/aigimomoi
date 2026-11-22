@@ -113,14 +113,16 @@ export function buildRecipeJsonLd(recipe: PublicRecipe, siteUrl: string) {
           '@type': 'Organization',
           name: 'ĂN GÌ MOM',
         },
-    ...(recipe.isCookTested || recipe.isEditorialReviewed
+    ...(typeof recipe.ratingCount === 'number' &&
+    recipe.ratingCount > 0 &&
+    typeof recipe.ratingAverage === 'number'
       ? {
           aggregateRating: {
             '@type': 'AggregateRating',
-            ratingValue: '4.9',
+            ratingValue: String(recipe.ratingAverage),
             bestRating: '5',
             worstRating: '1',
-            ratingCount: String(Math.max(12, (recipe.id % 25) + 14)),
+            ratingCount: String(recipe.ratingCount),
           },
         }
       : {}),

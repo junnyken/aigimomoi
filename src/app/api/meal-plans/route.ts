@@ -3,12 +3,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { mealPlans, recipes } from '@/lib/db/schema';
 import { getSessionUser } from '@/lib/auth/session';
+import { isCrossSiteRequest } from '@/lib/http/sameOrigin';
 import { eq, and, gte, lte, asc } from 'drizzle-orm';
 import { logger } from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
   try {
-    const user = await getSessionUser();
+    const user = await getSessionUser(request);
     if (!user) {
       return NextResponse.json({ error: 'Yêu cầu đăng nhập để xem kế hoạch tuần.' }, { status: 401 });
     }
@@ -67,19 +68,35 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const user = await getSessionUser();
+    if (isCrossSiteRequest(request)) {
+      return NextResponse.json(
+        { error: 'Yêu cầu bị từ chối do khác nguồn gốc (CSRF).' },
+        { status: 403 }
+      );
+    }
+
+    const user = await getSessionUser(request);
     if (!user) {
       return NextResponse.json({ error: 'Yêu cầu đăng nhập để lập kế hoạch.' }, { status: 401 });
     }
 
     const body = await request.json();
-    const { planDate, dayOfWeek, mealType = 'LUNCH', recipeId, customDishName, servings = 4, notes } = body;
+    const {
+      planDate,
+      dayOfWeek,
+      mealType = 'LUNCH',
+      recipeId,
+      recipeSlug,
+      customDishName,
+      servings = 4,
+      notes,
+    } = body;
 
     if (!planDate || typeof planDate !== 'string') {
       return NextResponse.json({ error: 'Ngày lên kế hoạch (planDate) không được để trống.' }, { status: 400 });
     }
 
-    if (!recipeId && (!customDishName || !customDishName.trim())) {
+    if (!recipeId && !recipeSlug && (!customDishName || !customDishName.trim())) {
       return NextResponse.json({ error: 'Vui lòng chọn công thức hoặc nhập tên món ăn.' }, { status: 400 });
     }
 
@@ -91,15 +108,29 @@ export async function POST(request: NextRequest) {
       computedDayOfWeek = jsDay === 0 ? 7 : jsDay;
     }
 
+    let resolvedRecipeId: number | null = recipeId ? Number(recipeId) : null;
     let dishName = customDishName ? customDishName.trim() : null;
-    if (recipeId) {
+    if (resolvedRecipeId) {
       const r = await db.query.recipes.findFirst({
-        where: eq(recipes.id, Number(recipeId)),
+        where: eq(recipes.id, resolvedRecipeId),
         columns: { name: true },
       });
       if (r && !dishName) {
         dishName = r.name;
       }
+    } else if (recipeSlug && typeof recipeSlug === 'string' && recipeSlug.trim()) {
+      const rBySlug = await db.query.recipes.findFirst({
+        where: and(eq(recipes.slug, recipeSlug.trim()), eq(recipes.status, 'PUBLISHED')),
+        columns: { id: true, name: true },
+      });
+      if (rBySlug) {
+        resolvedRecipeId = rBySlug.id;
+        if (!dishName) dishName = rBySlug.name;
+      }
+    }
+
+    if (!resolvedRecipeId && !dishName) {
+      return NextResponse.json({ error: 'Không tìm thấy công thức hoặc tên món ăn hợp lệ.' }, { status: 400 });
     }
 
     const [newPlan] = await db.insert(mealPlans).values({
@@ -107,7 +138,7 @@ export async function POST(request: NextRequest) {
       planDate: planDate.trim(),
       dayOfWeek: computedDayOfWeek,
       mealType: ['BREAKFAST', 'LUNCH', 'DINNER', 'SNACK'].includes(mealType) ? mealType : 'LUNCH',
-      recipeId: recipeId ? Number(recipeId) : null,
+      recipeId: resolvedRecipeId,
       customDishName: dishName,
       servings: Number(servings) > 0 ? Number(servings) : 4,
       notes: notes ? String(notes).trim() : null,

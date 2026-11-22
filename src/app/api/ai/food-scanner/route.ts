@@ -40,6 +40,39 @@ export interface FoodScanResponse {
   visionMessage?: string;
 }
 
+export interface FridgeScanPantryItem {
+  name: string;
+  quantity: number;
+  unit: string;
+  category: string;
+  shelfNote: string;
+}
+
+export interface FridgeScanResponse {
+  mode: 'FRIDGE';
+  summary: string;
+  pantryItems: FridgeScanPantryItem[];
+  suggestedDishes: string[];
+  provider: string;
+  visionStatus?: 'OK' | 'DEEPSEEK_TEXT_AI' | 'KEY_DEAD_OR_MISSING' | 'QUOTA_LIMIT';
+}
+
+export interface NutritionLabelScanResponse {
+  mode: 'LABEL';
+  productName: string;
+  servingSize: string;
+  calories: number;
+  protein: number;
+  fat: number;
+  carbs: number;
+  sugarGrams: number | null;
+  sodiumMg: number | null;
+  trafficLight: 'GREEN' | 'AMBER' | 'RED';
+  familyAdvice: string[];
+  provider: string;
+  visionStatus?: 'OK' | 'DEEPSEEK_TEXT_AI' | 'KEY_DEAD_OR_MISSING' | 'QUOTA_LIMIT';
+}
+
 function extractJsonObject(raw: string): string {
   const cleaned = raw
     .replace(/^```json\s*/i, '')
@@ -782,6 +815,334 @@ function buildHeuristicFallbackFromHint(
   };
 }
 
+async function callVisionJsonObject(
+  imageBase64: string,
+  mimeType: string,
+  systemInstruction: string,
+  userPrompt: string
+): Promise<{
+  parsed: Record<string, unknown> | null;
+  provider?: string;
+  failureStatus?: 'KEY_DEAD_OR_MISSING' | 'QUOTA_LIMIT';
+}> {
+  const effectiveCfg = await getEffectiveAiConfig(true);
+  const geminiKey = (
+    effectiveCfg.gemini.apiKey ||
+    process.env.GEMINI_API_KEY ||
+    process.env.AI_GEMINI_API_KEY ||
+    process.env.GOOGLE_GENERATIVE_AI_API_KEY ||
+    ''
+  ).trim();
+
+  let sawInvalidKey = false;
+  let sawQuotaLimit = false;
+
+  if (geminiKey && imageBase64) {
+    const rawConfiguredModel =
+      effectiveCfg.gemini.model === 'gemini-3.5-flash-lite'
+        ? 'gemini-2.5-flash'
+        : effectiveCfg.gemini.model;
+
+    const candidateModels = Array.from(
+      new Set(
+        [
+          rawConfiguredModel,
+          process.env.GEMINI_MODEL,
+          'gemini-2.5-flash',
+          'gemini-2.0-flash',
+          'gemini-2.5-flash-lite',
+        ].filter((m): m is string => Boolean(m && m.trim() && m !== 'gemini-3.5-flash-lite'))
+      )
+    );
+
+    for (const modelName of candidateModels) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 16000);
+      try {
+        const generationConfig: Record<string, unknown> = {
+          temperature: 0.2,
+          maxOutputTokens: 2500,
+          responseMimeType: 'application/json',
+        };
+        if (modelName.startsWith('gemini-2.5') && !modelName.includes('lite')) {
+          generationConfig.thinkingConfig = { thinkingBudget: 0 };
+        }
+        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${geminiKey}`;
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            systemInstruction: { parts: [{ text: systemInstruction }] },
+            contents: [
+              {
+                role: 'user',
+                parts: [
+                  {
+                    inline_data: {
+                      mime_type: mimeType || 'image/jpeg',
+                      data: imageBase64,
+                    },
+                  },
+                  { text: userPrompt },
+                ],
+              },
+            ],
+            generationConfig,
+          }),
+          signal: controller.signal,
+        });
+
+        if (!res.ok) {
+          const errTxt = await res.text();
+          if (res.status === 400 || res.status === 401 || res.status === 403 || errTxt.includes('API_KEY_INVALID')) {
+            sawInvalidKey = true;
+          } else if (res.status === 429 || errTxt.includes('RESOURCE_EXHAUSTED')) {
+            sawQuotaLimit = true;
+          }
+          continue;
+        }
+
+        const data = await res.json();
+        const parts: Array<{ text?: string; thought?: boolean }> =
+          data.candidates?.[0]?.content?.parts || [];
+        const nonThought = parts.filter((p) => !p.thought && typeof p.text === 'string');
+        const rawText = (nonThought.length > 0 ? nonThought : parts)
+          .map((p) => p.text || '')
+          .join('')
+          .trim();
+        if (!rawText) continue;
+        const parsed = JSON.parse(extractJsonObject(rawText)) as Record<string, unknown>;
+        return { parsed, provider: `gemini-vision (${modelName})` };
+      } catch {
+        // try next model
+      } finally {
+        clearTimeout(timeoutId);
+      }
+    }
+  }
+
+  const openaiKey = (effectiveCfg.openai.apiKey || process.env.OPENAI_API_KEY || '').trim();
+  if (openaiKey && imageBase64) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 16000);
+    try {
+      const openaiModel = effectiveCfg.openai.model || 'gpt-4o-mini';
+      const res = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${openaiKey}`,
+        },
+        body: JSON.stringify({
+          model: openaiModel,
+          temperature: 0.2,
+          max_tokens: 2000,
+          response_format: { type: 'json_object' },
+          messages: [
+            { role: 'system', content: systemInstruction },
+            {
+              role: 'user',
+              content: [
+                { type: 'text', text: userPrompt },
+                {
+                  type: 'image_url',
+                  image_url: { url: `data:${mimeType || 'image/jpeg'};base64,${imageBase64}` },
+                },
+              ],
+            },
+          ],
+        }),
+        signal: controller.signal,
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        const rawText = data.choices?.[0]?.message?.content || '';
+        if (rawText) {
+          const parsed = JSON.parse(extractJsonObject(rawText)) as Record<string, unknown>;
+          return { parsed, provider: `openai-vision (${openaiModel})` };
+        }
+      }
+    } catch {
+      // ignore OpenAI fallback
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  }
+
+  return {
+    parsed: null,
+    failureStatus: sawQuotaLimit && !sawInvalidKey ? 'QUOTA_LIMIT' : 'KEY_DEAD_OR_MISSING',
+  };
+}
+
+async function handleFridgeScan(
+  cleanBase64: string,
+  mimeType: string,
+  userHint: string
+): Promise<FridgeScanResponse> {
+  const sys = `Bạn là Trợ lý Quản lý Tủ Lạnh Bếp Việt của "Ăn Gì Mom".
+Nhiệm vụ: Nhận diện thực phẩm tươi sống, rau củ, trứng/đậu có trong ảnh ngăn mát tủ lạnh (hoặc ghi chú đi chợ), rồi đề xuất món cơm nhà dễ nấu ngay.
+Trả về JSON thuần:
+{
+  "summary": "Nhận xét nhanh 1-2 câu về tình trạng nguyên liệu trong tủ.",
+  "pantryItems": [
+    { "name": "Thịt ba chỉ heo", "quantity": 400, "unit": "g", "category": "Thực phẩm tươi sống", "shelfNote": "Nên chế biến trong 2 ngày" }
+  ],
+  "suggestedDishes": ["Thịt ba chỉ kho tiêu", "Canh rau ngót thịt băm", "Rau muống xào tỏi"]
+}`;
+  const prompt = userHint
+    ? `Hãy liệt kê nguyên liệu nhìn thấy trong ảnh tủ lạnh kèm mô tả: "${userHint}".`
+    : `Hãy liệt kê tất cả thực phẩm, rau củ, thịt cá bạn nhìn thấy trong ngăn mát tủ lạnh này.`;
+
+  if (cleanBase64) {
+    const attempt = await callVisionJsonObject(cleanBase64, mimeType, sys, prompt);
+    if (attempt.parsed && Array.isArray(attempt.parsed.pantryItems) && attempt.parsed.pantryItems.length > 0) {
+      const items = (attempt.parsed.pantryItems as Array<Record<string, unknown>>).slice(0, 15).map((p) => ({
+        name: String(p.name || 'Nguyên liệu'),
+        quantity: Number(p.quantity) > 0 ? Number(p.quantity) : 200,
+        unit: String(p.unit || 'g'),
+        category: String(p.category || 'Rau củ quả'),
+        shelfNote: String(p.shelfNote || 'Bảo quản ngăn mát 3–5 ngày'),
+      }));
+      const suggestedDishes = Array.isArray(attempt.parsed.suggestedDishes)
+        ? (attempt.parsed.suggestedDishes as unknown[]).map((d) => String(d)).filter(Boolean).slice(0, 4)
+        : ['Mâm cơm gia đình 3 món thanh đạm'];
+      return {
+        mode: 'FRIDGE',
+        summary: String(attempt.parsed.summary || `Đã nhận diện ${items.length} nguyên liệu sẵn có trong tủ lạnh.`),
+        pantryItems: items,
+        suggestedDishes,
+        provider: attempt.provider || 'vision-ai',
+        visionStatus: 'OK',
+      };
+    }
+  }
+
+  if (userHint) {
+    const completion = await aiGateway.complete({
+      systemInstruction: sys,
+      prompt: `Bóc tách danh sách nguyên liệu tủ lạnh từ mô tả: "${userHint}"`,
+      temperature: 0.25,
+      maxTokens: 1500,
+      jsonMode: true,
+    });
+    if (completion.text && completion.provider !== 'mock') {
+      try {
+        const parsed = JSON.parse(extractJsonObject(completion.text)) as Record<string, unknown>;
+        if (Array.isArray(parsed.pantryItems) && parsed.pantryItems.length > 0) {
+          const items = (parsed.pantryItems as Array<Record<string, unknown>>).slice(0, 15).map((p) => ({
+            name: String(p.name || 'Nguyên liệu'),
+            quantity: Number(p.quantity) > 0 ? Number(p.quantity) : 200,
+            unit: String(p.unit || 'g'),
+            category: String(p.category || 'Rau củ quả'),
+            shelfNote: String(p.shelfNote || 'Bảo quản ngăn mát'),
+          }));
+          return {
+            mode: 'FRIDGE',
+            summary: String(parsed.summary || `Đã phân tích ${items.length} nguyên liệu trong tủ lạnh.`),
+            pantryItems: items,
+            suggestedDishes: Array.isArray(parsed.suggestedDishes)
+              ? (parsed.suggestedDishes as unknown[]).map(String).slice(0, 4)
+              : ['Canh rau củ ngọt thanh', 'Món mặn áp chảo ít dầu'],
+            provider: completion.provider,
+            visionStatus: 'DEEPSEEK_TEXT_AI',
+          };
+        }
+      } catch {
+        // fallback below
+      }
+    }
+  }
+
+  const fallbackPlate = buildHeuristicFallbackFromHint(userHint);
+  return {
+    mode: 'FRIDGE',
+    summary: userHint
+      ? `Đã ghi nhận nhanh nhóm nguyên liệu từ mô tả "${userHint}".`
+      : 'Chế độ mẫu tham chiếu: Tải ảnh tủ lạnh (khi Admin cấu hình Vision Key) hoặc nhập tên các món đang có trong tủ để AI lập danh sách đi chợ/nấu ăn.',
+    pantryItems: fallbackPlate.items.map((it) => ({
+      name: it.name,
+      quantity: it.estimatedGrams,
+      unit: 'g',
+      category: it.category === 'PROTEIN' ? 'Thực phẩm tươi sống' : 'Rau củ quả',
+      shelfNote: it.category === 'PROTEIN' ? 'Bảo quản 2–3 ngày ngăn mát' : 'Dùng tươi trong 4–5 ngày',
+    })),
+    suggestedDishes: ['Ức gà áp chảo ít calo', 'Bông cải xanh luộc giòn', 'Trứng gà luộc lòng đào'],
+    provider: 'fct-fridge-fallback',
+    visionStatus: 'KEY_DEAD_OR_MISSING',
+  };
+}
+
+async function handleNutritionLabelScan(
+  cleanBase64: string,
+  mimeType: string,
+  userHint: string
+): Promise<NutritionLabelScanResponse> {
+  const sys = `Bạn là Chuyên gia Kiểm Định Nhãn Thực Phẩm Gia Đình của "Ăn Gì Mom".
+Nhiệm vụ: Đọc bảng Thành phần dinh dưỡng (Nutrition Facts) trên bao bì thực phẩm/sữa/bánh/gia vị, quy đổi về 1 khẩu phần chuẩn, đánh giá mức độ an toàn Đường & Muối (Natri) bằng đèn tín hiệu (GREEN = Lành mạnh ít đường muối, AMBER = Dùng vừa phải, RED = Cao đường/natri/béo bão hòa, hạn chế cho trẻ nhỏ & người cao huyết áp).
+Trả về JSON thuần:
+{
+  "productName": "Tên sản phẩm / loại thực phẩm",
+  "servingSize": "1 khẩu phần (1 hộp 180ml / 30g...)",
+  "calories": 140,
+  "protein": 5.5,
+  "fat": 4.2,
+  "carbs": 19.5,
+  "sugarGrams": 12.0,
+  "sodiumMg": 180,
+  "trafficLight": "AMBER",
+  "familyAdvice": ["Lời khuyên 1 dễ hiểu cho mẹ và bé", "Lời khuyên 2 cho ông bà/người giảm cân"]
+}`;
+  const prompt = userHint
+    ? `Đọc nhãn dinh dưỡng trong ảnh và kết hợp thông tin: "${userHint}".`
+    : `Hãy đọc chính xác các chỉ số trên nhãn Nutrition Facts trong bức ảnh này.`;
+
+  if (cleanBase64) {
+    const attempt = await callVisionJsonObject(cleanBase64, mimeType, sys, prompt);
+    if (attempt.parsed && (attempt.parsed.productName || attempt.parsed.calories !== undefined)) {
+      const p = attempt.parsed;
+      const light = p.trafficLight === 'GREEN' || p.trafficLight === 'RED' || p.trafficLight === 'AMBER' ? p.trafficLight : 'AMBER';
+      return {
+        mode: 'LABEL',
+        productName: String(p.productName || 'Sản phẩm đóng gói đã quét'),
+        servingSize: String(p.servingSize || '1 khẩu phần'),
+        calories: Math.max(0, Math.round(Number(p.calories) || 0)),
+        protein: Math.max(0, Math.round((Number(p.protein) || 0) * 10) / 10),
+        fat: Math.max(0, Math.round((Number(p.fat) || 0) * 10) / 10),
+        carbs: Math.max(0, Math.round((Number(p.carbs) || 0) * 10) / 10),
+        sugarGrams: p.sugarGrams !== null && p.sugarGrams !== undefined ? Math.round(Number(p.sugarGrams) * 10) / 10 : null,
+        sodiumMg: p.sodiumMg !== null && p.sodiumMg !== undefined ? Math.round(Number(p.sodiumMg)) : null,
+        trafficLight: light,
+        familyAdvice: Array.isArray(p.familyAdvice)
+          ? (p.familyAdvice as unknown[]).map(String).slice(0, 3)
+          : ['Đối chiếu khẩu phần thực tế với mục tiêu Kcal trong ngày.'],
+        provider: attempt.provider || 'vision-ai',
+        visionStatus: 'OK',
+      };
+    }
+  }
+
+  return {
+    mode: 'LABEL',
+    productName: userHint || 'Sữa / Thực phẩm đóng gói (Chưa đọc được chữ trên ảnh)',
+    servingSize: '1 khẩu phần (tham khảo)',
+    calories: 130,
+    protein: 6.0,
+    fat: 3.5,
+    carbs: 18.0,
+    sugarGrams: 9.5,
+    sodiumMg: 120,
+    trafficLight: 'AMBER',
+    familyAdvice: [
+      'Lưu ý kiểm tra mục "Đường tổng / Added Sugar" (< 10g/khẩu phần cho trẻ nhỏ) và "Natri / Sodium" (< 400mg/khẩu phần cho người cao huyết áp).',
+      'Khi Admin kích hoạt khóa Gemini Vision hoặc bạn gõ rõ tên sản phẩm/số gram, AI sẽ tính sát nhãn thật 100%.',
+    ],
+    provider: 'label-guide-fallback',
+    visionStatus: 'KEY_DEAD_OR_MISSING',
+  };
+}
+
 export async function POST(req: NextRequest) {
   try {
     if (isCrossSiteRequest(req)) {
@@ -803,10 +1164,12 @@ export async function POST(req: NextRequest) {
     const rawBase64 = String(body.imageBase64 || '').trim();
     const mimeType = String(body.mimeType || 'image/jpeg').trim();
     const userHint = String(body.userHint || '').trim();
+    const scanMode =
+      body.scanMode === 'FRIDGE' || body.scanMode === 'LABEL' ? body.scanMode : 'MEAL';
 
     if (!rawBase64 && !userHint) {
       return NextResponse.json(
-        { error: 'Vui lòng chọn ảnh đĩa ăn hoặc nhập mô tả các món trên đĩa để quét.' },
+        { error: 'Vui lòng chọn ảnh hoặc nhập mô tả thực phẩm cần quét.' },
         { status: 400 }
       );
     }
@@ -821,6 +1184,16 @@ export async function POST(req: NextRequest) {
         { error: 'Dung lượng ảnh quá lớn (tối đa 7MB). Vui lòng chọn ảnh nhẹ hơn.' },
         { status: 413 }
       );
+    }
+
+    if (scanMode === 'FRIDGE') {
+      const fridgeResult = await handleFridgeScan(cleanBase64, mimeType, userHint);
+      return NextResponse.json({ success: true, fridgeResult });
+    }
+
+    if (scanMode === 'LABEL') {
+      const labelResult = await handleNutritionLabelScan(cleanBase64, mimeType, userHint);
+      return NextResponse.json({ success: true, labelResult });
     }
 
     let visionAttempt: GeminiVisionAttempt | undefined;

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import {
   Copy,
@@ -14,9 +14,20 @@ import {
   Share2,
   Wallet,
   Store,
+  Refrigerator,
+  CheckCircle2,
+  LogIn,
+  Link2,
 } from 'lucide-react';
 import type { AggregationResult } from '@/lib/recipes/aggregation';
-import { useShoppingChecklist, generateShoppingPlainText } from '@/lib/shopping/shoppingClient';
+import {
+  useShoppingChecklist,
+  generateShoppingPlainText,
+  getLocalCheckedKeys,
+  saveLocalCheckedKeys,
+  encodeCheckedIndices,
+  decodeCheckedParam,
+} from '@/lib/shopping/shoppingClient';
 import { mealQueryFromDishes } from '@/lib/meal/flowUrls';
 import { estimateIngredientCostVnd, formatVndRounded1k, formatVndCurrency } from '@/lib/recipes/priceDictionary';
 import { ShoppingProgressBar } from './ShoppingProgressBar';
@@ -29,13 +40,36 @@ interface ShoppingViewProps {
 }
 
 export function ShoppingView({ result, dishes, servings }: ShoppingViewProps) {
-  const { isChecked, toggleCheck, resetAll } = useShoppingChecklist();
+  const { checkedKeys, isChecked, toggleCheck, resetAll } = useShoppingChecklist();
   const [copied, setCopied] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
+  const [syncingPantry, setSyncingPantry] = useState(false);
+  const hydratedFromUrlRef = useRef(false);
+  const [pantrySyncFeedback, setPantrySyncFeedback] = useState<{
+    type: 'success' | 'auth' | 'error';
+    message: string;
+  } | null>(null);
 
   // Tính toán số lượng đã mua
-  const allFreshKeys = result.freshItems.map((i) => i.key);
-  const allSeasoningKeys = result.seasoningItems.map((s) => s.key);
-  const allKeys = [...allFreshKeys, ...allSeasoningKeys];
+  const allKeys = useMemo(
+    () => [
+      ...result.freshItems.map((i) => i.key),
+      ...result.seasoningItems.map((s) => s.key),
+    ],
+    [result]
+  );
+
+  // Đồng bộ trạng thái đã tick từ link giỏ chung (?checked=0,2,5) khi người nhà mở link Zalo
+  useEffect(() => {
+    if (hydratedFromUrlRef.current || allKeys.length === 0 || typeof window === 'undefined') return;
+    hydratedFromUrlRef.current = true;
+    const rawChecked = new URLSearchParams(window.location.search).get('checked');
+    const urlKeys = decodeCheckedParam(rawChecked, allKeys);
+    if (urlKeys.length > 0) {
+      const merged = Array.from(new Set([...getLocalCheckedKeys(), ...urlKeys]));
+      saveLocalCheckedKeys(merged);
+    }
+  }, [allKeys]);
 
   const totalItemsCount = allKeys.length;
   const checkedItemsCount = allKeys.filter((k) => isChecked(k)).length;
@@ -52,6 +86,15 @@ export function ShoppingView({ result, dishes, servings }: ShoppingViewProps) {
   }
   const perPersonVnd = Math.max(2000, Math.round(totalMarketVnd / Math.max(1, servings) / 500) * 500);
 
+  const buildShareUrl = useCallback(() => {
+    if (typeof window === 'undefined') return '';
+    const baseQuery = mealQueryFromDishes(dishes, servings);
+    const encoded = encodeCheckedIndices(allKeys, checkedKeys);
+    return `${window.location.origin}/shopping?${baseQuery}${
+      encoded ? `&checked=${encodeURIComponent(encoded)}` : ''
+    }`;
+  }, [dishes, servings, allKeys, checkedKeys]);
+
   const handleCopy = useCallback(() => {
     const dishNames = dishes.map((d) => d.name);
     const text = generateShoppingPlainText(result, dishNames);
@@ -64,15 +107,26 @@ export function ShoppingView({ result, dishes, servings }: ShoppingViewProps) {
     }
   }, [result, dishes]);
 
+  const handleCopyShareLink = useCallback(() => {
+    const shareUrl = buildShareUrl();
+    if (!shareUrl || !navigator?.clipboard?.writeText) return;
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2500);
+    });
+  }, [buildShareUrl]);
+
   const handleNativeShare = useCallback(async () => {
     const dishNames = dishes.map((d) => d.name);
-    const text = generateShoppingPlainText(result, dishNames);
+    const shareUrl = buildShareUrl();
+    const text = `${generateShoppingPlainText(result, dishNames)}\n\n🔗 Giỏ đi chợ chung (đã tick ${checkedItemsCount}/${totalItemsCount}): ${shareUrl}`;
 
     if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
       try {
         await navigator.share({
           title: `Danh sách đi chợ (${servings} người) — Ăn Gì Mom`,
           text,
+          url: shareUrl || undefined,
         });
         return;
       } catch {
@@ -80,7 +134,70 @@ export function ShoppingView({ result, dishes, servings }: ShoppingViewProps) {
       }
     }
     handleCopy();
-  }, [result, dishes, servings, handleCopy]);
+  }, [result, dishes, servings, checkedItemsCount, totalItemsCount, buildShareUrl, handleCopy]);
+
+  const handleSyncToPantry = useCallback(async () => {
+    const checkedFresh = result.freshItems
+      .filter((i) => isChecked(i.key))
+      .map((i) => ({
+        name: i.name,
+        quantity: i.totalAmount || 1,
+        unit: i.unit || 'g',
+        category: i.category === 'MEAT_SEAFOOD' ? 'Thực phẩm tươi sống' : i.category === 'PRODUCE' ? 'Rau củ quả' : 'Đồ khô',
+      }));
+
+    const checkedSeasonings = result.seasoningItems
+      .filter((s) => isChecked(s.key))
+      .map((s) => ({
+        name: s.name,
+        quantity: 1,
+        unit: s.unit || 'gói',
+        category: 'Gia vị nêm nếm',
+      }));
+
+    const payloadItems = [...checkedFresh, ...checkedSeasonings];
+    if (payloadItems.length === 0) return;
+
+    setSyncingPantry(true);
+    setPantrySyncFeedback(null);
+    try {
+      const res = await fetch('/api/pantry/sync-from-shopping', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items: payloadItems }),
+      });
+
+      if (res.status === 401) {
+        setPantrySyncFeedback({
+          type: 'auth',
+          message: 'Hãy đăng nhập để lưu tự động các món vừa mua vào Tủ lạnh gia đình của bạn.',
+        });
+        return;
+      }
+
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        setPantrySyncFeedback({
+          type: 'success',
+          message:
+            data.message ||
+            `Đã cất thành công ${payloadItems.length} nguyên liệu vào Tủ lạnh của bạn!`,
+        });
+      } else {
+        setPantrySyncFeedback({
+          type: 'error',
+          message: data.error || 'Không thể đồng bộ nguyên liệu vào Tủ lạnh lúc này.',
+        });
+      }
+    } catch {
+      setPantrySyncFeedback({
+        type: 'error',
+        message: 'Lỗi kết nối máy chủ khi đồng bộ Tủ lạnh.',
+      });
+    } finally {
+      setSyncingPantry(false);
+    }
+  }, [result.freshItems, result.seasoningItems, isChecked]);
 
   return (
     <div className="w-full flex flex-col gap-6 pb-16">
@@ -123,12 +240,37 @@ export function ShoppingView({ result, dishes, servings }: ShoppingViewProps) {
 
             <button
               type="button"
+              onClick={handleCopyShareLink}
+              className="min-h-11 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-indigo-300 bg-indigo-50 hover:bg-indigo-600 text-indigo-800 hover:text-white text-xs font-semibold transition-all shadow-xs cursor-pointer"
+              title="Sao chép đường dẫn giỏ đi chợ giữ nguyên các món bạn đã tick mua để vợ/chồng mở xem chung"
+            >
+              {copiedLink ? <Check className="w-3.5 h-3.5 stroke-[3]" /> : <Link2 className="w-3.5 h-3.5" />}
+              <span>{copiedLink ? 'Đã copy link giỏ chung!' : 'Copy link giỏ đi chợ chung'}</span>
+            </button>
+
+            <button
+              type="button"
               onClick={handleNativeShare}
               className="min-h-11 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-[var(--color-accent-primary)]/30 bg-[var(--color-accent-light)] hover:bg-[var(--color-accent-primary)] text-[var(--color-accent-text)] hover:text-white text-xs font-semibold transition-all shadow-xs"
               title="Chia sẻ nhanh danh sách đi chợ cho người nhà qua ứng dụng nhắn tin"
             >
               <Share2 className="w-3.5 h-3.5" />
               <span>Chia sẻ người nhà</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleSyncToPantry}
+              disabled={syncingPantry || checkedItemsCount === 0}
+              className="min-h-11 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-teal-500/30 bg-teal-50 hover:bg-teal-600 text-teal-800 hover:text-white text-xs font-semibold transition-all shadow-xs disabled:opacity-45 disabled:cursor-not-allowed cursor-pointer"
+              title="Đưa toàn bộ nguyên liệu bạn đã tick mua xong vào kho Tủ lạnh cá nhân"
+            >
+              <Refrigerator className="w-3.5 h-3.5" />
+              <span>
+                {syncingPantry
+                  ? 'Đang cất vào tủ...'
+                  : `🧊 Cất món đã mua vào Tủ lạnh (${checkedItemsCount})`}
+              </span>
             </button>
 
             <button
@@ -142,6 +284,43 @@ export function ShoppingView({ result, dishes, servings }: ShoppingViewProps) {
             </button>
           </div>
         </div>
+
+        {pantrySyncFeedback && (
+          <div
+            className={`p-3.5 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs font-semibold ${
+              pantrySyncFeedback.type === 'success'
+                ? 'bg-emerald-50 border-emerald-300 text-emerald-950'
+                : pantrySyncFeedback.type === 'auth'
+                ? 'bg-amber-50 border-amber-300 text-amber-950'
+                : 'bg-red-50 border-red-300 text-red-950'
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              {pantrySyncFeedback.type === 'success' ? (
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+              ) : (
+                <LogIn className="w-4 h-4 text-amber-700 shrink-0" />
+              )}
+              <span>{pantrySyncFeedback.message}</span>
+            </div>
+            {pantrySyncFeedback.type === 'success' && (
+              <Link
+                href="/tu-lanh"
+                className="shrink-0 px-3 py-1.5 rounded-xl bg-[var(--color-brand-primary)] text-white text-xs font-bold"
+              >
+                Mở Tủ lạnh gia đình →
+              </Link>
+            )}
+            {pantrySyncFeedback.type === 'auth' && (
+              <Link
+                href="/login?next=/shopping"
+                className="shrink-0 px-3 py-1.5 rounded-xl bg-[var(--color-brand-primary)] text-white text-xs font-bold"
+              >
+                Đăng nhập ngay →
+              </Link>
+            )}
+          </div>
+        )}
 
         {/* Dishes Chips */}
         {dishes.length > 0 && (

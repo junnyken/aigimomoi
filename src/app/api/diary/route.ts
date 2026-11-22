@@ -141,6 +141,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json().catch(() => ({}));
     const {
       recipeId,
+      recipeSlug,
       recipeName,
       diaryDate,
       mealType = 'LUNCH',
@@ -217,6 +218,37 @@ export async function POST(request: NextRequest) {
         baseFiber = snapshot.perServing.fiber ?? null;
       } else if (recipe.caloriesPerServing) {
         baseCalories = recipe.caloriesPerServing;
+      }
+    } else if (recipeSlug && typeof recipeSlug === 'string' && recipeSlug.trim()) {
+      const [recipe] = await db
+        .select()
+        .from(recipes)
+        .where(and(eq(recipes.slug, recipeSlug.trim()), eq(recipes.status, 'PUBLISHED')))
+        .limit(1);
+
+      if (recipe) {
+        resolvedRecipeId = recipe.id;
+        finalName = recipe.name;
+        const snapshot = recipe.nutritionSnapshot as {
+          perServing?: {
+            calories?: number;
+            protein?: number;
+            fat?: number;
+            carbs?: number;
+            sodium?: number | null;
+            fiber?: number | null;
+          };
+        } | null;
+        if (snapshot?.perServing) {
+          baseCalories = snapshot.perServing.calories || recipe.caloriesPerServing || baseCalories;
+          baseProtein = snapshot.perServing.protein ?? baseProtein;
+          baseFat = snapshot.perServing.fat ?? baseFat;
+          baseCarbs = snapshot.perServing.carbs ?? baseCarbs;
+          baseSodium = snapshot.perServing.sodium ?? baseSodium;
+          baseFiber = snapshot.perServing.fiber ?? baseFiber;
+        } else if (recipe.caloriesPerServing) {
+          baseCalories = recipe.caloriesPerServing;
+        }
       }
     }
 

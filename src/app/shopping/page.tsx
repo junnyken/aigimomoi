@@ -45,7 +45,7 @@ async function ShoppingPageContent({ searchParams }: ShoppingPageProps) {
     mealSelection.main,
     mealSelection.soup,
     mealSelection.side,
-    mealSelection.sauce && !mealSelection.sauce.isBuiltInPreset ? mealSelection.sauce : null,
+    mealSelection.sauce ?? null,
   ]
     .filter((d): d is NonNullable<typeof d> => Boolean(d))
     .map((d) => ({

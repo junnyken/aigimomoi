@@ -16,6 +16,8 @@ import {
   ExternalLink,
   LogIn,
   Printer,
+  Copy,
+  Refrigerator,
 } from 'lucide-react';
 
 interface MealPlan {
@@ -69,7 +71,19 @@ function WeeklyPlannerContent() {
 
   // Shopping aggregation modal
   const [showShoppingModal, setShowShoppingModal] = useState(false);
-  const [shoppingItems, setShoppingItems] = useState<any[]>([]);
+  const [shoppingItems, setShoppingItems] = useState<Array<{
+    name: string;
+    totalAmount: number;
+    unit: string;
+    category?: string;
+    inPantry?: boolean;
+    pantryQuantity?: number;
+    recipesUsedIn?: string[];
+  }>>([]);
+  const [checkedWeeklyIndices, setCheckedWeeklyIndices] = useState<number[]>([]);
+  const [weeklyCopied, setWeeklyCopied] = useState(false);
+  const [syncingWeeklyPantry, setSyncingWeeklyPantry] = useState(false);
+  const [weeklyPantryNotice, setWeeklyPantryNotice] = useState<string | null>(null);
   const [excludePantry, setExcludePantry] = useState(true);
   const [aggregating, setAggregating] = useState(false);
 
@@ -220,12 +234,76 @@ function WeeklyPlannerContent() {
       if (res.ok) {
         const data = await res.json();
         setShoppingItems(data.items || []);
+        setCheckedWeeklyIndices([]);
+        setWeeklyPantryNotice(null);
         setShowShoppingModal(true);
       }
     } catch (err) {
       console.error('Aggregate shopping error', err);
     } finally {
       setAggregating(false);
+    }
+  };
+
+  const toggleWeeklyShoppingItem = (idx: number) => {
+    setCheckedWeeklyIndices((prev) =>
+      prev.includes(idx) ? prev.filter((i) => i !== idx) : [...prev, idx]
+    );
+  };
+
+  const handleCopyWeeklyShopping = async () => {
+    if (shoppingItems.length === 0) return;
+    const toBuy = shoppingItems.filter((it) => !it.inPantry);
+    const listToFormat = toBuy.length > 0 ? toBuy : shoppingItems;
+    const lines = [
+      `🛒 DANH SÁCH ĐI CHỢ TUẦN (${daysInWeek[0]?.displayDate || weekStart} - ${daysInWeek[6]?.displayDate || ''}) — ĂN GÌ MOM`,
+      ...listToFormat.map(
+        (it, i) => `${i + 1}. ${it.name}: ${it.totalAmount} ${it.unit}${it.inPantry ? ' (Đã có sẵn trong tủ)' : ''}`
+      ),
+    ];
+    try {
+      await navigator.clipboard.writeText(lines.join('\n'));
+      setWeeklyCopied(true);
+      setTimeout(() => setWeeklyCopied(false), 2500);
+    } catch {
+      // ignore clipboard errors
+    }
+  };
+
+  const handleSyncWeeklyToPantry = async () => {
+    const selected =
+      checkedWeeklyIndices.length > 0
+        ? checkedWeeklyIndices.map((idx) => shoppingItems[idx]).filter(Boolean)
+        : shoppingItems.filter((it) => !it.inPantry);
+
+    if (selected.length === 0) return;
+    setSyncingWeeklyPantry(true);
+    setWeeklyPantryNotice(null);
+    try {
+      const res = await fetch('/api/pantry/sync-from-shopping', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          items: selected.map((it) => ({
+            name: it.name,
+            quantity: it.totalAmount || 1,
+            unit: it.unit || 'g',
+            category: it.category || '',
+          })),
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        setWeeklyPantryNotice(
+          data.message || `Đã cất ${selected.length} nguyên liệu vào Tủ lạnh gia đình!`
+        );
+      } else {
+        setWeeklyPantryNotice(data.error || 'Không thể lưu vào Tủ lạnh lúc này.');
+      }
+    } catch {
+      setWeeklyPantryNotice('Lỗi kết nối khi lưu vào Tủ lạnh.');
+    } finally {
+      setSyncingWeeklyPantry(false);
     }
   };
 
@@ -430,9 +508,9 @@ function WeeklyPlannerContent() {
                     </span>
                   </div>
 
-                  {/* Danh sách các bữa trong ngày */}
+                  {/* Danh sách các bữa trong ngày (gồm Sáng, Trưa, Tối và Ăn vặt) */}
                   <div className="space-y-3">
-                    {(['BREAKFAST', 'LUNCH', 'DINNER'] as const).map((mType) => {
+                    {(['BREAKFAST', 'LUNCH', 'DINNER', 'SNACK'] as const).map((mType) => {
                       const mealItems = dayPlans.filter((p) => p.mealType === mType);
 
                       return (
@@ -662,55 +740,98 @@ function WeeklyPlannerContent() {
                 </label>
               </div>
 
-              {/* Danh sách nguyên liệu */}
+              {/* Danh sách nguyên liệu (tick chọn món đã mua để cất tủ lạnh) */}
               <div className="overflow-y-auto max-h-[45vh] pr-1 space-y-2">
-                {shoppingItems.map((item, idx) => (
-                  <div
-                    key={idx}
-                    className={`p-3 rounded-xl border flex items-center justify-between text-xs ${
-                      item.inPantry 
-                        ? 'bg-emerald-50/50 border-emerald-200 text-emerald-900 opacity-70' 
-                        : 'bg-white border-stone-200 text-stone-800'
-                    }`}
-                  >
-                    <div>
-                      <span className="font-bold text-sm block">{item.name}</span>
-                      <span className="text-[11px] text-stone-400">
-                        Dùng cho: {item.recipesUsedIn?.join(', ')}
-                      </span>
-                    </div>
+                {shoppingItems.map((item, idx) => {
+                  const isTicked = checkedWeeklyIndices.includes(idx);
+                  return (
+                    <label
+                      key={idx}
+                      className={`p-3 rounded-xl border flex items-center justify-between gap-3 text-xs cursor-pointer transition-colors ${
+                        item.inPantry
+                          ? 'bg-emerald-50/50 border-emerald-200 text-emerald-900 opacity-75'
+                          : isTicked
+                          ? 'bg-teal-50 border-teal-300 text-teal-950'
+                          : 'bg-white border-stone-200 text-stone-800 hover:bg-stone-50'
+                      }`}
+                    >
+                      <div className="flex items-start gap-2.5 min-w-0">
+                        <input
+                          type="checkbox"
+                          checked={isTicked}
+                          onChange={() => toggleWeeklyShoppingItem(idx)}
+                          className="mt-0.5 w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 shrink-0"
+                        />
+                        <div className="min-w-0">
+                          <span className={`font-bold text-sm block truncate ${isTicked ? 'line-through opacity-75' : ''}`}>
+                            {item.name}
+                          </span>
+                          <span className="text-[11px] text-stone-400 block truncate">
+                            Dùng cho: {item.recipesUsedIn?.join(', ')}
+                          </span>
+                        </div>
+                      </div>
 
-                    <div className="text-right">
-                      <span className="font-bold text-sm text-[var(--color-brand-primary)]">
-                        {item.totalAmount} {item.unit}
-                      </span>
-                      {item.inPantry && (
-                        <span className="block text-[10px] text-emerald-700 font-semibold">
-                          ✓ Đã có trong tủ ({item.pantryQuantity} {item.unit})
+                      <div className="text-right shrink-0">
+                        <span className="font-bold text-sm text-[var(--color-brand-primary)]">
+                          {item.totalAmount} {item.unit}
                         </span>
-                      )}
-                    </div>
-                  </div>
-                ))}
+                        {item.inPantry && (
+                          <span className="block text-[10px] text-emerald-700 font-semibold">
+                            ✓ Đã có trong tủ ({item.pantryQuantity} {item.unit})
+                          </span>
+                        )}
+                      </div>
+                    </label>
+                  );
+                })}
               </div>
+
+              {weeklyPantryNotice && (
+                <div className="mt-3 p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs font-semibold flex items-center justify-between gap-2">
+                  <span>{weeklyPantryNotice}</span>
+                  <Link href="/tu-lanh" className="shrink-0 underline font-bold text-emerald-700">
+                    Xem Tủ lạnh →
+                  </Link>
+                </div>
+              )}
             </div>
 
-            <div className="pt-4 border-t border-stone-100 flex items-center justify-between mt-4">
+            <div className="pt-4 border-t border-stone-100 flex flex-wrap items-center justify-between gap-2 mt-4">
               <button
                 type="button"
                 onClick={() => setShowShoppingModal(false)}
-                className="px-4 py-2.5 rounded-xl border border-stone-300 text-stone-600 hover:bg-stone-50 font-medium text-sm transition-colors"
+                className="px-4 py-2.5 rounded-xl border border-stone-300 text-stone-600 hover:bg-stone-50 font-medium text-sm transition-colors cursor-pointer"
               >
                 Đóng
               </button>
 
-              <Link
-                href="/shopping"
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 font-bold text-sm transition-all shadow-xs"
-              >
-                <ShoppingBag className="w-4 h-4" />
-                <span>Mở giỏ đi chợ chính</span>
-              </Link>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleCopyWeeklyShopping}
+                  className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-[var(--color-brand-primary)]/30 bg-[var(--color-brand-light)] text-[var(--color-brand-primary)] hover:bg-[var(--color-brand-primary)] hover:text-white font-bold text-xs sm:text-sm transition-colors cursor-pointer"
+                >
+                  {weeklyCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                  <span>{weeklyCopied ? 'Đã sao chép!' : 'Sao chép gửi Zalo'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleSyncWeeklyToPantry}
+                  disabled={syncingWeeklyPantry || shoppingItems.length === 0}
+                  className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 font-bold text-xs sm:text-sm transition-all shadow-xs disabled:opacity-50 cursor-pointer"
+                >
+                  <Refrigerator className="w-4 h-4" />
+                  <span>
+                    {syncingWeeklyPantry
+                      ? 'Đang lưu...'
+                      : checkedWeeklyIndices.length > 0
+                      ? `Cất ${checkedWeeklyIndices.length} món vào Tủ lạnh`
+                      : 'Cất đồ cần mua vào Tủ lạnh'}
+                  </span>
+                </button>
+              </div>
             </div>
           </div>
         </div>

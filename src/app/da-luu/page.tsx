@@ -12,6 +12,7 @@ import {
   Folder,
   Check,
   Trash2,
+  Sparkles,
 } from 'lucide-react';
 import { useSavedRecipes, useRecipeCollections } from '@/lib/recipes/savedRecipesClient';
 import type { PublicRecipeCard } from '@/lib/recipes/publicQueries';
@@ -98,7 +99,7 @@ export default function SavedRecipesPage() {
   return (
     <div className="w-full flex flex-col gap-6 pb-12">
       {/* Header */}
-      <section className="bg-gradient-to-r from-[var(--color-brand-primary)]/10 to-[var(--color-accent-primary)]/10 p-6 md:p-8 rounded-3xl border border-[var(--color-border-subtle)]">
+      <section className="bg-gradient-to-r from-[var(--color-brand-primary)]/10 to-[var(--color-accent-primary)]/10 p-6 md:p-8 rounded-3xl border border-[var(--color-border-subtle)] flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div className="max-w-2xl flex flex-col gap-2">
           <div className="inline-flex items-center gap-2 text-xs font-semibold text-[var(--color-brand-primary)] uppercase tracking-wider">
             <Bookmark className="w-4 h-4 fill-[var(--color-brand-primary)]" />
@@ -110,6 +111,23 @@ export default function SavedRecipesPage() {
           <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed">
             Phân loại các công thức yêu thích vào từng thư mục riêng (Món bé thích, Nấu nhanh 15 phút, Mâm cơm tiết kiệm...) để tìm lại ngay khi cần vào bếp.
           </p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+          <Link
+            href="/contribute/new?ai=1"
+            className="min-h-11 inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-[var(--color-brand-primary)] text-white text-xs sm:text-sm font-bold shadow-xs hover:opacity-95 transition-all"
+          >
+            <Sparkles className="w-4 h-4" />
+            <span>✨ Bóc tách &amp; Lưu công thức từ Facebook / Web bằng AI</span>
+          </Link>
+          <Link
+            href="/contribute"
+            className="min-h-11 inline-flex items-center gap-1.5 px-4 py-2.5 rounded-2xl border border-[var(--color-border-base)] bg-[var(--color-surface-white)] text-xs font-semibold text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)] transition-all"
+          >
+            <span>Sổ tay món tôi đóng góp</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
         </div>
       </section>
 

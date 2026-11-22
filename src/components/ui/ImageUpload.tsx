@@ -1,7 +1,66 @@
 'use client';
 
 import { useState, useRef } from 'react';
+import Link from 'next/link';
 import { Upload, X, Loader2, Image as ImageIcon, Link2, Check } from 'lucide-react';
+
+const MAX_DIMENSION = 1400;
+const AUTO_COMPRESS_THRESHOLD_BYTES = 450 * 1024;
+
+async function compressImageIfNeeded(file: File): Promise<File> {
+  if (file.size <= AUTO_COMPRESS_THRESHOLD_BYTES || typeof document === 'undefined') {
+    return file;
+  }
+
+  return new Promise((resolve) => {
+    const img = new window.Image();
+    const objectUrl = URL.createObjectURL(file);
+
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      let { width, height } = img;
+      if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
+        if (width >= height) {
+          height = Math.round((height * MAX_DIMENSION) / width);
+          width = MAX_DIMENSION;
+        } else {
+          width = Math.round((width * MAX_DIMENSION) / height);
+          height = MAX_DIMENSION;
+        }
+      }
+
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        resolve(file);
+        return;
+      }
+
+      ctx.drawImage(img, 0, 0, width, height);
+      canvas.toBlob(
+        (blob) => {
+          if (!blob || blob.size >= file.size) {
+            resolve(file);
+            return;
+          }
+          const safeBaseName = file.name.replace(/\.[^.]+$/, '') || 'cooksnap';
+          resolve(new File([blob], `${safeBaseName}.jpg`, { type: 'image/jpeg' }));
+        },
+        'image/jpeg',
+        0.84
+      );
+    };
+
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      resolve(file);
+    };
+
+    img.src = objectUrl;
+  });
+}
 
 interface ImageUploadProps {
   value?: string | null;
@@ -26,6 +85,7 @@ export function ImageUpload({
 }: ImageUploadProps) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [requiresAuth, setRequiresAuth] = useState(false);
   const [showUrlInput, setShowUrlInput] = useState(false);
   const [urlDraft, setUrlDraft] = useState(value || '');
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -38,15 +98,17 @@ export function ImageUpload({
       : 'aspect-16/9';
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const rawFile = e.target.files?.[0];
+    if (!rawFile) return;
 
     setError(null);
+    setRequiresAuth(false);
     setUploading(true);
 
     try {
+      const optimizedFile = await compressImageIfNeeded(rawFile);
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append('file', optimizedFile);
       formData.append('subfolder', subfolder);
 
       const res = await fetch('/api/upload', {
@@ -54,7 +116,14 @@ export function ImageUpload({
         body: formData,
       });
 
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
+
+      if (res.status === 401) {
+        setRequiresAuth(true);
+        throw new Error(
+          data.error || 'Vui lòng đăng nhập tài khoản miễn phí để tải ảnh thành phẩm từ điện thoại.'
+        );
+      }
 
       if (!res.ok) {
         throw new Error(data.error || 'Tải ảnh lên thất bại');
@@ -62,8 +131,8 @@ export function ImageUpload({
 
       onChange(data.url);
       setUrlDraft(data.url);
-    } catch (err: any) {
-      setError(err.message || 'Lỗi khi tải ảnh');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Lỗi khi tải ảnh');
     } finally {
       setUploading(false);
       if (fileInputRef.current) {
@@ -226,7 +295,19 @@ export function ImageUpload({
         </div>
       )}
 
-      {error && <p className="text-[11px] text-red-600 font-medium">{error}</p>}
+      {error && (
+        <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-red-700 font-medium bg-red-50 border border-red-200 rounded-xl px-3 py-2">
+          <span>{error}</span>
+          {requiresAuth && (
+            <Link
+              href="/login"
+              className="px-2.5 py-1 rounded-lg bg-[#3F6240] text-white font-bold hover:opacity-95 shrink-0"
+            >
+              Đăng nhập ngay →
+            </Link>
+          )}
+        </div>
+      )}
     </div>
   );
 }

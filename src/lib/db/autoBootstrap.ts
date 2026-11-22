@@ -118,15 +118,15 @@ async function runBootstrap(): Promise<void> {
     }
   }
 
-  // 4. Tự động seed bộ công thức món Việt chuẩn (bao gồm bộ Giảm cân · Ít Calo, Tập Gym · Tăng cơ & Yoga · Eat Clean) nếu chưa có
-  const existingYogaGymBatch = await db
+  // 4. Tự động seed bộ công thức món Việt chuẩn (bao gồm bộ Giảm cân, Yoga/Gym & đủ 5 Nước chấm) nếu chưa có
+  const existingFullSauceBatch = await db
     .select({ id: recipes.id })
     .from(recipes)
-    .where(eq(recipes.slug, 'poke-bowl-ca-hoi-bo-gao-lut-yoga-gym'))
+    .where(eq(recipes.slug, 'xi-dau-toi-ot-me-rang'))
     .limit(1);
 
-  if (existingYogaGymBatch.length === 0) {
-    logger.info('Seeding updated production catalog (including Yoga, Eat Clean & Gym/Macro recipes)...');
+  if (existingFullSauceBatch.length === 0) {
+    logger.info('Seeding updated production catalog (including Yoga, Eat Clean, Gym & 5 dipping sauces)...');
     await seedProductionCatalog();
     logger.info('Auto-seed production catalog completed!');
   }

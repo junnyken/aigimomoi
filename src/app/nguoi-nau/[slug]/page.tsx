@@ -1,11 +1,17 @@
+import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ArrowLeft, BadgeCheck, MapPin, Star, Store, UtensilsCrossed, Users, Briefcase } from 'lucide-react';
+import { ArrowLeft, BadgeCheck, MapPin, Star, Store, UtensilsCrossed, Users, Briefcase, Package } from 'lucide-react';
 import { getCachedPublicCreator } from '@/lib/creators/public';
+import type { PublicCreatorBundle } from '@/lib/creators/queries';
 import { CREATOR_TIER_LABELS, isValidCreatorSlug } from '@/lib/creators/tier';
 import { CREATOR_REGIONS } from '@/lib/creators/profileInput';
 import { RecipeCard } from '@/components/recipe/RecipeCard';
+import { ClaimBundleButton } from '@/components/recipe/ClaimBundleButton';
+import { getSessionUser } from '@/lib/auth/session';
+import { getUserRecipeEntitlements } from '@/lib/gating/queries';
+import { formatPriceVND } from '@/lib/gating/pricing';
 
 interface PageParams {
   params: Promise<{ slug: string }>;
@@ -124,6 +130,71 @@ export default async function CreatorProfilePage({ params }: PageParams) {
         nội dung trước khi đăng nhưng chưa nấu thử kiểm nghiệm.
       </p>
 
+      {creator.bundles && creator.bundles.length > 0 && (
+        <section aria-labelledby="creator-bundles-heading" className="flex flex-col gap-4">
+          <h2 id="creator-bundles-heading" className="text-xl font-bold text-[var(--color-text-primary)] flex items-center gap-2">
+            <Package className="w-5 h-5 text-amber-600" aria-hidden="true" />
+            Bộ công thức &amp; Thực đơn chọn gói ({creator.bundles.length})
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {creator.bundles.map((bundle) => (
+              <div
+                key={bundle.id}
+                className="rounded-3xl border border-amber-200 bg-gradient-to-br from-white to-amber-50/40 p-5 sm:p-6 shadow-xs flex flex-col justify-between gap-4"
+              >
+                <div className="space-y-2.5">
+                  <div className="flex items-start justify-between gap-3">
+                    <h3 className="text-lg font-bold text-[var(--color-text-primary)]">
+                      {bundle.title}
+                    </h3>
+                    <span className="shrink-0 px-3 py-1 rounded-full bg-amber-100 text-amber-900 border border-amber-200 text-xs font-extrabold">
+                      {formatPriceVND(bundle.price)}
+                    </span>
+                  </div>
+                  {bundle.description && (
+                    <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed">
+                      {bundle.description}
+                    </p>
+                  )}
+                  <div className="pt-1">
+                    <p className="text-xs font-semibold text-[var(--color-text-muted)] mb-1.5">
+                      Bao gồm {bundle.recipes.length} món:
+                    </p>
+                    <ul className="flex flex-wrap gap-1.5">
+                      {bundle.recipes.map((r) => (
+                        <li key={r.id}>
+                          <Link
+                            href={`/cong-thuc/${r.slug}`}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-white border border-[var(--color-border-base)] hover:border-amber-400 text-xs font-medium text-[var(--color-text-primary)] transition-colors"
+                          >
+                            <span>🍲 {r.name}</span>
+                            {r.caloriesPerServing && (
+                              <span className="text-[10px] text-[var(--color-text-muted)]">
+                                (~{r.caloriesPerServing} kcal)
+                              </span>
+                            )}
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-amber-100">
+                  <Suspense
+                    fallback={
+                      <div className="h-10 w-56 rounded-2xl bg-amber-100/60 animate-pulse" />
+                    }
+                  >
+                    <DynamicBundleClaimSlot bundle={bundle} creatorSlug={creator.slug} />
+                  </Suspense>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
       <section aria-labelledby="creator-recipes-heading" className="flex flex-col gap-4">
         <h2 id="creator-recipes-heading" className="text-xl font-bold text-[var(--color-text-primary)]">
           Công thức của {creator.displayName}
@@ -152,5 +223,31 @@ function Stat({ icon: Icon, label, value }: { icon: typeof Star; label: string; 
       </dt>
       <dd className="text-xl font-bold text-[var(--color-text-primary)]">{value}</dd>
     </div>
+  );
+}
+
+async function DynamicBundleClaimSlot({
+  bundle,
+  creatorSlug,
+}: {
+  bundle: PublicCreatorBundle;
+  creatorSlug: string;
+}) {
+  const sessionUser = await getSessionUser();
+  let alreadyOwned = false;
+  if (sessionUser) {
+    const ownedIds = await getUserRecipeEntitlements(sessionUser.id);
+    alreadyOwned =
+      bundle.recipes.length > 0 && bundle.recipes.every((r) => ownedIds.has(r.id));
+  }
+
+  return (
+    <ClaimBundleButton
+      bundleId={bundle.id}
+      creatorSlug={creatorSlug}
+      price={bundle.price}
+      isLoggedIn={Boolean(sessionUser)}
+      alreadyOwned={alreadyOwned}
+    />
   );
 }

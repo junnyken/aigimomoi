@@ -4,13 +4,15 @@ import { eq, inArray, and } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { recipeBundles, recipeBundleItems, recipes } from '@/lib/db/schema';
 import { getSessionUser } from '@/lib/auth/session';
+import { isCrossSiteRequest } from '@/lib/http/sameOrigin';
 import { getCreatorTierForUser } from '@/lib/creators/queries';
+import { revalidateCreatorCaches } from '@/lib/creators/public';
 import { validateBundlePricing } from '@/lib/gating/pricing';
 import { suggestCreatorSlug } from '@/lib/creators/tier';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const sessionUser = await getSessionUser();
+    const sessionUser = await getSessionUser(request);
     if (!sessionUser) {
       return NextResponse.json({ ok: false, message: 'Vui lòng đăng nhập.' }, { status: 401 });
     }
@@ -37,7 +39,14 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const sessionUser = await getSessionUser();
+    if (isCrossSiteRequest(request)) {
+      return NextResponse.json(
+        { ok: false, message: 'Yêu cầu bị từ chối do khác nguồn gốc (CSRF).' },
+        { status: 403 }
+      );
+    }
+
+    const sessionUser = await getSessionUser(request);
     if (!sessionUser) {
       return NextResponse.json({ ok: false, message: 'Vui lòng đăng nhập.' }, { status: 401 });
     }
@@ -125,6 +134,8 @@ export async function POST(request: NextRequest) {
       await tx.insert(recipeBundleItems).values(itemValues);
       return insertedBundle;
     });
+
+    revalidateCreatorCaches();
 
     return NextResponse.json({
       ok: true,
