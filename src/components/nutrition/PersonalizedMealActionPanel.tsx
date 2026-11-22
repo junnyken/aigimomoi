@@ -21,7 +21,14 @@ import {
   ExternalLink,
   ChevronDown,
   ChevronUp,
+  Users,
 } from 'lucide-react';
+import {
+  DEFAULT_FAMILY_PROFILES,
+  loadFamilyProfiles,
+  saveFamilyProfiles,
+  type FamilyMemberProfile,
+} from '@/lib/nutrition/familyProfiles';
 
 interface ApiRecipe {
   id: number;
@@ -143,6 +150,10 @@ export function PersonalizedMealActionPanel({
   const [addedPlanIds, setAddedPlanIds] = useState<Record<string, boolean>>({});
   const [addedDiaryIds, setAddedDiaryIds] = useState<Record<string, boolean>>({});
   const [busyKey, setBusyKey] = useState<string | null>(null);
+  const [familyProfiles, setFamilyProfiles] =
+    useState<FamilyMemberProfile[]>(DEFAULT_FAMILY_PROFILES);
+  const [assignedMemberId, setAssignedMemberId] = useState<string>('');
+  const [familySyncToast, setFamilySyncToast] = useState<string | null>(null);
   const [actionFeedback, setActionFeedback] = useState<{
     type: 'success' | 'auth' | 'error';
     message: string;
@@ -156,6 +167,11 @@ export function PersonalizedMealActionPanel({
     const mm = String(now.getMonth() + 1).padStart(2, '0');
     const dd = String(now.getDate()).padStart(2, '0');
     setSelectedPlanDate(`${yyyy}-${mm}-${dd}`);
+    const loadedProfiles = loadFamilyProfiles();
+    setFamilyProfiles(loadedProfiles);
+    if (loadedProfiles.length > 0) {
+      setAssignedMemberId(loadedProfiles[0].id);
+    }
   }, []);
 
   useEffect(() => {
@@ -616,6 +632,74 @@ export function PersonalizedMealActionPanel({
       ? '8.000 – 9.500 bước/ngày'
       : '9.000 – 11.000 bước/ngày';
 
+  const handleAssignTargetToFamilyMember = () => {
+    const mealBudget = mode === 'meals' && selectedMealType === 'LUNCH' ? lunchKcal : dinnerKcal;
+    const clampedKcal = Math.min(1100, Math.max(300, Math.round(mealBudget)));
+    const targetMember =
+      familyProfiles.find((p) => p.id === assignedMemberId) ?? familyProfiles[0];
+    if (!targetMember) return;
+
+    const updated = familyProfiles.map((p) =>
+      p.id === targetMember.id
+        ? {
+            ...p,
+            targetMealKcal: clampedKcal,
+            isBrownRice: goal === 'lose_standard' || goal === 'lose_mild' ? true : p.isBrownRice,
+          }
+        : p
+    );
+    const saved = saveFamilyProfiles(updated);
+    setFamilyProfiles(saved);
+    setFamilySyncToast(
+      `Đã đồng bộ mức ${clampedKcal} kcal/bữa cho "${targetMember.memberName}" sang bảng Chia Khẩu Phần 1 Mâm!`
+    );
+    setTimeout(() => setFamilySyncToast(null), 5000);
+  };
+
+  const renderFamilyTargetSyncBar = () => (
+    <div className="p-3.5 rounded-2xl bg-emerald-50/80 border border-emerald-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs no-print">
+      <div className="flex items-start gap-2">
+        <Users className="w-4 h-4 text-emerald-700 shrink-0 mt-0.5" />
+        <div>
+          <strong className="text-emerald-950 block">
+            Đồng bộ Kcal bữa tối (~{dinnerKcal} kcal) sang Hồ sơ Gia đình
+          </strong>
+          <span className="text-[11px] text-emerald-800">
+            {familySyncToast ||
+              'Gắn trực tiếp con số vừa tính cho một thành viên để trang /meal tự chia khẩu phần 1 mâm khớp 100%.'}
+          </span>
+        </div>
+      </div>
+      <div className="flex flex-wrap items-center gap-2 shrink-0">
+        <select
+          value={assignedMemberId}
+          onChange={(e) => setAssignedMemberId(e.target.value)}
+          aria-label="Chọn thành viên nhận mức Kcal"
+          className="px-2.5 py-1.5 rounded-xl bg-white border border-emerald-300 text-xs font-bold text-emerald-950"
+        >
+          {familyProfiles.map((member) => (
+            <option key={member.id} value={member.id}>
+              {member.memberName} (hiện {member.targetMealKcal} kcal)
+            </option>
+          ))}
+        </select>
+        <button
+          type="button"
+          onClick={handleAssignTargetToFamilyMember}
+          className="px-3 py-1.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-extrabold cursor-pointer"
+        >
+          ✓ Gắn cho thành viên
+        </button>
+        <Link
+          href="/meal"
+          className="px-2.5 py-1.5 rounded-xl bg-white border border-emerald-300 text-emerald-900 font-bold hover:bg-emerald-100"
+        >
+          Mở /meal →
+        </Link>
+      </div>
+    </div>
+  );
+
   // =========================================================================
   // CHẾ ĐỘ 1: PHÁC ĐỒ HÀNH ĐỘNG & PHÂN BỔ 3 BỮA TRONG NGÀY (TAB 2)
   // =========================================================================
@@ -722,6 +806,7 @@ export function PersonalizedMealActionPanel({
               </p>
             </div>
           </div>
+          {renderFamilyTargetSyncBar()}
         </div>
       </div>
     );
@@ -790,6 +875,8 @@ export function PersonalizedMealActionPanel({
           </div>
         </div>
       </div>
+
+      {renderFamilyTargetSyncBar()}
 
       {/* Bộ lọc Nhanh Theo Chế Độ Tập Luyện: Tất Cả / Yoga & Eat Clean / Gym Tăng Cơ / Giảm Cân Ít Calo */}
       <div className="p-3.5 rounded-2xl bg-[#F4F8F4] border border-[var(--color-brand-border)] flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 no-print">

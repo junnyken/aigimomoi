@@ -1,7 +1,7 @@
 'use client';
 
 // AG-40: Trang Quản lý Kho Thực phẩm & Tủ lạnh Gia đình (Pantry)
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, useEffect, Suspense, useRef } from 'react';
 import Link from 'next/link';
 import { 
   Refrigerator, 
@@ -15,8 +15,15 @@ import {
   Clock,
   Sparkles,
   LogIn,
-  Utensils
+  Utensils,
+  Camera,
+  Mic,
+  RefreshCw,
+  X,
+  CheckCircle2,
 } from 'lucide-react';
+import { useVietnameseVoiceInput } from '@/lib/speech/useVietnameseVoiceInput';
+import type { FridgeScanResponse } from '@/app/api/ai/food-scanner/route';
 
 interface PantryItem {
   id: number;
@@ -57,6 +64,26 @@ function PantryContent() {
   const [isUnauthorized, setIsUnauthorized] = useState(false);
   const [activeTab, setActiveTab] = useState<'ALL' | 'FRIDGE' | 'FREEZER' | 'DRY_PANTRY'>('ALL');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
+
+  // Camera Quét Ảnh Tủ Lạnh trực tiếp
+  const fridgeFileRef = useRef<HTMLInputElement | null>(null);
+  const [showFridgeScanModal, setShowFridgeScanModal] = useState(false);
+  const [fridgePreviewUrl, setFridgePreviewUrl] = useState<string | null>(null);
+  const [fridgeBase64, setFridgeBase64] = useState<string | null>(null);
+  const [fridgeHint, setFridgeHint] = useState('');
+  const [fridgeScanning, setFridgeScanning] = useState(false);
+  const [fridgeScanResult, setFridgeScanResult] = useState<FridgeScanResponse | null>(null);
+  const [selectedFridgeNames, setSelectedFridgeNames] = useState<string[]>([]);
+  const [fridgeSyncing, setFridgeSyncing] = useState(false);
+  const [fridgeScanError, setFridgeScanError] = useState<string | null>(null);
+  const {
+    supported: voiceSupported,
+    listening: voiceListening,
+    startVoiceInput,
+  } = useVietnameseVoiceInput((spoken) =>
+    setFridgeHint((prev) => (prev.trim() ? `${prev.trim()}, ${spoken}` : spoken))
+  );
 
   // Form thêm món mới
   const [formName, setFormName] = useState('');
@@ -172,15 +199,129 @@ function PantryContent() {
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm('Bạn có chắc muốn xóa món này khỏi tủ lạnh?')) return;
     try {
       const res = await fetch(`/api/pantry/${id}`, { method: 'DELETE' });
       if (res.ok) {
         setItems((prev) => prev.filter((i) => i.id !== id));
+        setConfirmDeleteId(null);
         fetchPantry();
       }
     } catch (err) {
       console.error('Delete item error', err);
+    }
+  };
+
+  const handleFridgeImageChange = async (file: File) => {
+    setFridgeScanError(null);
+    setFridgeScanResult(null);
+    try {
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const img = new Image();
+          img.onload = () => {
+            const maxDim = 1280;
+            const scale = Math.min(1, maxDim / Math.max(img.width, img.height, 1));
+            const canvas = document.createElement('canvas');
+            canvas.width = Math.max(1, Math.round(img.width * scale));
+            canvas.height = Math.max(1, Math.round(img.height * scale));
+            const ctx = canvas.getContext('2d');
+            if (!ctx) {
+              resolve(String(reader.result));
+              return;
+            }
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            resolve(canvas.toDataURL('image/jpeg', 0.82));
+          };
+          img.onerror = () => reject(new Error('Không thể đọc ảnh đã chọn.'));
+          img.src = String(reader.result);
+        };
+        reader.onerror = () => reject(new Error('Lỗi đọc tập tin ảnh.'));
+        reader.readAsDataURL(file);
+      });
+
+      setFridgePreviewUrl(dataUrl);
+      const base64Only = dataUrl.includes(',') ? dataUrl.split(',')[1] : dataUrl;
+      setFridgeBase64(base64Only);
+      await runFridgeAiScan(base64Only);
+    } catch (err) {
+      setFridgeScanError(err instanceof Error ? err.message : 'Không xử lý được ảnh.');
+    }
+  };
+
+  const runFridgeAiScan = async (overrideBase64?: string) => {
+    const b64 = overrideBase64 ?? fridgeBase64;
+    if (!b64) {
+      setFridgeScanError('Hãy chọn hoặc chụp một bức ảnh ngăn mát tủ lạnh trước.');
+      return;
+    }
+    setFridgeScanning(true);
+    setFridgeScanError(null);
+    try {
+      const res = await fetch('/api/ai/food-scanner', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          imageBase64: b64,
+          mimeType: 'image/jpeg',
+          userHint: fridgeHint.trim(),
+          scanMode: 'FRIDGE',
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setFridgeScanError(data.error || 'AI chưa nhận diện được nguyên liệu từ ảnh này.');
+        return;
+      }
+      if (data.fridgeResult) {
+        const result: FridgeScanResponse = data.fridgeResult;
+        setFridgeScanResult(result);
+        setSelectedFridgeNames(result.pantryItems.map((i) => i.name));
+      }
+    } catch {
+      setFridgeScanError('Lỗi kết nối khi gọi AI quét tủ lạnh.');
+    } finally {
+      setFridgeScanning(false);
+    }
+  };
+
+  const handleSyncScannedFridge = async () => {
+    if (!fridgeScanResult) return;
+    const chosen = fridgeScanResult.pantryItems.filter((i) =>
+      selectedFridgeNames.includes(i.name)
+    );
+    if (chosen.length === 0) return;
+
+    setFridgeSyncing(true);
+    setFridgeScanError(null);
+    try {
+      const res = await fetch('/api/pantry/sync-from-shopping', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          items: chosen.map((i) => ({
+            name: i.name,
+            quantity: Number(i.quantity) > 0 ? Number(i.quantity) : 1,
+            unit: i.unit || 'phần',
+            category: i.category || 'Tủ mát',
+          })),
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setFridgeScanError(data.error || 'Không thể lưu các món đã quét vào Tủ lạnh.');
+        return;
+      }
+      setShowFridgeScanModal(false);
+      setMessage(
+        data.message || `Đã cất ${chosen.length} nguyên liệu nhận diện từ ảnh vào Tủ lạnh!`
+      );
+      setTimeout(() => setMessage(''), 4000);
+      fetchPantry();
+    } catch {
+      setFridgeScanError('Lỗi kết nối máy chủ khi lưu vào Tủ lạnh.');
+    } finally {
+      setFridgeSyncing(false);
     }
   };
 
@@ -304,6 +445,17 @@ function PantryContent() {
             <ShoppingBag className="w-4 h-4 text-[var(--color-brand-primary)]" />
             <span>Giỏ đi chợ</span>
           </Link>
+          <button
+            type="button"
+            onClick={() => {
+              setFridgeScanError(null);
+              setShowFridgeScanModal(true);
+            }}
+            className="min-h-11 inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-semibold text-sm transition-colors shadow-xs cursor-pointer"
+          >
+            <Camera className="w-4 h-4" />
+            <span>📸 Quét ảnh Tủ lạnh (AI)</span>
+          </button>
           <button
             onClick={() => {
               setErrorMsg('');
@@ -523,13 +675,33 @@ function PantryContent() {
                   </button>
                 </div>
 
-                <button
-                  onClick={() => handleDelete(item.id)}
-                  className="p-1.5 rounded-lg text-stone-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-                  title="Xóa khỏi tủ lạnh"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                {confirmDeleteId === item.id ? (
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(item.id)}
+                      className="px-2 py-1 rounded-lg bg-red-600 text-white text-[11px] font-bold hover:bg-red-700 cursor-pointer"
+                    >
+                      Xóa
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmDeleteId(null)}
+                      className="px-2 py-1 rounded-lg border border-stone-200 text-stone-600 text-[11px] font-semibold hover:bg-stone-50 cursor-pointer"
+                    >
+                      Hủy
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setConfirmDeleteId(item.id)}
+                    className="p-1.5 rounded-lg text-stone-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                    title="Xóa khỏi tủ lạnh"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
               </div>
             </div>
           ))}
@@ -661,6 +833,170 @@ function PantryContent() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Quét Ảnh Tủ Lạnh Bằng Camera AI */}
+      {showFridgeScanModal && (
+        <div className="fixed inset-0 z-50 bg-black/55 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-xl w-full max-h-[90vh] overflow-y-auto p-6 shadow-2xl border border-stone-200 space-y-4">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h3 className="text-lg font-extrabold text-stone-900 flex items-center gap-2">
+                  <Camera className="w-5 h-5 text-teal-600" />
+                  <span>Quét Ảnh Ngăn Mát Tủ Lạnh (AI Fridge Vision)</span>
+                </h3>
+                <p className="text-xs text-stone-500 mt-0.5">
+                  Chụp hoặc tải ảnh đồ ăn đang có trong tủ lạnh để AI tự nhặt danh sách và cất vào kho /tu-lanh trong 1 chạm.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowFridgeScanModal(false)}
+                className="p-1.5 rounded-lg text-stone-400 hover:bg-stone-100 cursor-pointer"
+                aria-label="Đóng"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <input
+              ref={fridgeFileRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) handleFridgeImageChange(file);
+                e.target.value = '';
+              }}
+            />
+
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => fridgeFileRef.current?.click()}
+                disabled={fridgeScanning}
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-extrabold cursor-pointer disabled:opacity-50"
+              >
+                <Camera className="w-4 h-4" />
+                <span>{fridgePreviewUrl ? 'Chụp / Chọn ảnh khác' : 'Chụp / Tải ảnh tủ lạnh'}</span>
+              </button>
+              {fridgeBase64 && (
+                <button
+                  type="button"
+                  onClick={() => runFridgeAiScan()}
+                  disabled={fridgeScanning}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-stone-300 bg-stone-50 hover:bg-stone-100 text-xs font-bold text-stone-700 cursor-pointer"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${fridgeScanning ? 'animate-spin' : ''}`} />
+                  <span>{fridgeScanning ? 'Đang nhận diện...' : 'Quét lại kèm ghi chú'}</span>
+                </button>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={fridgeHint}
+                onChange={(e) => setFridgeHint(e.target.value)}
+                placeholder="Ghi chú thêm (VD: Hộp xanh là thịt băm 300g, túi góc trái là cải ngọt...)"
+                className="flex-1 px-3 py-2 text-xs rounded-xl border border-stone-300 text-stone-800 focus:outline-hidden focus:ring-2 focus:ring-teal-500"
+              />
+              {voiceSupported && (
+                <button
+                  type="button"
+                  onClick={startVoiceInput}
+                  className={`px-3 py-2 rounded-xl border text-xs font-bold inline-flex items-center gap-1 cursor-pointer shrink-0 ${
+                    voiceListening
+                      ? 'bg-red-600 text-white border-red-600 animate-pulse'
+                      : 'bg-white text-stone-700 border-stone-300 hover:bg-stone-50'
+                  }`}
+                >
+                  <Mic className="w-3.5 h-3.5" />
+                  <span>{voiceListening ? 'Đang nghe' : 'Nói'}</span>
+                </button>
+              )}
+            </div>
+
+            {fridgePreviewUrl && (
+              <div className="rounded-2xl overflow-hidden border border-stone-200 max-h-52 bg-stone-900">
+                <img
+                  src={fridgePreviewUrl}
+                  alt="Ảnh tủ lạnh đang quét"
+                  className="w-full h-48 object-contain mx-auto"
+                />
+              </div>
+            )}
+
+            {fridgeScanError && (
+              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold">
+                {fridgeScanError}
+              </div>
+            )}
+
+            {fridgeScanResult && (
+              <div className="p-4 rounded-2xl bg-[#F4F8F4] border border-emerald-200 space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs font-extrabold text-emerald-950 flex items-center gap-1.5">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-700" />
+                    AI nhận diện {fridgeScanResult.pantryItems.length} thực phẩm
+                  </span>
+                  <span className="text-[11px] text-emerald-800">Tick chọn món muốn cất</span>
+                </div>
+                <p className="text-xs text-stone-600">{fridgeScanResult.summary}</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto">
+                  {fridgeScanResult.pantryItems.map((pItem) => {
+                    const checked = selectedFridgeNames.includes(pItem.name);
+                    return (
+                      <label
+                        key={pItem.name}
+                        className={`px-3 py-2 rounded-xl border text-xs flex items-center gap-2 cursor-pointer ${
+                          checked
+                            ? 'bg-white border-teal-500 text-stone-900'
+                            : 'bg-stone-50 border-stone-200 text-stone-400'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() =>
+                            setSelectedFridgeNames((prev) =>
+                              prev.includes(pItem.name)
+                                ? prev.filter((n) => n !== pItem.name)
+                                : [...prev, pItem.name]
+                            )
+                          }
+                          className="accent-teal-600"
+                        />
+                        <div className="min-w-0">
+                          <span className="font-bold block truncate">{pItem.name}</span>
+                          <span className="text-[10px] text-stone-500">
+                            {pItem.quantity} {pItem.unit}
+                            {pItem.shelfNote ? ` • ${pItem.shelfNote}` : ''}
+                          </span>
+                        </div>
+                      </label>
+                    );
+                  })}
+                </div>
+
+                <div className="flex flex-wrap items-center justify-end gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={handleSyncScannedFridge}
+                    disabled={fridgeSyncing || selectedFridgeNames.length === 0}
+                    className="px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-extrabold disabled:opacity-50 cursor-pointer"
+                  >
+                    {fridgeSyncing
+                      ? 'Đang cất vào tủ...'
+                      : `🧊 Cất ${selectedFridgeNames.length} món vào Tủ lạnh`}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

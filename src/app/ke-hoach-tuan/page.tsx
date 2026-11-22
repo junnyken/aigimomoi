@@ -57,6 +57,7 @@ function WeeklyPlannerContent() {
   const [loading, setLoading] = useState(true);
   const [isUnauthorized, setIsUnauthorized] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [confirmDeletePlanId, setConfirmDeletePlanId] = useState<number | null>(null);
   const [selectedDayDate, setSelectedDayDate] = useState<string>('');
   const [selectedMealType, setSelectedMealType] = useState<'BREAKFAST' | 'LUNCH' | 'DINNER' | 'SNACK'>('LUNCH');
 
@@ -191,11 +192,11 @@ function WeeklyPlannerContent() {
   };
 
   const handleDeletePlan = async (id: number) => {
-    if (!confirm('Bạn có chắc muốn xóa món này khỏi kế hoạch?')) return;
     try {
       const res = await fetch(`/api/meal-plans/${id}`, { method: 'DELETE' });
       if (res.ok) {
         setPlans((prev) => prev.filter((p) => p.id !== id));
+        setConfirmDeletePlanId(null);
       }
     } catch (err) {
       console.error('Delete plan error', err);
@@ -536,13 +537,33 @@ function WeeklyPlannerContent() {
                                     <span className={`font-bold text-xs leading-tight ${mealItem.isCompleted ? 'line-through text-stone-400' : 'text-stone-800'}`}>
                                       {mealItem.customDishName || mealItem.recipe?.name}
                                     </span>
-                                    <button
-                                      onClick={() => handleDeletePlan(mealItem.id)}
-                                      className="text-stone-300 hover:text-red-500 p-0.5 no-print"
-                                      title="Xóa"
-                                    >
-                                      <Trash2 className="w-3 h-3" />
-                                    </button>
+                                    {confirmDeletePlanId === mealItem.id ? (
+                                      <div className="flex items-center gap-1 no-print">
+                                        <button
+                                          type="button"
+                                          onClick={() => handleDeletePlan(mealItem.id)}
+                                          className="px-1.5 py-0.5 rounded bg-red-600 text-white text-[10px] font-bold hover:bg-red-700 cursor-pointer"
+                                        >
+                                          Xóa
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => setConfirmDeletePlanId(null)}
+                                          className="px-1.5 py-0.5 rounded border border-stone-200 text-stone-600 text-[10px] font-semibold hover:bg-stone-50 cursor-pointer"
+                                        >
+                                          Hủy
+                                        </button>
+                                      </div>
+                                    ) : (
+                                      <button
+                                        type="button"
+                                        onClick={() => setConfirmDeletePlanId(mealItem.id)}
+                                        className="text-stone-300 hover:text-red-500 p-0.5 no-print cursor-pointer"
+                                        title="Xóa"
+                                      >
+                                        <Trash2 className="w-3 h-3" />
+                                      </button>
+                                    )}
                                   </div>
 
                                   {mealItem.recipe && (

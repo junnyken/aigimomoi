@@ -19,6 +19,11 @@ import {
   Mic,
 } from 'lucide-react';
 import { useVietnameseVoiceInput } from '@/lib/speech/useVietnameseVoiceInput';
+import {
+  createCompactThumbnailDataUrl,
+  markDiaryDateActive,
+  saveVisualDiaryPhoto,
+} from '@/lib/nutrition/visualDiaryStore';
 import type { ScannedFoodItem, FoodScanResponse } from '@/app/api/ai/food-scanner/route';
 
 const QUICK_HIDDEN_ITEMS: Array<{
@@ -474,6 +479,7 @@ export function HeroFoodScannerCard() {
   const [scanResult, setScanResult] = useState<FoodScanResponse>(HERO_PRESETS[0].scanData);
   const [items, setItems] = useState<ScannedFoodItem[]>(HERO_PRESETS[0].scanData.items);
   const [cookingOilMode, setCookingOilMode] = useState<'NONE' | 'LIGHT_OIL' | 'SAUCE_RICH'>('LIGHT_OIL');
+  const [portionShare, setPortionShare] = useState<1 | 0.5 | 0.25>(1);
   const [focusedItemId, setFocusedItemId] = useState<string | null>(null);
   const [savedNotice, setSavedNotice] = useState<string | null>(null);
 
@@ -512,9 +518,9 @@ export function HeroFoodScannerCard() {
     const carbPct = Math.round((carbGrams / safeTotal) * 100);
     const fatPct = Math.max(0, 100 - veggiePct - proteinPct - carbPct);
 
-    const finalKcal = Math.round(kcal + oilExtraKcal);
-    const finalProtein = Math.round(protein * 10) / 10;
-    const finalFiber = Math.round(fiber * 10) / 10;
+    const finalKcal = Math.round((kcal + oilExtraKcal) * portionShare);
+    const finalProtein = Math.round(protein * portionShare * 10) / 10;
+    const finalFiber = Math.round(fiber * portionShare * 10) / 10;
 
     // Chấm điểm Đĩa Ăn động (Thang điểm /10 chuẩn Foodvisor & Cal AI)
     let rawScore = 8.4;
@@ -549,10 +555,10 @@ export function HeroFoodScannerCard() {
     return {
       kcal: finalKcal,
       protein: finalProtein,
-      fat: Math.round((fat + oilExtraFat) * 10) / 10,
-      carbs: Math.round(carbs * 10) / 10,
+      fat: Math.round((fat + oilExtraFat) * portionShare * 10) / 10,
+      carbs: Math.round(carbs * portionShare * 10) / 10,
       fiber: finalFiber,
-      totalGrams: Math.round(totalGrams),
+      totalGrams: Math.round(totalGrams * portionShare),
       veggiePct,
       proteinPct,
       carbPct,
@@ -563,7 +569,7 @@ export function HeroFoodScannerCard() {
       standardMealBudget,
       budgetPercent,
     };
-  }, [items, oilExtraKcal, oilExtraFat, cookingOilMode, scanResult.mealFormat]);
+  }, [items, oilExtraKcal, oilExtraFat, cookingOilMode, portionShare, scanResult.mealFormat]);
 
   function handleSelectPreset(preset: HeroPreset) {
     setActivePresetId(preset.id);
@@ -762,7 +768,22 @@ export function HeroFoodScannerCard() {
       }
 
       if (res.ok) {
-        setSavedNotice(`Đã lưu (${totals.kcal} kcal) vào Nhật ký hôm nay!`);
+        const thumbUrl = await createCompactThumbnailDataUrl(previewImageUrl);
+        if (thumbUrl) {
+          saveVisualDiaryPhoto({
+            date: todayStr,
+            mealType: 'LUNCH',
+            title: scanResult.dishTitle,
+            imageUrl: thumbUrl,
+            calories: totals.kcal,
+            protein: totals.protein,
+            carbs: totals.carbs,
+            fat: totals.fat,
+          });
+        } else {
+          markDiaryDateActive(todayStr);
+        }
+        setSavedNotice(`Đã lưu (${totals.kcal} kcal) vào Nhật ký & Timeline ảnh!`);
       }
     } catch {
       // ignore
@@ -1034,9 +1055,29 @@ export function HeroFoodScannerCard() {
               </div>
             </div>
 
-            {/* Thanh chọn Dầu/Sốt + Nút tối ưu 1-chạm trên cùng 1 hàng gọn */}
+            {/* Thanh chọn Chia Mâm Chung (100% / 1/2 / 1/4) + Dầu/Sốt trên hàng gọn */}
             <div className="flex flex-wrap items-center justify-between gap-1.5 pt-1.5 border-t border-stone-100">
-              <div className="flex items-center gap-1">
+              <div className="flex flex-wrap items-center gap-1">
+                {(
+                  [
+                    { val: 1 as const, label: 'Đĩa riêng' },
+                    { val: 0.5 as const, label: '½ mâm' },
+                    { val: 0.25 as const, label: '¼ mâm' },
+                  ]
+                ).map((opt) => (
+                  <button
+                    key={opt.val}
+                    type="button"
+                    onClick={() => setPortionShare(opt.val)}
+                    className={`px-2 py-0.5 rounded-md text-[10px] font-bold border cursor-pointer transition-colors ${
+                      portionShare === opt.val
+                        ? 'bg-[var(--color-brand-primary)] text-white border-[var(--color-brand-primary)]'
+                        : 'bg-white text-stone-700 border-[#DFD2C0]'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
                 {(
                   [
                     { key: 'NONE', label: '💧 Hấp/Luộc' },
@@ -1189,6 +1230,21 @@ export function HeroFoodScannerCard() {
             >
               <span>Mở Bàn Quét Đầy Đủ</span>
               <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-1.5 pt-1 border-t border-stone-100 text-[10px] font-bold">
+            <Link
+              href="/tinh-calo?tab=scan&mode=fridge"
+              className="text-teal-800 hover:underline"
+            >
+              🧊 Quét ảnh Tủ lạnh → Gợi ý mâm
+            </Link>
+            <Link
+              href="/tinh-calo?tab=scan&mode=label"
+              className="text-amber-800 hover:underline"
+            >
+              🏷️ Quét Nhãn bao bì (Đường/Muối) →
             </Link>
           </div>
         </div>

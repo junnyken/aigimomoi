@@ -510,4 +510,24 @@ export const mealPlans = pgTable('meal_plans', {
   index('meal_plans_recipe_idx').on(table.recipeId),
 ]);
 
+export interface SharedShoppingCustomItem {
+  id: string;
+  name: string;
+  checked: boolean;
+}
+
+// Live Shared Shopping Sessions (Giỏ đi chợ đồng bộ 24h cho gia đình)
+export const sharedShoppingSessions = pgTable('shared_shopping_sessions', {
+  token: text('token').primaryKey(),
+  mealQuery: text('meal_query').notNull(),
+  servings: integer('servings').notNull().default(4),
+  checkedKeys: jsonb('checked_keys').$type<string[]>().notNull().default(sql`'[]'::jsonb`),
+  customItems: jsonb('custom_items').$type<SharedShoppingCustomItem[]>().notNull().default(sql`'[]'::jsonb`),
+  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index('shared_shopping_sessions_expires_idx').on(table.expiresAt),
+]);
+
 

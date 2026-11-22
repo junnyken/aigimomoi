@@ -1,5 +1,8 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
+import { and, eq, gt } from 'drizzle-orm';
+import { db, ingredients, pantryItems, sharedShoppingSessions } from '@/lib/db';
+import { ensureSharedShoppingTable, isValidShoppingToken } from '@/lib/shopping/sharedSessionsServer';
 import { resolveMealSelection, queryMealRecipesForAggregation } from '@/lib/meal/mealQueries';
 import { aggregateMealIngredients } from '@/lib/recipes/aggregation';
 import { clampServings } from '@/lib/recipes/scaling';
@@ -27,11 +30,45 @@ export default function ShoppingPage({ searchParams }: ShoppingPageProps) {
 async function ShoppingPageContent({ searchParams }: ShoppingPageProps) {
   const params = await searchParams;
 
-  const mainSlug = typeof params.main === 'string' ? params.main.trim() : null;
-  const soupSlug = typeof params.soup === 'string' ? params.soup.trim() : null;
-  const sideSlug = typeof params.side === 'string' ? params.side.trim() : null;
-  const sauceSlug = typeof params.sauce === 'string' ? params.sauce.trim() : null;
-  const servings = clampServings(params.servings, 4);
+  let mainSlug = typeof params.main === 'string' ? params.main.trim() : null;
+  let soupSlug = typeof params.soup === 'string' ? params.soup.trim() : null;
+  let sideSlug = typeof params.side === 'string' ? params.side.trim() : null;
+  let sauceSlug = typeof params.sauce === 'string' ? params.sauce.trim() : null;
+  let servings = clampServings(params.servings, 4);
+  const rawSessionToken = typeof params.session === 'string' ? params.session.trim() : null;
+  const sessionToken =
+    rawSessionToken && isValidShoppingToken(rawSessionToken) ? rawSessionToken : null;
+
+  // Nếu mở link chia sẻ ?session=... trực tiếp, lấy lại mealQuery từ PostgreSQL nếu thiếu tham số món
+  if (sessionToken && !mainSlug && !soupSlug && !sideSlug) {
+    try {
+      await ensureSharedShoppingTable();
+      const [liveSession] = await db
+        .select({
+          mealQuery: sharedShoppingSessions.mealQuery,
+          servings: sharedShoppingSessions.servings,
+        })
+        .from(sharedShoppingSessions)
+        .where(
+          and(
+            eq(sharedShoppingSessions.token, sessionToken),
+            gt(sharedShoppingSessions.expiresAt, new Date())
+          )
+        )
+        .limit(1);
+
+      if (liveSession?.mealQuery) {
+        const recovered = new URLSearchParams(liveSession.mealQuery);
+        mainSlug = recovered.get('main') || mainSlug;
+        soupSlug = recovered.get('soup') || soupSlug;
+        sideSlug = recovered.get('side') || sideSlug;
+        sauceSlug = recovered.get('sauce') || sauceSlug;
+        servings = clampServings(liveSession.servings, servings);
+      }
+    } catch {
+      // Fallback sang mặc định nếu chưa kết nối được DB
+    }
+  }
 
   // Phân giải mâm cơm
   const mealSelection = await resolveMealSelection({
@@ -59,7 +96,43 @@ async function ShoppingPageContent({ searchParams }: ShoppingPageProps) {
   const recipesList = await queryMealRecipesForAggregation(slugs, sessionUser?.id ?? null);
   const result = aggregateMealIngredients(recipesList, servings);
 
-  return <ShoppingView result={result} dishes={dishes} servings={servings} />;
+  // Nạp nguyên liệu đang còn hạn trong Tủ lạnh cá nhân để gợi ý trừ tự động khỏi giỏ đi chợ
+  let availablePantryNames: string[] = [];
+  if (sessionUser) {
+    try {
+      const now = new Date();
+      const userPantryRows = await db
+        .select({
+          customName: pantryItems.customName,
+          expiresAt: pantryItems.expiresAt,
+          ingredientName: ingredients.name,
+        })
+        .from(pantryItems)
+        .leftJoin(ingredients, eq(pantryItems.ingredientId, ingredients.id))
+        .where(eq(pantryItems.userId, sessionUser.id));
+
+      availablePantryNames = Array.from(
+        new Set(
+          userPantryRows
+            .filter((row) => !row.expiresAt || row.expiresAt.getTime() > now.getTime())
+            .map((row) => (row.ingredientName || row.customName || '').trim())
+            .filter(Boolean)
+        )
+      );
+    } catch {
+      availablePantryNames = [];
+    }
+  }
+
+  return (
+    <ShoppingView
+      result={result}
+      dishes={dishes}
+      servings={servings}
+      availablePantryNames={availablePantryNames}
+      initialSessionToken={sessionToken}
+    />
+  );
 }
 
 function ShoppingLoadingShell() {

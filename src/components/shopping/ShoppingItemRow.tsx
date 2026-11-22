@@ -15,6 +15,7 @@ interface ShoppingItemRowProps {
   onToggle: (key: string) => void;
   traces?: IngredientTrace[];
   isSeasoning?: boolean;
+  inPantry?: boolean;
 }
 
 export function ShoppingItemRow({
@@ -27,6 +28,7 @@ export function ShoppingItemRow({
   onToggle,
   traces = [],
   isSeasoning = false,
+  inPantry = false,
 }: ShoppingItemRowProps) {
   const costInfo =
     !isSeasoning && typeof totalAmount === 'number' && totalAmount > 0 && unit
@@ -64,15 +66,22 @@ export function ShoppingItemRow({
       {/* Item Info */}
       <div className="flex-1 min-w-0 flex flex-col gap-1">
         <div className="flex items-center justify-between gap-2">
-          <span
-            className={`text-sm sm:text-base font-bold transition-all ${
-              isChecked
-                ? 'line-through text-[var(--color-text-muted)]'
-                : 'text-[var(--color-text-primary)] group-hover:text-[var(--color-brand-primary)]'
-            }`}
-          >
-            {name}
-          </span>
+          <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+            <span
+              className={`text-sm sm:text-base font-bold transition-all ${
+                isChecked
+                  ? 'line-through text-[var(--color-text-muted)]'
+                  : 'text-[var(--color-text-primary)] group-hover:text-[var(--color-brand-primary)]'
+              }`}
+            >
+              {name}
+            </span>
+            {inPantry && (
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-teal-50 text-teal-800 border border-teal-200">
+                🧊 Có trong tủ lạnh
+              </span>
+            )}
+          </div>
 
           {formattedAmount && unit && (
             <div className="flex flex-col items-end shrink-0">

@@ -612,6 +612,14 @@ export function FoodPlateScannerPanel({
   );
 
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const mode = new URLSearchParams(window.location.search).get('mode');
+      if (mode === 'fridge') setScanMode('FRIDGE');
+      else if (mode === 'label') setScanMode('LABEL');
+    }
+  }, []);
+
+  useEffect(() => {
     if (cachedCatalogRecipes && cachedCatalogRecipes.length > 0) return;
     let active = true;
     fetch('/api/recipes')

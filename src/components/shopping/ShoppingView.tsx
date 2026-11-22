@@ -18,8 +18,12 @@ import {
   CheckCircle2,
   LogIn,
   Link2,
+  Radio,
+  Plus,
+  Trash2,
 } from 'lucide-react';
 import type { AggregationResult } from '@/lib/recipes/aggregation';
+import type { SharedShoppingCustomItem } from '@/lib/db/schema';
 import {
   useShoppingChecklist,
   generateShoppingPlainText,
@@ -33,18 +37,48 @@ import { estimateIngredientCostVnd, formatVndRounded1k, formatVndCurrency } from
 import { ShoppingProgressBar } from './ShoppingProgressBar';
 import { ShoppingItemRow } from './ShoppingItemRow';
 
+function normalizeVnIngredientName(value: string): string {
+  return value.toLowerCase().trim().replace(/\s+/g, ' ');
+}
+
+function matchesPantryName(itemName: string, pantryNamesNormalized: string[]): boolean {
+  const n = normalizeVnIngredientName(itemName);
+  if (!n) return false;
+  return pantryNamesNormalized.some((p) => {
+    if (p === n) return true;
+    if (p.length >= 3 && n.includes(p)) return true;
+    if (n.length >= 3 && p.includes(n)) return true;
+    return false;
+  });
+}
+
 interface ShoppingViewProps {
   result: AggregationResult;
   dishes: { name: string; slug: string; role: string }[];
   servings: number;
+  availablePantryNames?: string[];
+  initialSessionToken?: string | null;
 }
 
-export function ShoppingView({ result, dishes, servings }: ShoppingViewProps) {
+export function ShoppingView({
+  result,
+  dishes,
+  servings,
+  availablePantryNames = [],
+  initialSessionToken = null,
+}: ShoppingViewProps) {
   const { checkedKeys, isChecked, toggleCheck, resetAll } = useShoppingChecklist();
   const [copied, setCopied] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
   const [syncingPantry, setSyncingPantry] = useState(false);
   const hydratedFromUrlRef = useRef(false);
+  const [liveSessionToken, setLiveSessionToken] = useState<string | null>(initialSessionToken);
+  const [creatingLiveSession, setCreatingLiveSession] = useState(false);
+  const [liveExpiresAt, setLiveExpiresAt] = useState<string | null>(null);
+  const [liveLastSyncedAt, setLiveLastSyncedAt] = useState<string | null>(null);
+  const [liveStatusMsg, setLiveStatusMsg] = useState<string | null>(null);
+  const [customItems, setCustomItems] = useState<SharedShoppingCustomItem[]>([]);
+  const [newCustomItemName, setNewCustomItemName] = useState('');
   const [pantrySyncFeedback, setPantrySyncFeedback] = useState<{
     type: 'success' | 'auth' | 'error';
     message: string;
@@ -59,6 +93,26 @@ export function ShoppingView({ result, dishes, servings }: ShoppingViewProps) {
     [result]
   );
 
+  const pantryKeySet = useMemo(() => {
+    const normalizedPantry = availablePantryNames
+      .map(normalizeVnIngredientName)
+      .filter(Boolean);
+    if (normalizedPantry.length === 0) return new Set<string>();
+    const matched = new Set<string>();
+    for (const item of result.freshItems) {
+      if (matchesPantryName(item.name, normalizedPantry)) matched.add(item.key);
+    }
+    for (const s of result.seasoningItems) {
+      if (matchesPantryName(s.name, normalizedPantry)) matched.add(s.key);
+    }
+    return matched;
+  }, [result, availablePantryNames]);
+
+  const uncheckedPantryKeys = useMemo(
+    () => Array.from(pantryKeySet).filter((k) => !isChecked(k)),
+    [pantryKeySet, isChecked]
+  );
+
   // Đồng bộ trạng thái đã tick từ link giỏ chung (?checked=0,2,5) khi người nhà mở link Zalo
   useEffect(() => {
     if (hydratedFromUrlRef.current || allKeys.length === 0 || typeof window === 'undefined') return;
@@ -70,6 +124,151 @@ export function ShoppingView({ result, dishes, servings }: ShoppingViewProps) {
       saveLocalCheckedKeys(merged);
     }
   }, [allKeys]);
+
+  // Polling giỏ đi chợ đồng bộ PostgreSQL 24h mỗi 5 giây
+  useEffect(() => {
+    if (!liveSessionToken) return;
+    let active = true;
+
+    const pullSession = async () => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
+      try {
+        const res = await fetch(`/api/shopping/sessions/${liveSessionToken}`);
+        if (!active) return;
+        if (res.status === 404) {
+          setLiveStatusMsg('Link giỏ đi chợ đồng bộ đã hết hạn 24h hoặc không tồn tại.');
+          setLiveSessionToken(null);
+          return;
+        }
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!active) return;
+
+        if (Array.isArray(data.checkedKeys)) {
+          const remoteKeys: string[] = data.checkedKeys;
+          const localKeys = getLocalCheckedKeys();
+          if (JSON.stringify(remoteKeys) !== JSON.stringify(localKeys)) {
+            saveLocalCheckedKeys(remoteKeys);
+          }
+        }
+        if (Array.isArray(data.customItems)) {
+          setCustomItems(data.customItems);
+        }
+        if (typeof data.expiresAt === 'string') setLiveExpiresAt(data.expiresAt);
+        if (typeof data.updatedAt === 'string') setLiveLastSyncedAt(data.updatedAt);
+      } catch {
+        // Ignore transient offline errors during polling
+      }
+    };
+
+    pullSession();
+    const timer = window.setInterval(pullSession, 5000);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+    };
+  }, [liveSessionToken]);
+
+  const patchLiveSession = useCallback(
+    async (
+      token: string,
+      nextCheckedKeys: string[],
+      nextCustomItems: SharedShoppingCustomItem[]
+    ) => {
+      try {
+        const res = await fetch(`/api/shopping/sessions/${token}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            checkedKeys: nextCheckedKeys,
+            customItems: nextCustomItems,
+          }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (typeof data.updatedAt === 'string') {
+            setLiveLastSyncedAt(data.updatedAt);
+          }
+        }
+      } catch {
+        // Ignore transient sync error
+      }
+    },
+    []
+  );
+
+  const handleToggleItem = useCallback(
+    (key: string) => {
+      toggleCheck(key);
+      if (liveSessionToken) {
+        const nextKeys = getLocalCheckedKeys();
+        patchLiveSession(liveSessionToken, nextKeys, customItems);
+      }
+    },
+    [toggleCheck, liveSessionToken, customItems, patchLiveSession]
+  );
+
+  const handleResetAll = useCallback(() => {
+    resetAll();
+    if (liveSessionToken) {
+      patchLiveSession(liveSessionToken, [], customItems);
+    }
+  }, [resetAll, liveSessionToken, customItems, patchLiveSession]);
+
+  const handleDeductFromPantry = useCallback(() => {
+    if (uncheckedPantryKeys.length === 0) return;
+    const merged = Array.from(new Set([...getLocalCheckedKeys(), ...uncheckedPantryKeys]));
+    saveLocalCheckedKeys(merged);
+    if (liveSessionToken) {
+      patchLiveSession(liveSessionToken, merged, customItems);
+    }
+  }, [uncheckedPantryKeys, liveSessionToken, customItems, patchLiveSession]);
+
+  const handleAddCustomItem = useCallback(
+    (e: React.FormEvent) => {
+      e.preventDefault();
+      const trimmed = newCustomItemName.trim();
+      if (!trimmed) return;
+      const nextCustom: SharedShoppingCustomItem[] = [
+        ...customItems,
+        {
+          id: `custom-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          name: trimmed.slice(0, 100),
+          checked: false,
+        },
+      ].slice(0, 30);
+      setCustomItems(nextCustom);
+      setNewCustomItemName('');
+      if (liveSessionToken) {
+        patchLiveSession(liveSessionToken, checkedKeys, nextCustom);
+      }
+    },
+    [newCustomItemName, customItems, liveSessionToken, checkedKeys, patchLiveSession]
+  );
+
+  const handleToggleCustomItem = useCallback(
+    (id: string) => {
+      const nextCustom = customItems.map((c) =>
+        c.id === id ? { ...c, checked: !c.checked } : c
+      );
+      setCustomItems(nextCustom);
+      if (liveSessionToken) {
+        patchLiveSession(liveSessionToken, checkedKeys, nextCustom);
+      }
+    },
+    [customItems, liveSessionToken, checkedKeys, patchLiveSession]
+  );
+
+  const handleDeleteCustomItem = useCallback(
+    (id: string) => {
+      const nextCustom = customItems.filter((c) => c.id !== id);
+      setCustomItems(nextCustom);
+      if (liveSessionToken) {
+        patchLiveSession(liveSessionToken, checkedKeys, nextCustom);
+      }
+    },
+    [customItems, liveSessionToken, checkedKeys, patchLiveSession]
+  );
 
   const totalItemsCount = allKeys.length;
   const checkedItemsCount = allKeys.filter((k) => isChecked(k)).length;
@@ -89,11 +288,66 @@ export function ShoppingView({ result, dishes, servings }: ShoppingViewProps) {
   const buildShareUrl = useCallback(() => {
     if (typeof window === 'undefined') return '';
     const baseQuery = mealQueryFromDishes(dishes, servings);
+    if (liveSessionToken) {
+      return `${window.location.origin}/shopping?${baseQuery}&session=${encodeURIComponent(
+        liveSessionToken
+      )}`;
+    }
     const encoded = encodeCheckedIndices(allKeys, checkedKeys);
     return `${window.location.origin}/shopping?${baseQuery}${
       encoded ? `&checked=${encodeURIComponent(encoded)}` : ''
     }`;
-  }, [dishes, servings, allKeys, checkedKeys]);
+  }, [dishes, servings, allKeys, checkedKeys, liveSessionToken]);
+
+  const handleCreateLiveSession = useCallback(async () => {
+    if (liveSessionToken) {
+      const liveUrl = buildShareUrl();
+      if (liveUrl && navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(liveUrl).catch(() => {});
+        setLiveStatusMsg('Đã sao chép lại link Giỏ Đồng Bộ 24h!');
+      }
+      return;
+    }
+
+    setCreatingLiveSession(true);
+    setLiveStatusMsg(null);
+    try {
+      const baseQuery = mealQueryFromDishes(dishes, servings);
+      const res = await fetch('/api/shopping/sessions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mealQuery: baseQuery,
+          servings,
+          checkedKeys,
+          customItems,
+        }),
+      });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        setLiveStatusMsg(errData.error || 'Không thể tạo giỏ đồng bộ thời gian thực lúc này.');
+        return;
+      }
+      const data = await res.json();
+      setLiveSessionToken(data.token);
+      setLiveExpiresAt(data.expiresAt);
+      setLiveLastSyncedAt(data.updatedAt);
+
+      if (typeof window !== 'undefined') {
+        const nextRelative = `/shopping?${baseQuery}&session=${encodeURIComponent(data.token)}`;
+        window.history.replaceState(null, '', nextRelative);
+        const fullUrl = `${window.location.origin}${nextRelative}`;
+        await navigator.clipboard?.writeText(fullUrl).catch(() => {});
+      }
+      setLiveStatusMsg(
+        'Đã tạo & sao chép link Giỏ Đi Chợ Đồng Bộ 24h! Người nhà mở link tick món sẽ tự đồng bộ mỗi 5 giây.'
+      );
+    } catch {
+      setLiveStatusMsg('Lỗi kết nối khi tạo giỏ đi chợ đồng bộ 24h.');
+    } finally {
+      setCreatingLiveSession(false);
+    }
+  }, [liveSessionToken, buildShareUrl, dishes, servings, checkedKeys, customItems]);
 
   const handleCopy = useCallback(() => {
     const dishNames = dishes.map((d) => d.name);
@@ -240,12 +494,33 @@ export function ShoppingView({ result, dishes, servings }: ShoppingViewProps) {
 
             <button
               type="button"
+              onClick={handleCreateLiveSession}
+              disabled={creatingLiveSession}
+              className={`min-h-11 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border text-xs font-bold transition-all shadow-xs cursor-pointer ${
+                liveSessionToken
+                  ? 'border-emerald-500 bg-emerald-600 text-white'
+                  : 'border-emerald-400 bg-emerald-50 hover:bg-emerald-600 text-emerald-900 hover:text-white'
+              }`}
+              title="Khởi tạo giỏ đi chợ đồng bộ PostgreSQL 24h cho hai vợ chồng tick cùng lúc"
+            >
+              <Radio className={`w-3.5 h-3.5 ${liveSessionToken ? 'animate-pulse' : ''}`} />
+              <span>
+                {creatingLiveSession
+                  ? 'Đang tạo giỏ Live...'
+                  : liveSessionToken
+                  ? '🟢 Đang đồng bộ 24h (Copy link)'
+                  : '🟢 Tạo giỏ đồng bộ 24h'}
+              </span>
+            </button>
+
+            <button
+              type="button"
               onClick={handleCopyShareLink}
               className="min-h-11 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-indigo-300 bg-indigo-50 hover:bg-indigo-600 text-indigo-800 hover:text-white text-xs font-semibold transition-all shadow-xs cursor-pointer"
               title="Sao chép đường dẫn giỏ đi chợ giữ nguyên các món bạn đã tick mua để vợ/chồng mở xem chung"
             >
               {copiedLink ? <Check className="w-3.5 h-3.5 stroke-[3]" /> : <Link2 className="w-3.5 h-3.5" />}
-              <span>{copiedLink ? 'Đã copy link giỏ chung!' : 'Copy link giỏ đi chợ chung'}</span>
+              <span>{copiedLink ? 'Đã copy link giỏ chung!' : 'Copy link giỏ chung'}</span>
             </button>
 
             <button
@@ -275,7 +550,7 @@ export function ShoppingView({ result, dishes, servings }: ShoppingViewProps) {
 
             <button
               type="button"
-              onClick={resetAll}
+              onClick={handleResetAll}
               className="min-h-11 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-[var(--color-border-base)] bg-[var(--color-surface-white)] hover:bg-red-50 hover:border-red-200 hover:text-red-600 text-xs font-semibold text-[var(--color-text-muted)] transition-all shadow-xs"
               title="Đặt lại toàn bộ danh sách đã tick"
             >
@@ -284,6 +559,28 @@ export function ShoppingView({ result, dishes, servings }: ShoppingViewProps) {
             </button>
           </div>
         </div>
+
+        {(liveStatusMsg || liveSessionToken) && (
+          <div className="p-3 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-950 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div className="flex items-center gap-2 font-semibold">
+              <Radio className="w-4 h-4 text-emerald-600 shrink-0 animate-pulse" />
+              <span>
+                {liveStatusMsg ||
+                  'Phiên giỏ đi chợ đồng bộ thời gian thực (tự làm mới mỗi 5 giây) đang hoạt động.'}
+              </span>
+            </div>
+            {(liveLastSyncedAt || liveExpiresAt) && (
+              <span className="text-[11px] text-emerald-800 shrink-0">
+                {liveLastSyncedAt
+                  ? `Cập nhật: ${new Date(liveLastSyncedAt).toLocaleTimeString('vi-VN')}`
+                  : ''}
+                {liveExpiresAt
+                  ? ` • Hết hạn: ${new Date(liveExpiresAt).toLocaleTimeString('vi-VN')}`
+                  : ''}
+              </span>
+            )}
+          </div>
+        )}
 
         {pantrySyncFeedback && (
           <div
@@ -341,6 +638,33 @@ export function ShoppingView({ result, dishes, servings }: ShoppingViewProps) {
 
       {/* Progress Bar */}
       <ShoppingProgressBar total={totalItemsCount} checkedCount={checkedItemsCount} />
+
+      {/* Tự động phát hiện & trừ đồ có sẵn trong Tủ lạnh */}
+      {uncheckedPantryKeys.length > 0 && (
+        <div className="rounded-3xl border border-teal-300 bg-teal-50/90 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-teal-600 text-white flex items-center justify-center shrink-0">
+              <Refrigerator className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="text-sm font-extrabold text-teal-950">
+                Phát hiện {uncheckedPantryKeys.length} nguyên liệu đã có sẵn trong Tủ lạnh nhà bạn
+              </h2>
+              <p className="text-xs text-teal-800 mt-0.5">
+                Hệ thống đối chiếu từ danh sách còn hạn ở /tu-lanh. Bấm để tick trừ tự động khỏi chi phí đi chợ hôm nay.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={handleDeductFromPantry}
+            className="shrink-0 min-h-10 inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-extrabold cursor-pointer shadow-xs"
+          >
+            <Check className="w-4 h-4 stroke-[3]" />
+            <span>Trừ tự động ({uncheckedPantryKeys.length} món)</span>
+          </button>
+        </div>
+      )}
 
       {/* Bảng Dự toán Ngân sách Giỏ Đi Chợ Hôm Nay (Tham khảo Bách Hóa Xanh & Chợ) */}
       {totalMarketVnd > 0 && (
@@ -439,7 +763,8 @@ export function ShoppingView({ result, dishes, servings }: ShoppingViewProps) {
                     formattedAmount={item.formattedTotal}
                     unit={item.unit}
                     isChecked={isChecked(item.key)}
-                    onToggle={toggleCheck}
+                    onToggle={handleToggleItem}
+                    inPantry={pantryKeySet.has(item.key)}
                     traces={item.traces}
                   />
                 ))}
@@ -469,7 +794,8 @@ export function ShoppingView({ result, dishes, servings }: ShoppingViewProps) {
                     formattedAmount={item.formattedTotal}
                     unit={item.unit}
                     isChecked={isChecked(item.key)}
-                    onToggle={toggleCheck}
+                    onToggle={handleToggleItem}
+                    inPantry={pantryKeySet.has(item.key)}
                     traces={item.traces}
                   />
                 ))}
@@ -499,7 +825,8 @@ export function ShoppingView({ result, dishes, servings }: ShoppingViewProps) {
                     formattedAmount={item.formattedTotal}
                     unit={item.unit}
                     isChecked={isChecked(item.key)}
-                    onToggle={toggleCheck}
+                    onToggle={handleToggleItem}
+                    inPantry={pantryKeySet.has(item.key)}
                     traces={item.traces}
                   />
                 ))}
@@ -529,7 +856,8 @@ export function ShoppingView({ result, dishes, servings }: ShoppingViewProps) {
                     formattedAmount={item.formattedTotal}
                     unit={item.unit}
                     isChecked={isChecked(item.key)}
-                    onToggle={toggleCheck}
+                    onToggle={handleToggleItem}
+                    inPantry={pantryKeySet.has(item.key)}
                     traces={item.traces}
                   />
                 ))}
@@ -563,7 +891,8 @@ export function ShoppingView({ result, dishes, servings }: ShoppingViewProps) {
                       itemKey={s.key}
                       name={s.name}
                       isChecked={isChecked(s.key)}
-                      onToggle={toggleCheck}
+                      onToggle={handleToggleItem}
+                      inPantry={pantryKeySet.has(s.key)}
                       traces={s.traces.map((t) => ({
                         recipeName: t.recipeName,
                         recipeSlug: t.recipeSlug,
@@ -579,6 +908,98 @@ export function ShoppingView({ result, dishes, servings }: ShoppingViewProps) {
               </div>
             </section>
           )}
+
+          {/* 5. Đồ Mua Thêm Ngoài Mâm (Đồng bộ trực tiếp với người đang ở siêu thị) */}
+          <section
+            aria-labelledby="heading-extra-shopping"
+            className="rounded-3xl bg-[var(--color-surface-white)] border border-[var(--color-border-base)] p-5 md:p-6 space-y-3.5 shadow-2xs"
+          >
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div>
+                <h2
+                  id="heading-extra-shopping"
+                  className="text-base font-bold text-[var(--color-text-primary)] flex items-center gap-2"
+                >
+                  <span>🛍️ Đồ mua thêm ngoài mâm</span>
+                  {liveSessionToken && (
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                      Đồng bộ Live
+                    </span>
+                  )}
+                </h2>
+                <p className="text-xs text-[var(--color-text-secondary)]">
+                  Thêm nhanh sữa, trái cây, giấy ăn hoặc đồ lặt vặt — tự động đồng bộ qua link 24h cho vợ/chồng cùng xem.
+                </p>
+              </div>
+            </div>
+
+            <form onSubmit={handleAddCustomItem} className="flex gap-2">
+              <input
+                type="text"
+                maxLength={100}
+                value={newCustomItemName}
+                onChange={(e) => setNewCustomItemName(e.target.value)}
+                placeholder="VD: 1 lốc sữa tươi ít đường, dưa hấu 1kg, giấy ăn..."
+                className="flex-1 px-3.5 py-2 text-xs sm:text-sm rounded-xl border border-[var(--color-border-base)] bg-[var(--color-surface-white)] text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-primary)]"
+              />
+              <button
+                type="submit"
+                disabled={!newCustomItemName.trim()}
+                className="px-4 py-2 rounded-xl bg-[var(--color-brand-primary)] text-white text-xs font-extrabold inline-flex items-center gap-1.5 hover:opacity-95 disabled:opacity-45 cursor-pointer shrink-0"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Thêm vào giỏ</span>
+              </button>
+            </form>
+
+            {customItems.length > 0 && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                {customItems.map((extra) => (
+                  <div
+                    key={extra.id}
+                    className={`px-3.5 py-2.5 rounded-xl border flex items-center justify-between gap-2 transition-colors ${
+                      extra.checked
+                        ? 'bg-[var(--color-surface-raised)]/60 border-[var(--color-border-subtle)] opacity-75'
+                        : 'bg-[var(--color-surface-subtle)] border-[var(--color-border-base)]'
+                    }`}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => handleToggleCustomItem(extra.id)}
+                      className="flex items-center gap-2.5 min-w-0 flex-1 text-left cursor-pointer"
+                    >
+                      <span
+                        className={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 ${
+                          extra.checked
+                            ? 'bg-emerald-600 border-emerald-600 text-white'
+                            : 'bg-white border-[var(--color-border-base)]'
+                        }`}
+                      >
+                        {extra.checked && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                      </span>
+                      <span
+                        className={`text-xs sm:text-sm font-semibold truncate ${
+                          extra.checked
+                            ? 'line-through text-[var(--color-text-muted)]'
+                            : 'text-[var(--color-text-primary)]'
+                        }`}
+                      >
+                        {extra.name}
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteCustomItem(extra.id)}
+                      aria-label={`Xóa ${extra.name}`}
+                      className="p-1.5 rounded-lg text-[var(--color-text-muted)] hover:text-red-600 hover:bg-red-50 cursor-pointer shrink-0"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
 
           {/* Ready to Cook CTA */}
           <div className="py-6 flex flex-col sm:flex-row items-center justify-between gap-4 p-6 bg-gradient-to-r from-[var(--color-brand-primary)]/10 to-[var(--color-accent-primary)]/10 border border-[var(--color-border-subtle)] rounded-3xl">

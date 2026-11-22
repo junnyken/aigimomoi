@@ -160,8 +160,14 @@ export default function CalorieCalculatorPage() {
       setGoal(saved.goal);
       setSavedTargetKcal(saved.targetCalories);
     }
-    if (typeof window !== 'undefined' && window.location.search.includes('tab=scan')) {
-      setActiveStepTab('scan');
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const tab = urlParams.get('tab');
+      if (tab === 'scan') {
+        setActiveStepTab('scan');
+      } else if (tab === 'meals') {
+        setActiveStepTab('meals');
+      }
     }
   }, []);
 
