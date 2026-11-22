@@ -27,6 +27,7 @@ import {
 } from '@/lib/nutrition/personalTarget';
 import { PersonalizedMealActionPanel } from '@/components/nutrition/PersonalizedMealActionPanel';
 import { FoodPlateScannerPanel } from '@/components/nutrition/FoodPlateScannerPanel';
+import { StreetFoodQuickLookup } from '@/components/nutrition/StreetFoodQuickLookup';
 
 type Gender = 'female' | 'male';
 type ActivityLevelKey = 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active';
@@ -1188,6 +1189,9 @@ export default function CalorieCalculatorPage() {
             />
           )}
         </section>
+
+        {/* Tra cứu Calo Hàng Quán, Ăn Sáng & Trà Sữa Việt kèm Nút Gạt Khử Calo */}
+        <StreetFoodQuickLookup targetCalories={metrics.targetCalories} />
       </div>
     </div>
   );

@@ -24,6 +24,11 @@ import {
 } from 'lucide-react';
 import { VIETNAMESE_STANDARD_FCT } from '@/lib/nutrition/seedData';
 import { useVietnameseVoiceInput } from '@/lib/speech/useVietnameseVoiceInput';
+import {
+  createCompactThumbnailDataUrl,
+  markDiaryDateActive,
+  saveVisualDiaryPhoto,
+} from '@/lib/nutrition/visualDiaryStore';
 import type {
   ScannedFoodItem,
   FoodScanResponse,
@@ -573,6 +578,8 @@ export function FoodPlateScannerPanel({
   const [activePresetId, setActivePresetId] = useState<string>(SAMPLE_PRESETS[0].id);
   const [scanMode, setScanMode] = useState<'MEAL' | 'FRIDGE' | 'LABEL'>('MEAL');
   const [portionShare, setPortionShare] = useState<1 | 0.5 | 0.25 | 0.17>(1);
+  const [extraRiceBowls, setExtraRiceBowls] = useState<0 | 0.5 | 1 | 1.5 | 2>(0);
+  const [extraRiceType, setExtraRiceType] = useState<'white' | 'brown'>('white');
   const [previewImageUrl, setPreviewImageUrl] = useState<string>(SAMPLE_PRESETS[0].imageUrl);
   const [uploadedBase64, setUploadedBase64] = useState<string | null>(null);
   const [userHint, setUserHint] = useState<string>('');
@@ -662,17 +669,34 @@ export function FoodPlateScannerPanel({
       else healthyFatGrams += it.estimatedGrams;
     }
 
-    const safeTotal = Math.max(1, totalGrams);
-    const veggiePct = Math.round((veggieGrams / safeTotal) * 100);
-    const proteinPct = Math.round((proteinFoodGrams / safeTotal) * 100);
-    const carbPct = Math.round((carbFoodGrams / safeTotal) * 100);
+    const riceUnit =
+      extraRiceType === 'brown'
+        ? { kcal: 110, protein: 2.6, fat: 0.9, carbs: 23.0, fiber: 1.8, grams: 100 }
+        : { kcal: 130, protein: 2.7, fat: 0.3, carbs: 28.2, fiber: 0.4, grams: 100 };
+
+    const extraRiceGrams = Math.round(extraRiceBowls * riceUnit.grams);
+    const userVeggieGrams = Math.round(veggieGrams * portionShare);
+    const userProteinFoodGrams = Math.round(proteinFoodGrams * portionShare);
+    const userCarbFoodGrams = Math.round(carbFoodGrams * portionShare) + extraRiceGrams;
+    const userHealthyFatGrams = Math.round(healthyFatGrams * portionShare);
+    const userTotalGrams =
+      userVeggieGrams + userProteinFoodGrams + userCarbFoodGrams + userHealthyFatGrams;
+
+    const safeTotal = Math.max(1, userTotalGrams);
+    const veggiePct = Math.round((userVeggieGrams / safeTotal) * 100);
+    const proteinPct = Math.round((userProteinFoodGrams / safeTotal) * 100);
+    const carbPct = Math.round((userCarbFoodGrams / safeTotal) * 100);
     const fatPct = Math.max(0, 100 - veggiePct - proteinPct - carbPct);
 
-    const finalKcal = Math.round((kcal + oilExtraKcal) * portionShare);
-    const finalProtein = Math.round(protein * portionShare * 10) / 10;
-    const finalFat = Math.round((fat + oilExtraFat) * portionShare * 10) / 10;
-    const finalCarbs = Math.round(carbs * portionShare * 10) / 10;
-    const finalFiber = Math.round(fiber * portionShare * 10) / 10;
+    const finalKcal = Math.round((kcal + oilExtraKcal) * portionShare + extraRiceBowls * riceUnit.kcal);
+    const finalProtein =
+      Math.round((protein * portionShare + extraRiceBowls * riceUnit.protein) * 10) / 10;
+    const finalFat =
+      Math.round(((fat + oilExtraFat) * portionShare + extraRiceBowls * riceUnit.fat) * 10) / 10;
+    const finalCarbs =
+      Math.round((carbs * portionShare + extraRiceBowls * riceUnit.carbs) * 10) / 10;
+    const finalFiber =
+      Math.round((fiber * portionShare + extraRiceBowls * riceUnit.fiber) * 10) / 10;
 
     let rawScore = 8.5;
     if (finalProtein >= 25) rawScore += 0.6;
@@ -693,18 +717,18 @@ export function FoodPlateScannerPanel({
       fat: finalFat,
       carbs: finalCarbs,
       fiber: finalFiber,
-      totalGrams: Math.round(totalGrams * portionShare),
-      veggieGrams: Math.round(veggieGrams * portionShare),
-      proteinFoodGrams: Math.round(proteinFoodGrams * portionShare),
-      carbFoodGrams: Math.round(carbFoodGrams * portionShare),
-      healthyFatGrams: Math.round(healthyFatGrams * portionShare),
+      totalGrams: userTotalGrams,
+      veggieGrams: userVeggieGrams,
+      proteinFoodGrams: userProteinFoodGrams,
+      carbFoodGrams: userCarbFoodGrams,
+      healthyFatGrams: userHealthyFatGrams,
       veggiePct,
       proteinPct,
       carbPct,
       fatPct,
       scoreOutOf10,
     };
-  }, [items, oilExtraKcal, oilExtraFat, cookingOilMode, portionShare]);
+  }, [items, oilExtraKcal, oilExtraFat, cookingOilMode, portionShare, extraRiceBowls, extraRiceType]);
 
   const targetSlotKcal =
     scanResult.mealFormat === 'DAILY_3_MEALS'
@@ -1118,6 +1142,7 @@ export function FoodPlateScannerPanel({
         return;
       }
       if (res.ok) {
+        markDiaryDateActive(todayStr);
         setDiaryFeedback({
           type: 'success',
           message: `Đã lưu "${labelResult.productName}" (${labelResult.calories} kcal) vào Nhật ký!`,
@@ -1145,12 +1170,17 @@ export function FoodPlateScannerPanel({
         .slice(0, 4)
         .map((i) => `${i.name} (${i.estimatedGrams}g)`)
         .join(', ');
+      const riceNote =
+        extraRiceBowls > 0
+          ? ` + ${extraRiceBowls} chén ${extraRiceType === 'brown' ? 'gạo lứt' : 'cơm trắng'}`
+          : '';
+      const portionNote = portionShare < 1 ? ` · Phần ${Math.round(portionShare * 100)}% mâm` : '';
 
       const res = await fetch('/api/diary', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          recipeName: `📸 ${scanResult.dishTitle} [${itemSummaryNames}]`,
+          recipeName: `📸 ${scanResult.dishTitle}${riceNote}${portionNote} [${itemSummaryNames}]`,
           diaryDate: todayStr,
           mealType: selectedMealSlot,
           memberName: 'Tôi',
@@ -1172,9 +1202,24 @@ export function FoodPlateScannerPanel({
       }
 
       if (res.ok) {
+        const thumbUrl = await createCompactThumbnailDataUrl(previewImageUrl);
+        if (thumbUrl) {
+          saveVisualDiaryPhoto({
+            date: todayStr,
+            mealType: selectedMealSlot,
+            title: `${scanResult.dishTitle}${riceNote}`,
+            imageUrl: thumbUrl,
+            calories: totals.kcal,
+            protein: totals.protein,
+            carbs: totals.carbs,
+            fat: totals.fat,
+          });
+        } else {
+          markDiaryDateActive(todayStr);
+        }
         setDiaryFeedback({
           type: 'success',
-          message: `Đã lưu "${scanResult.dishTitle}" (${totals.kcal} kcal • ${totals.protein}g Đạm • ${totals.fiber}g Xơ) vào Nhật ký hôm nay!`,
+          message: `Đã lưu "${scanResult.dishTitle}" (${totals.kcal} kcal • ${totals.protein}g Đạm • ${totals.fiber}g Xơ) vào Nhật ký & Timeline ảnh hôm nay!`,
         });
       } else {
         setDiaryFeedback({
@@ -1449,10 +1494,15 @@ export function FoodPlateScannerPanel({
                   {syncingPantry ? 'Đang cất vào tủ...' : '🧊 Cất tất cả vào Tủ lạnh (/tu-lanh)'}
                 </button>
                 <Link
-                  href="/meal"
+                  href={`/meal?aiIngredients=${encodeURIComponent(
+                    fridgeResult.pantryItems
+                      .map((i) => i.name)
+                      .slice(0, 12)
+                      .join(',')
+                  )}`}
                   className="px-3.5 py-2 rounded-xl bg-[var(--color-brand-primary)] text-white text-xs font-bold hover:opacity-95"
                 >
-                  🍲 Ghép mâm cơm ngay →
+                  🍲 Ghép mâm AI từ đồ tủ lạnh →
                 </Link>
               </div>
             )}
@@ -1783,33 +1833,87 @@ export function FoodPlateScannerPanel({
               )}
             </div>
 
-            {/* Thanh chọn Khẩu phần Mâm Cơm Chung Gia Đình (chia 1/2, 1/4, 1/6 bàn ăn) */}
-            <div className="px-3 py-2 rounded-xl bg-white border border-[#E5DAC8] flex flex-wrap items-center justify-between gap-2 no-print">
-              <span className="text-xs font-extrabold text-[#3F6240]">
-                👨‍👩‍👧‍👦 Chụp đĩa riêng hay mâm chung?
-              </span>
-              <div className="flex flex-wrap items-center gap-1.5">
-                {(
-                  [
-                    { val: 1 as const, label: 'Đĩa riêng (100%)' },
-                    { val: 0.5 as const, label: 'Mâm 2 người (1/2)' },
-                    { val: 0.25 as const, label: 'Mâm 4 người (1/4)' },
-                    { val: 0.17 as const, label: 'Mâm 6 người (1/6)' },
-                  ]
-                ).map((opt) => (
-                  <button
-                    key={opt.val}
-                    type="button"
-                    onClick={() => setPortionShare(opt.val)}
-                    className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border transition-colors cursor-pointer ${
-                      portionShare === opt.val
-                        ? 'bg-[var(--color-accent-primary)] text-white border-[var(--color-accent-primary)]'
-                        : 'bg-[#FAF7F0] text-[var(--color-text-secondary)] border-[#D8C7B0]'
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
+            {/* Thanh chọn Khẩu phần Mâm Cơm Chung Gia Đình + Chén cơm ăn kèm ngoài mâm */}
+            <div className="px-3 py-2.5 rounded-xl bg-white border border-[#E5DAC8] space-y-2 no-print">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="text-xs font-extrabold text-[#3F6240]">
+                  👨‍👩‍👧‍👦 Chụp đĩa riêng hay mâm chung?
+                </span>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {(
+                    [
+                      { val: 1 as const, label: 'Đĩa riêng (100%)' },
+                      { val: 0.5 as const, label: 'Mâm 2 người (1/2)' },
+                      { val: 0.25 as const, label: 'Mâm 4 người (1/4)' },
+                      { val: 0.17 as const, label: 'Mâm 6 người (1/6)' },
+                    ]
+                  ).map((opt) => (
+                    <button
+                      key={opt.val}
+                      type="button"
+                      onClick={() => setPortionShare(opt.val)}
+                      className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border transition-colors cursor-pointer ${
+                        portionShare === opt.val
+                          ? 'bg-[var(--color-accent-primary)] text-white border-[var(--color-accent-primary)]'
+                          : 'bg-[#FAF7F0] text-[var(--color-text-secondary)] border-[#D8C7B0]'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="pt-2 border-t border-stone-100 flex flex-wrap items-center justify-between gap-2">
+                <span className="text-[11px] font-bold text-[#3F6240]">
+                  🍚 Cơm ăn kèm ngoài mâm:
+                </span>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {(
+                    [
+                      { val: 0 as const, label: '+0 chén' },
+                      { val: 0.5 as const, label: '+½ chén' },
+                      { val: 1 as const, label: '+1 chén' },
+                      { val: 1.5 as const, label: '+1.5 chén' },
+                      { val: 2 as const, label: '+2 chén' },
+                    ]
+                  ).map((opt) => (
+                    <button
+                      key={opt.val}
+                      type="button"
+                      onClick={() => setExtraRiceBowls(opt.val)}
+                      className={`px-2 py-0.5 rounded-lg text-[11px] font-bold border transition-colors cursor-pointer ${
+                        extraRiceBowls === opt.val
+                          ? 'bg-[var(--color-brand-primary)] text-white border-[var(--color-brand-primary)]'
+                          : 'bg-[#FAF7F0] text-[var(--color-text-secondary)] border-[#D8C7B0]'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+
+                  <div className="inline-flex rounded-lg border border-[#D8C7B0] bg-[#FAF7F0] p-0.5 ml-1">
+                    {(
+                      [
+                        { key: 'white' as const, label: 'Cơm trắng' },
+                        { key: 'brown' as const, label: 'Gạo lứt' },
+                      ]
+                    ).map((rt) => (
+                      <button
+                        key={rt.key}
+                        type="button"
+                        onClick={() => setExtraRiceType(rt.key)}
+                        className={`px-2 py-0.5 rounded-md text-[10px] font-bold cursor-pointer ${
+                          extraRiceType === rt.key
+                            ? 'bg-white text-[var(--color-brand-primary)] shadow-2xs'
+                            : 'text-stone-600'
+                        }`}
+                      >
+                        {rt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
 

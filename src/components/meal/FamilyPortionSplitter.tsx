@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
   Users,
@@ -9,8 +9,21 @@ import {
   HeartPulse,
   LogIn,
   Utensils,
+  Settings2,
+  Plus,
+  Trash2,
+  RotateCcw,
 } from 'lucide-react';
 import type { MealDishSummary } from '@/lib/meal/mealPresets';
+import {
+  DEFAULT_FAMILY_PROFILES,
+  calculateMemberPortionFromMeal,
+  loadFamilyProfiles,
+  pickMemberBadgeColor,
+  saveFamilyProfiles,
+  type FamilyMemberProfile,
+} from '@/lib/nutrition/familyProfiles';
+import { markDiaryDateActive } from '@/lib/nutrition/visualDiaryStore';
 
 interface FamilyPortionSplitterProps {
   main: MealDishSummary | null;
@@ -20,65 +33,6 @@ interface FamilyPortionSplitterProps {
   servings: number;
 }
 
-interface MemberArchetype {
-  id: string;
-  memberName: string;
-  title: string;
-  badgeColor: string;
-  riceBowls: number;
-  riceLabel: string;
-  isBrownRice: boolean;
-  dishFactor: number;
-  guidance: string;
-}
-
-const ARCHETYPES: MemberArchetype[] = [
-  {
-    id: 'bo',
-    memberName: 'Bố',
-    title: '💪 Bố / Người lao động',
-    badgeColor: 'bg-blue-50 text-blue-900 border-blue-200',
-    riceBowls: 1.5,
-    riceLabel: '1.5 chén cơm trắng',
-    isBrownRice: false,
-    dishFactor: 1.2,
-    guidance: '1.5 chén cơm trắng + 1.2 phần đạm món mặn + rau canh thoải mái.',
-  },
-  {
-    id: 'me',
-    memberName: 'Mẹ',
-    title: '🥗 Mẹ giữ dáng / Giảm cân',
-    badgeColor: 'bg-emerald-50 text-emerald-900 border-emerald-200',
-    riceBowls: 0.5,
-    riceLabel: '½ chén cơm gạo lứt',
-    isBrownRice: true,
-    dishFactor: 0.85,
-    guidance: '½ chén cơm (ưu tiên gạo lứt) + ăn rau & canh trước + gắp phần nạc, hạn chế rưới nước kho.',
-  },
-  {
-    id: 'be',
-    memberName: 'Bé',
-    title: '🧒 Bé nhỏ',
-    badgeColor: 'bg-amber-50 text-amber-900 border-amber-200',
-    riceBowls: 1.0,
-    riceLabel: '1 chén cơm mềm',
-    isBrownRice: false,
-    dishFactor: 0.75,
-    guidance: '1 chén cơm mềm + 0.75 phần thịt/cá xé nhỏ + canh ngọt tự nhiên, không chấm ớt cay.',
-  },
-  {
-    id: 'ongba',
-    memberName: 'Ông Bà',
-    title: '🩺 Ông Bà / Huyết áp & Đường huyết',
-    badgeColor: 'bg-rose-50 text-rose-900 border-rose-200',
-    riceBowls: 0.75,
-    riceLabel: '¾ chén cơm',
-    isBrownRice: false,
-    dishFactor: 0.85,
-    guidance: '¾ chén cơm + ưu tiên món luộc/canh thanh + gắp ráo sốt mặn, hạn chế chấm thêm nước mắm.',
-  },
-];
-
 export function FamilyPortionSplitter({
   main,
   soup,
@@ -86,13 +40,28 @@ export function FamilyPortionSplitter({
   sauce,
   servings,
 }: FamilyPortionSplitterProps) {
-  const [selectedIds, setSelectedIds] = useState<string[]>(['bo', 'me', 'be', 'ongba']);
+  const [profiles, setProfiles] = useState<FamilyMemberProfile[]>(DEFAULT_FAMILY_PROFILES);
+  const [selectedIds, setSelectedIds] = useState<string[]>(
+    DEFAULT_FAMILY_PROFILES.map((p) => p.id)
+  );
+  const [isEditingProfiles, setIsEditingProfiles] = useState(false);
+  const [draftProfiles, setDraftProfiles] = useState<FamilyMemberProfile[]>(
+    DEFAULT_FAMILY_PROFILES
+  );
+
   const [mealSlot, setMealSlot] = useState<'LUNCH' | 'DINNER'>('DINNER');
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState<{
     type: 'success' | 'auth' | 'error';
     message: string;
   } | null>(null);
+
+  useEffect(() => {
+    const stored = loadFamilyProfiles();
+    setProfiles(stored);
+    setDraftProfiles(stored);
+    setSelectedIds(stored.map((p) => p.id));
+  }, []);
 
   const dishes = [main, soup, side, sauce].filter((d): d is MealDishSummary => Boolean(d));
   if (dishes.length === 0) return null;
@@ -104,7 +73,7 @@ export function FamilyPortionSplitter({
   const baseFiber = dishes.reduce((sum, d) => sum + (d.macrosPerServing?.fiber ?? 0), 0);
   const baseSodium = dishes.reduce((sum, d) => sum + (d.macrosPerServing?.sodium ?? 0), 0);
 
-  const hasHighSodiumForElderly = baseSodium > 800;
+  const hasHighSodiumMember = profiles.some((p) => p.lowSodium) && baseSodium > 800;
 
   const toggleMember = (id: string) => {
     setSelectedIds((prev) =>
@@ -112,32 +81,110 @@ export function FamilyPortionSplitter({
     );
   };
 
-  function computeMemberTotals(arch: MemberArchetype) {
-    const ricePerBowl = arch.isBrownRice
+  function openEditor() {
+    setDraftProfiles(profiles);
+    setIsEditingProfiles((prev) => !prev);
+  }
+
+  function updateDraftField<K extends keyof FamilyMemberProfile>(
+    idx: number,
+    key: K,
+    value: FamilyMemberProfile[K]
+  ) {
+    setDraftProfiles((prev) =>
+      prev.map((item, i) => (i === idx ? { ...item, [key]: value } : item))
+    );
+  }
+
+  function addDraftMember() {
+    if (draftProfiles.length >= 5) return;
+    const nextIdx = draftProfiles.length;
+    const newProfile: FamilyMemberProfile = {
+      id: `member-${Date.now()}`,
+      memberName: `Thành viên ${nextIdx + 1}`,
+      roleTitle: `👤 Thành viên ${nextIdx + 1}`,
+      badgeColor: pickMemberBadgeColor(nextIdx),
+      targetMealKcal: 550,
+      isBrownRice: false,
+      lowSodium: false,
+      noSpicy: false,
+    };
+    setDraftProfiles((prev) => [...prev, newProfile]);
+  }
+
+  function removeDraftMember(idx: number) {
+    if (draftProfiles.length <= 2) return;
+    setDraftProfiles((prev) => prev.filter((_, i) => i !== idx));
+  }
+
+  function handleSaveProfiles() {
+    const synced = draftProfiles.map((p) => ({
+      ...p,
+      roleTitle:
+        p.roleTitle.includes(p.memberName) || !p.memberName.trim()
+          ? p.roleTitle
+          : `${p.memberName.trim()}`,
+    }));
+    const saved = saveFamilyProfiles(synced);
+    setProfiles(saved);
+    setDraftProfiles(saved);
+    setSelectedIds(saved.map((p) => p.id));
+    setIsEditingProfiles(false);
+    setFeedback({
+      type: 'success',
+      message: `Đã lưu hồ sơ ${saved.length} thành viên gia đình. Khẩu phần chia trên mâm đã cập nhật!`,
+    });
+  }
+
+  function handleResetDefaultProfiles() {
+    const saved = saveFamilyProfiles(DEFAULT_FAMILY_PROFILES);
+    setProfiles(saved);
+    setDraftProfiles(saved);
+    setSelectedIds(saved.map((p) => p.id));
+  }
+
+  function computeMemberTotals(member: FamilyMemberProfile) {
+    const portion = calculateMemberPortionFromMeal(member, baseDishKcal);
+    const ricePerBowl = member.isBrownRice
       ? { kcal: 110, protein: 2.6, fat: 0.9, carbs: 23.0, fiber: 1.8, sodium: 4 }
       : { kcal: 130, protein: 2.7, fat: 0.3, carbs: 28.2, fiber: 0.4, sodium: 2 };
 
-    // Ông bà gắp ráo nước kho/chấm nên giảm ~20% natri ước tính
-    const sodiumMultiplier = arch.id === 'ongba' ? arch.dishFactor * 0.8 : arch.dishFactor;
+    const sodiumMultiplier = member.lowSodium ? portion.dishFactor * 0.8 : portion.dishFactor;
 
     const kcal = Math.round(
-      arch.riceBowls * ricePerBowl.kcal + baseDishKcal * arch.dishFactor
+      portion.riceBowls * ricePerBowl.kcal + baseDishKcal * portion.dishFactor
     );
     const protein =
-      Math.round((arch.riceBowls * ricePerBowl.protein + baseProtein * arch.dishFactor) * 10) / 10;
+      Math.round(
+        (portion.riceBowls * ricePerBowl.protein + baseProtein * portion.dishFactor) * 10
+      ) / 10;
     const fat =
-      Math.round((arch.riceBowls * ricePerBowl.fat + baseFat * arch.dishFactor) * 10) / 10;
+      Math.round((portion.riceBowls * ricePerBowl.fat + baseFat * portion.dishFactor) * 10) / 10;
     const carbs =
-      Math.round((arch.riceBowls * ricePerBowl.carbs + baseCarbs * arch.dishFactor) * 10) / 10;
+      Math.round(
+        (portion.riceBowls * ricePerBowl.carbs + baseCarbs * portion.dishFactor) * 10
+      ) / 10;
     const fiber =
-      Math.round((arch.riceBowls * ricePerBowl.fiber + baseFiber * arch.dishFactor) * 10) / 10;
-    const sodium = Math.round(arch.riceBowls * ricePerBowl.sodium + baseSodium * sodiumMultiplier);
+      Math.round(
+        (portion.riceBowls * ricePerBowl.fiber + baseFiber * portion.dishFactor) * 10
+      ) / 10;
+    const sodium = Math.round(
+      portion.riceBowls * ricePerBowl.sodium + baseSodium * sodiumMultiplier
+    );
 
-    return { kcal, protein, fat, carbs, fiber, sodium };
+    return {
+      ...portion,
+      kcal,
+      protein,
+      fat,
+      carbs,
+      fiber,
+      sodium,
+    };
   }
 
   async function handleLogMembersToDiary() {
-    const activeMembers = ARCHETYPES.filter((a) => selectedIds.includes(a.id));
+    const activeMembers = profiles.filter((p) => selectedIds.includes(p.id));
     if (activeMembers.length === 0) return;
 
     setSaving(true);
@@ -147,16 +194,16 @@ export function FamilyPortionSplitter({
 
     try {
       const responses = await Promise.all(
-        activeMembers.map((arch) => {
-          const stats = computeMemberTotals(arch);
+        activeMembers.map((member) => {
+          const stats = computeMemberTotals(member);
           return fetch('/api/diary', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              recipeName: `🍽️ ${mealNameSummary || 'Mâm cơm gia đình'} (${arch.riceLabel})`,
+              recipeName: `🍽️ ${mealNameSummary || 'Mâm cơm gia đình'} (${stats.riceLabel})`,
               diaryDate: todayStr,
               mealType: mealSlot,
-              memberName: arch.memberName,
+              memberName: member.memberName,
               consumedPortion: 1,
               customCalories: stats.kcal,
               customProtein: stats.protein,
@@ -178,6 +225,7 @@ export function FamilyPortionSplitter({
       }
 
       if (responses.every((r) => r.ok)) {
+        markDiaryDateActive(todayStr);
         setFeedback({
           type: 'success',
           message: `Đã ghi khẩu phần của ${activeMembers
@@ -209,7 +257,9 @@ export function FamilyPortionSplitter({
         <div>
           <div className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-[var(--color-brand-primary)]">
             <Users className="w-3.5 h-3.5" />
-            <span>1 Nồi – 4 Nhịp Ăn Khác Nhau ({servings} người)</span>
+            <span>
+              1 Nồi – {profiles.length} Nhịp Ăn Khác Nhau ({servings} người)
+            </span>
           </div>
           <h2
             id="family-portion-splitter-heading"
@@ -218,11 +268,20 @@ export function FamilyPortionSplitter({
             Chia khẩu phần cùng 1 mâm cơm cho từng thành viên
           </h2>
           <p className="text-xs text-[var(--color-text-secondary)]">
-            Nấu chung một mâm nhưng mẹ giảm cân vẫn ăn nhẹ tinh bột, bố đủ năng lượng lao động, bé và ông bà đều vừa vặn.
+            Nấu chung một mâm nhưng tự động co giãn chén cơm &amp; lượng gắp theo mục tiêu Calo của từng người trong nhà.
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={openEditor}
+            className="min-h-10 inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-[var(--color-border-base)] bg-[var(--color-surface-subtle)] hover:bg-[var(--color-surface-raised)] text-xs font-bold text-[var(--color-text-primary)] cursor-pointer"
+          >
+            <Settings2 className="w-3.5 h-3.5 text-[var(--color-brand-primary)]" />
+            <span>Hồ sơ gia đình ({profiles.length})</span>
+          </button>
+
           <div className="inline-flex rounded-xl border border-[var(--color-border-base)] bg-[var(--color-surface-subtle)] p-1">
             {(
               [
@@ -261,30 +320,171 @@ export function FamilyPortionSplitter({
         </div>
       </div>
 
-      {hasHighSodiumForElderly && (
+      {/* Trình chỉnh sửa Hồ sơ 2-5 Thành viên Gia đình */}
+      {isEditingProfiles && (
+        <div className="p-4 rounded-2xl bg-[var(--color-surface-subtle)] border border-[var(--color-border-base)] space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h3 className="text-xs sm:text-sm font-extrabold text-[var(--color-text-primary)]">
+                Tùy chỉnh hồ sơ 2–5 thành viên nhà bạn
+              </h3>
+              <p className="text-[11px] text-[var(--color-text-secondary)]">
+                Lưu trên trình duyệt để dùng cho cả bảng chia mâm cơm và gợi ý nhanh ở Nhật ký.
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleResetDefaultProfiles}
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-[var(--color-border-base)] bg-[var(--color-surface-white)] text-[11px] font-semibold text-[var(--color-text-secondary)] hover:text-red-600 cursor-pointer"
+              >
+                <RotateCcw className="w-3 h-3" />
+                <span>Mặc định</span>
+              </button>
+              {draftProfiles.length < 5 && (
+                <button
+                  type="button"
+                  onClick={addDraftMember}
+                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-600 text-white text-[11px] font-bold hover:bg-emerald-700 cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Thêm người ({draftProfiles.length}/5)</span>
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+            {draftProfiles.map((member, idx) => (
+              <div
+                key={member.id}
+                className="p-3 rounded-xl bg-[var(--color-surface-white)] border border-[var(--color-border-subtle)] space-y-2"
+              >
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    maxLength={24}
+                    value={member.memberName}
+                    onChange={(e) => updateDraftField(idx, 'memberName', e.target.value)}
+                    placeholder="Tên (VD: Bố, Mẹ, Na...)"
+                    className="flex-1 px-2.5 py-1.5 text-xs font-bold rounded-lg border border-[var(--color-border-base)] bg-[var(--color-surface-white)] text-[var(--color-text-primary)]"
+                  />
+                  <div className="flex items-center gap-1 shrink-0">
+                    <input
+                      type="number"
+                      min={300}
+                      max={1100}
+                      step={20}
+                      value={member.targetMealKcal}
+                      onChange={(e) =>
+                        updateDraftField(
+                          idx,
+                          'targetMealKcal',
+                          Math.min(1100, Math.max(300, Number(e.target.value) || 500))
+                        )
+                      }
+                      className="w-20 px-2 py-1.5 text-xs font-bold text-right rounded-lg border border-[var(--color-border-base)] bg-[var(--color-surface-white)] text-[var(--color-text-primary)]"
+                    />
+                    <span className="text-[11px] text-[var(--color-text-muted)]">kcal</span>
+                  </div>
+                  {draftProfiles.length > 2 && (
+                    <button
+                      type="button"
+                      onClick={() => removeDraftMember(idx)}
+                      aria-label={`Xóa ${member.memberName}`}
+                      className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 cursor-pointer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex flex-wrap gap-1.5 text-[11px]">
+                  <button
+                    type="button"
+                    onClick={() => updateDraftField(idx, 'isBrownRice', !member.isBrownRice)}
+                    className={`px-2 py-0.5 rounded-md border font-semibold cursor-pointer ${
+                      member.isBrownRice
+                        ? 'bg-emerald-600 text-white border-emerald-600'
+                        : 'bg-[var(--color-surface-subtle)] text-[var(--color-text-secondary)] border-[var(--color-border-subtle)]'
+                    }`}
+                  >
+                    🌾 Gạo lứt
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => updateDraftField(idx, 'lowSodium', !member.lowSodium)}
+                    className={`px-2 py-0.5 rounded-md border font-semibold cursor-pointer ${
+                      member.lowSodium
+                        ? 'bg-amber-600 text-white border-amber-600'
+                        : 'bg-[var(--color-surface-subtle)] text-[var(--color-text-secondary)] border-[var(--color-border-subtle)]'
+                    }`}
+                  >
+                    🧂 Ít muối
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => updateDraftField(idx, 'noSpicy', !member.noSpicy)}
+                    className={`px-2 py-0.5 rounded-md border font-semibold cursor-pointer ${
+                      member.noSpicy
+                        ? 'bg-rose-600 text-white border-rose-600'
+                        : 'bg-[var(--color-surface-subtle)] text-[var(--color-text-secondary)] border-[var(--color-border-subtle)]'
+                    }`}
+                  >
+                    🌶️ Không cay
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setIsEditingProfiles(false)}
+              className="px-3 py-1.5 rounded-lg border border-[var(--color-border-base)] text-xs font-semibold text-[var(--color-text-secondary)] cursor-pointer"
+            >
+              Đóng
+            </button>
+            <button
+              type="button"
+              onClick={handleSaveProfiles}
+              className="px-4 py-1.5 rounded-lg bg-[var(--color-brand-primary)] text-white text-xs font-bold hover:opacity-95 cursor-pointer"
+            >
+              Lưu hồ sơ gia đình
+            </button>
+          </div>
+        </div>
+      )}
+
+      {hasHighSodiumMember && (
         <div className="p-3 rounded-2xl bg-amber-50 border border-amber-200 text-amber-950 text-xs flex items-start gap-2">
           <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
           <span>
-            <strong>Lưu ý cho Ông Bà / người cao huyết áp:</strong> Tổng lượng Natri ước tính của 1 phần đầy đủ đang ở mức ~
+            <strong>Lưu ý cho thành viên ăn nhạt / huyết áp:</strong> Tổng lượng Natri ước tính của 1 phần đầy đủ đang ở mức ~
             {Math.round(baseSodium)}mg. Nên gắp phần thịt/cá ráo nước kho, ưu tiên ăn canh thanh và không chấm thêm nước mắm mặn.
           </span>
         </div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        {ARCHETYPES.map((arch) => {
-          const checked = selectedIds.includes(arch.id);
-          const stats = computeMemberTotals(arch);
+      <div
+        className={`grid grid-cols-1 sm:grid-cols-2 ${
+          profiles.length >= 5 ? 'xl:grid-cols-5 lg:grid-cols-3' : 'lg:grid-cols-4'
+        } gap-3`}
+      >
+        {profiles.map((member) => {
+          const checked = selectedIds.includes(member.id);
+          const stats = computeMemberTotals(member);
           return (
             <div
-              key={arch.id}
-              onClick={() => toggleMember(arch.id)}
+              key={member.id}
+              onClick={() => toggleMember(member.id)}
               role="button"
               tabIndex={0}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                   e.preventDefault();
-                  toggleMember(arch.id);
+                  toggleMember(member.id);
                 }
               }}
               className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between gap-2.5 ${
@@ -296,26 +496,31 @@ export function FamilyPortionSplitter({
               <div className="space-y-1.5">
                 <div className="flex items-start justify-between gap-2">
                   <span
-                    className={`inline-flex items-center px-2 py-0.5 rounded-lg border text-[11px] font-bold ${arch.badgeColor}`}
+                    className={`inline-flex items-center px-2 py-0.5 rounded-lg border text-[11px] font-bold ${member.badgeColor}`}
                   >
-                    {arch.title}
+                    {member.roleTitle}
                   </span>
                   <input
                     type="checkbox"
                     checked={checked}
-                    onChange={() => toggleMember(arch.id)}
+                    onChange={() => toggleMember(member.id)}
                     onClick={(e) => e.stopPropagation()}
-                    aria-label={`Chọn ghi nhật ký cho ${arch.memberName}`}
+                    aria-label={`Chọn ghi nhật ký cho ${member.memberName}`}
                     className="w-4 h-4 accent-[var(--color-brand-primary)] cursor-pointer mt-0.5"
                   />
                 </div>
 
-                <div className="flex items-baseline gap-1.5 pt-1">
-                  <strong className="text-lg font-black text-[var(--color-accent-primary)]">
-                    {stats.kcal}
-                  </strong>
-                  <span className="text-[11px] font-semibold text-[var(--color-text-muted)]">
-                    kcal/bữa
+                <div className="flex items-baseline justify-between gap-1.5 pt-1">
+                  <div>
+                    <strong className="text-lg font-black text-[var(--color-accent-primary)]">
+                      {stats.kcal}
+                    </strong>
+                    <span className="text-[11px] font-semibold text-[var(--color-text-muted)] ml-1">
+                      kcal/bữa
+                    </span>
+                  </div>
+                  <span className="text-[10px] font-bold text-[var(--color-text-secondary)]">
+                    Mục tiêu ~{member.targetMealKcal}
                   </span>
                 </div>
 
@@ -328,7 +533,7 @@ export function FamilyPortionSplitter({
 
               <div className="pt-2 border-t border-[var(--color-border-subtle)] text-[11px] text-[var(--color-text-secondary)] leading-snug flex items-start gap-1.5">
                 <Utensils className="w-3.5 h-3.5 text-[var(--color-brand-primary)] shrink-0 mt-0.5" />
-                <span>{arch.guidance}</span>
+                <span>{stats.guidance}</span>
               </div>
             </div>
           );

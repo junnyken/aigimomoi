@@ -29,6 +29,8 @@ import {
   Droplets,
   TrendingDown,
   Search,
+  Camera,
+  Award,
 } from 'lucide-react';
 import {
   loadPersonalNutritionTarget,
@@ -38,6 +40,22 @@ import {
   VIETNAMESE_EATING_OUT_CATALOG,
   type VietnameseEatingOutItem,
 } from '@/lib/nutrition/vietnameseEatingOutCatalog';
+import {
+  DEFAULT_FAMILY_PROFILES,
+  loadFamilyProfiles,
+  type FamilyMemberProfile,
+} from '@/lib/nutrition/familyProfiles';
+import {
+  computeHarvardPlateScore,
+  computeLoggingStreak,
+  createCompactThumbnailDataUrl,
+  deleteVisualDiaryPhoto,
+  loadVisualDiaryPhotos,
+  markDiaryDateActive,
+  saveVisualDiaryPhoto,
+  type VisualDiaryPhoto,
+} from '@/lib/nutrition/visualDiaryStore';
+import { ImageUpload } from '@/components/ui/ImageUpload';
 
 interface WeightLog {
   date: string;
@@ -217,6 +235,11 @@ function MealDiaryContent() {
   const [weightLogs, setWeightLogs] = useState<WeightLog[]>([]);
   const [weightInput, setWeightInput] = useState('');
   const [weightNotice, setWeightNotice] = useState<string | null>(null);
+  const [familyProfiles, setFamilyProfiles] =
+    useState<FamilyMemberProfile[]>(DEFAULT_FAMILY_PROFILES);
+  const [memberFilter, setMemberFilter] = useState<string>('ALL');
+  const [visualPhotos, setVisualPhotos] = useState<VisualDiaryPhoto[]>([]);
+  const [streakDays, setStreakDays] = useState<number>(0);
 
   // Modal Add Entry
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -224,6 +247,7 @@ function MealDiaryContent() {
   const [recipeName, setRecipeName] = useState('');
   const [memberName, setMemberName] = useState('Cả nhà');
   const [portion, setPortion] = useState(1.0);
+  const [entryPhotoUrl, setEntryPhotoUrl] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [eatingOutQuery, setEatingOutQuery] = useState('');
   const [selectedEatingOut, setSelectedEatingOut] = useState<VietnameseEatingOutItem | null>(null);
@@ -233,6 +257,9 @@ function MealDiaryContent() {
     const today = new Date().toISOString().split('T')[0];
     setSelectedDate(today);
     setWaterCups(readWaterCups(today));
+    setFamilyProfiles(loadFamilyProfiles());
+    setVisualPhotos(loadVisualDiaryPhotos());
+    setStreakDays(computeLoggingStreak(today));
 
     const logs = readWeightLogs();
     setWeightLogs(logs);
@@ -259,10 +286,16 @@ function MealDiaryContent() {
       }
       if (res.ok) {
         const data = await res.json();
-        setEntries(data.entries || []);
+        const loadedEntries: DiaryEntry[] = data.entries || [];
+        setEntries(loadedEntries);
         setMeals(data.meals || { BREAKFAST: [], LUNCH: [], DINNER: [], SNACK: [] });
         if (data.summary) {
           setSummary(data.summary);
+        }
+        if (loadedEntries.length > 0) {
+          const activeDates = markDiaryDateActive(dateStr);
+          const todayStr = new Date().toISOString().split('T')[0];
+          setStreakDays(computeLoggingStreak(todayStr, activeDates));
         }
       }
     } catch (e) {
@@ -289,6 +322,11 @@ function MealDiaryContent() {
     const clamped = Math.max(0, Math.min(16, next));
     setWaterCups(clamped);
     saveWaterCups(selectedDate, clamped);
+    if (clamped > 0 && selectedDate) {
+      const activeDates = markDiaryDateActive(selectedDate);
+      const todayStr = new Date().toISOString().split('T')[0];
+      setStreakDays(computeLoggingStreak(todayStr, activeDates));
+    }
   }
 
   function handleSaveWeight() {
@@ -314,6 +352,7 @@ function MealDiaryContent() {
     setEatingOutQuery('');
     setSelectedEatingOut(null);
     setSelectedModifierIds([]);
+    setEntryPhotoUrl('');
     setIsModalOpen(true);
   }
 
@@ -322,6 +361,7 @@ function MealDiaryContent() {
     setEatingOutQuery('');
     setSelectedEatingOut(null);
     setSelectedModifierIds([]);
+    setEntryPhotoUrl('');
   }
 
   function handleSelectEatingOut(item: VietnameseEatingOutItem) {
@@ -387,6 +427,41 @@ function MealDiaryContent() {
       });
 
       if (res.ok) {
+        const createdPayload = await res.json().catch(() => null);
+        const logDate = selectedDate || new Date().toISOString().split('T')[0];
+        const activeDates = markDiaryDateActive(logDate);
+        const todayStr = new Date().toISOString().split('T')[0];
+        setStreakDays(computeLoggingStreak(todayStr, activeDates));
+
+        if (entryPhotoUrl.trim()) {
+          const compactImg =
+            (await createCompactThumbnailDataUrl(entryPhotoUrl.trim())) || entryPhotoUrl.trim();
+          const savedItem = createdPayload?.entry;
+          const updatedPhotos = saveVisualDiaryPhoto({
+            date: logDate,
+            mealType: addMealType,
+            title: finalRecipeName,
+            imageUrl: compactImg,
+            calories:
+              typeof savedItem?.calories === 'number'
+                ? savedItem.calories
+                : Math.round((adjusted?.calories ?? 250) * portion),
+            protein:
+              typeof savedItem?.protein === 'number'
+                ? savedItem.protein
+                : Math.round((adjusted?.protein ?? 15) * portion * 10) / 10,
+            carbs:
+              typeof savedItem?.carbs === 'number'
+                ? savedItem.carbs
+                : Math.round((adjusted?.carbs ?? 20) * portion * 10) / 10,
+            fat:
+              typeof savedItem?.fat === 'number'
+                ? savedItem.fat
+                : Math.round((adjusted?.fat ?? 10) * portion * 10) / 10,
+          });
+          setVisualPhotos(updatedPhotos);
+        }
+
         closeAddModal();
         setRecipeName('');
         setPortion(1.0);
@@ -397,6 +472,10 @@ function MealDiaryContent() {
     } finally {
       setSubmitting(false);
     }
+  }
+
+  function handleRemoveVisualPhoto(id: string) {
+    setVisualPhotos(deleteVisualDiaryPhoto(id));
   }
 
   const waterTargetCups = personalTarget?.waterLiters
@@ -687,6 +766,36 @@ function MealDiaryContent() {
                 </div>
               </div>
 
+              {/* Điểm Đĩa Harvard & Chuỗi Streak Giữ Phong Độ */}
+              {(() => {
+                const harvard = computeHarvardPlateScore(summary, targetCalories, waterCups);
+                return (
+                  <div className="mt-4 pt-4 border-t border-[var(--color-border-subtle)] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex flex-wrap items-center gap-2.5">
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-950 text-xs font-extrabold">
+                        <Award className="w-4 h-4 text-emerald-700" />
+                        <span>
+                          Điểm Đĩa Harvard: {harvard.score}/100 ({harvard.gradeLabel})
+                        </span>
+                      </span>
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-orange-50 border border-orange-200 text-orange-950 text-xs font-extrabold">
+                        <Flame className="w-4 h-4 text-orange-600" />
+                        <span>
+                          {streakDays > 0
+                            ? `Chuỗi ${streakDays} ngày giữ nhịp`
+                            : 'Bắt đầu chuỗi ngày mới hôm nay'}
+                        </span>
+                      </span>
+                    </div>
+                    {harvard.tips.length > 0 && (
+                      <p className="text-[11px] font-medium text-[var(--color-text-secondary)]">
+                        💡 {harvard.tips[0]}
+                      </p>
+                    )}
+                  </div>
+                );
+              })()}
+
               {/* Khẩu phần bếp nhà đã đồng bộ từ trang Tính Calo */}
               {personalTarget && (
                 <div className="mt-4 p-3 rounded-xl bg-[#FAF7F0] border border-[#EADBC8] text-xs text-[#4A3C2F] flex flex-col sm:flex-row sm:items-center justify-between gap-2">
@@ -836,11 +945,137 @@ function MealDiaryContent() {
               </div>
             </div>
 
+            {/* Dòng thời gian Ảnh Món Ăn (Visual Food Timeline) */}
+            {(() => {
+              const dayPhotos = visualPhotos.filter((p) => p.date === selectedDate);
+              const displayedPhotos = dayPhotos.length > 0 ? dayPhotos : visualPhotos.slice(0, 6);
+              return (
+                <div className="bg-[var(--color-surface-white)] border border-[var(--color-border-base)] rounded-2xl p-5 shadow-sm space-y-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-2.5">
+                      <span className="p-2 rounded-xl bg-amber-50 border border-amber-200 text-amber-700">
+                        <Camera className="w-4 h-4" />
+                      </span>
+                      <div>
+                        <h2 className="text-sm font-bold text-[var(--color-text-primary)]">
+                          Nhật Ký Bằng Hình Ảnh (Visual Food Timeline)
+                        </h2>
+                        <p className="text-xs text-[var(--color-text-secondary)]">
+                          {dayPhotos.length > 0
+                            ? `${dayPhotos.length} ảnh bữa ăn đã lưu cho ngày ${selectedDate}`
+                            : displayedPhotos.length > 0
+                            ? `Chưa có ảnh ngày ${selectedDate} — đang hiện ${displayedPhotos.length} bữa gần nhất`
+                            : 'Chụp ảnh đĩa ăn bằng AI hoặc đính kèm ảnh khi thêm món để tạo album bữa cơm nhà.'}
+                        </p>
+                      </div>
+                    </div>
+                    <Link
+                      href="/tinh-calo?tab=scan"
+                      className="px-3 py-1.5 rounded-lg bg-[var(--color-accent-primary)] text-white text-xs font-bold hover:opacity-95"
+                    >
+                      📸 Chụp món tính Kcal ngay
+                    </Link>
+                  </div>
+
+                  {displayedPhotos.length > 0 && (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                      {displayedPhotos.map((photo) => (
+                        <div
+                          key={photo.id}
+                          className="rounded-xl overflow-hidden border border-[var(--color-border-base)] bg-[var(--color-surface-subtle)] flex flex-col justify-between relative group"
+                        >
+                          <div className="aspect-[4/3] bg-stone-100 relative overflow-hidden">
+                            <img
+                              src={photo.imageUrl}
+                              alt={photo.title}
+                              className="w-full h-full object-cover"
+                            />
+                            <span className="absolute top-1.5 left-1.5 px-2 py-0.5 rounded-md bg-black/70 text-white text-[10px] font-bold">
+                              {photo.calories} kcal
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveVisualPhoto(photo.id)}
+                              title="Xóa ảnh khỏi timeline"
+                              className="absolute top-1.5 right-1.5 p-1 rounded-md bg-black/60 text-white hover:bg-red-600 cursor-pointer"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </div>
+                          <div className="p-2.5 space-y-0.5">
+                            <p className="text-xs font-bold text-[var(--color-text-primary)] truncate">
+                              {photo.title}
+                            </p>
+                            <p className="text-[10px] text-[var(--color-text-muted)]">
+                              {photo.date} • Đạm {photo.protein}g • Bột {photo.carbs}g
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
+            {/* Bộ lọc nhanh theo thành viên gia đình */}
+            {(() => {
+              const memberNames = Array.from(
+                new Set([
+                  'Cả nhà',
+                  'Tôi',
+                  ...familyProfiles.map((p) => p.memberName),
+                  ...entries.map((e) => e.memberName).filter(Boolean),
+                ])
+              );
+              return (
+                <div className="flex flex-wrap items-center gap-1.5 bg-[var(--color-surface-white)] border border-[var(--color-border-base)] rounded-2xl px-4 py-3 shadow-xs">
+                  <span className="text-xs font-bold text-[var(--color-text-secondary)] mr-1 flex items-center gap-1">
+                    <Users className="w-3.5 h-3.5 text-[var(--color-brand-primary)]" />
+                    Xem khẩu phần của:
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setMemberFilter('ALL')}
+                    className={`px-3 py-1 rounded-full text-xs font-bold border transition-colors cursor-pointer ${
+                      memberFilter === 'ALL'
+                        ? 'bg-[var(--color-brand-primary)] text-white border-[var(--color-brand-primary)]'
+                        : 'bg-[var(--color-surface-subtle)] text-[var(--color-text-secondary)] border-[var(--color-border-subtle)]'
+                    }`}
+                  >
+                    Tất cả ({entries.length})
+                  </button>
+                  {memberNames.map((name) => {
+                    const countForMember = entries.filter((e) => e.memberName === name).length;
+                    return (
+                      <button
+                        key={name}
+                        type="button"
+                        onClick={() => setMemberFilter(name)}
+                        className={`px-3 py-1 rounded-full text-xs font-semibold border transition-colors cursor-pointer ${
+                          memberFilter === name
+                            ? 'bg-[var(--color-accent-primary)] text-white border-[var(--color-accent-primary)]'
+                            : 'bg-[var(--color-surface-subtle)] text-[var(--color-text-secondary)] border-[var(--color-border-subtle)] hover:border-[var(--color-brand-border)]'
+                        }`}
+                      >
+                        {name}
+                        {countForMember > 0 ? ` (${countForMember})` : ''}
+                      </button>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+
             {/* 4 Bữa Ăn Trong Ngày */}
             {(['BREAKFAST', 'LUNCH', 'DINNER', 'SNACK'] as const).map((type) => {
               const conf = MEAL_CONFIG[type];
               const Icon = conf.icon;
-              const mealList = meals[type] || [];
+              const rawMealList = meals[type] || [];
+              const mealList =
+                memberFilter === 'ALL'
+                  ? rawMealList
+                  : rawMealList.filter((m) => m.memberName === memberFilter);
               const mealCalories = mealList.reduce((acc, m) => acc + m.calories, 0);
 
               return (
@@ -1081,7 +1316,7 @@ function MealDiaryContent() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-[var(--color-text-secondary)] mb-1">
                     Thành viên ăn
@@ -1093,6 +1328,24 @@ function MealDiaryContent() {
                     onChange={(e) => setMemberName(e.target.value)}
                     className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--color-border-base)] bg-[var(--color-surface-white)] text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-primary)]"
                   />
+                  <div className="mt-1.5 flex flex-wrap gap-1">
+                    {Array.from(
+                      new Set(['Cả nhà', 'Tôi', ...familyProfiles.map((p) => p.memberName)])
+                    ).map((mName) => (
+                      <button
+                        key={mName}
+                        type="button"
+                        onClick={() => setMemberName(mName)}
+                        className={`px-2 py-0.5 rounded-md text-[10px] font-bold border cursor-pointer ${
+                          memberName === mName
+                            ? 'bg-[var(--color-brand-primary)] text-white border-[var(--color-brand-primary)]'
+                            : 'bg-[var(--color-surface-subtle)] text-[var(--color-text-secondary)] border-[var(--color-border-subtle)]'
+                        }`}
+                      >
+                        {mName}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
                 <div>
@@ -1110,6 +1363,15 @@ function MealDiaryContent() {
                     <option value={2.0}>2.0 phần (2 người ăn)</option>
                   </select>
                 </div>
+              </div>
+
+              <div>
+                <ImageUpload
+                  value={entryPhotoUrl}
+                  onChange={setEntryPhotoUrl}
+                  label="📸 Ảnh bữa ăn (tùy chọn — lưu vào Visual Timeline)"
+                  subfolder="diary"
+                />
               </div>
 
               <div className="flex justify-end gap-2 pt-2">

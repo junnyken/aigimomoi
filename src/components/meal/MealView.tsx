@@ -16,6 +16,7 @@ import {
   ShieldCheck,
   AlertCircle,
   Wallet,
+  CheckCircle2,
 } from 'lucide-react';
 import {
   BUILT_IN_DIPPING_SAUCES,
@@ -194,6 +195,188 @@ const FAMILY_PROFILES: {
     keywords: ['trứng', 'đậu', 'thịt băm', 'rau muống', 'cải', 'canh'],
   },
 ];
+
+interface GuardrailEvaluation {
+  status: 'PASS' | 'WARN' | 'INFO';
+  title: string;
+  message: string;
+  showShoppingLink?: boolean;
+}
+
+function findMatchedTerms(text: string, terms: string[]): string[] {
+  return terms.filter((term) => text.includes(term));
+}
+
+function evaluateMealHealthGuardrails(
+  activeProfile: FamilyProfileKey | null,
+  dishes: (MealDishSummary | null)[],
+  riceBowls: number,
+  riceType: RiceTypeKey,
+  servings: number
+): GuardrailEvaluation | null {
+  if (!activeProfile) return null;
+  const activeDishes = dishes.filter((d): d is MealDishSummary => Boolean(d));
+  if (activeDishes.length === 0) return null;
+
+  const combinedText = activeDishes
+    .map((d) => `${d.name} ${d.shortDescription}`)
+    .join(' ')
+    .toLowerCase();
+
+  const totalDishKcal = activeDishes.reduce((s, d) => s + (d.caloriesPerServing ?? 0), 0);
+  const totalProtein = activeDishes.reduce((s, d) => s + (d.macrosPerServing?.protein ?? 0), 0);
+  const totalFat = activeDishes.reduce((s, d) => s + (d.macrosPerServing?.fat ?? 0), 0);
+  const totalSodium = activeDishes.reduce((s, d) => s + (d.macrosPerServing?.sodium ?? 0), 0);
+
+  if (activeProfile === 'gout') {
+    const highPurineHits = findMatchedTerms(combinedText, [
+      'bò',
+      'tôm',
+      'mực',
+      'cua',
+      'ghẹ',
+      'hải sản',
+      'lòng',
+      'nội tạng',
+      'cá trích',
+      'cá thu',
+    ]);
+    return highPurineHits.length > 0
+      ? {
+          status: 'WARN',
+          title: 'Kiểm soát Gout: Cần lưu ý thành phần giàu Purin',
+          message: `Mâm hiện có món chứa từ khóa (${highPurineHits.join(', ')}). Người có Acid Uric cao nên đổi sang món từ trứng, đậu hũ hoặc thịt gà trắng để an toàn hơn.`,
+        }
+      : {
+          status: 'PASS',
+          title: 'Kiểm soát Gout: Đạt chuẩn ít Purin',
+          message: 'Không phát hiện hải sản vỏ cứng, nội tạng hay thịt đỏ đậm trong mâm hiện tại — rất thân thiện cho người cần kiêng Gout.',
+        };
+  }
+
+  if (activeProfile === 'tieu-duong') {
+    const sugaryHits = findMatchedTerms(combinedText, [
+      'kho tàu',
+      'rim ngọt',
+      'đường phèn',
+      'mật ong',
+      'nước cốt dừa',
+    ]);
+    if (riceType === 'white' && riceBowls > 1) {
+      return {
+        status: 'WARN',
+        title: 'Tiểu đường Low-GI: Lượng cơm trắng hơi cao',
+        message: `Đang chọn ${riceBowls} chén cơm trắng. Nên giảm xuống ½–1 chén hoặc chuyển sang gạo lứt và ăn canh/rau trước khi ăn cơm.`,
+      };
+    }
+    return sugaryHits.length > 0
+      ? {
+          status: 'WARN',
+          title: 'Tiểu đường Low-GI: Lưu ý món kho/sốt ngọt',
+          message: `Phát hiện món có vị ngọt (${sugaryHits.join(', ')}). Khi nấu tại nhà nên gia giảm ½ lượng đường và ăn kèm thêm rau luộc.`,
+        }
+      : {
+          status: 'PASS',
+          title: 'Tiểu đường Low-GI: Đạt chuẩn ổn định đường huyết',
+          message: `Kết hợp ${riceBowls} chén ${riceType === 'brown' ? 'gạo lứt' : 'cơm'} cùng các món thanh đạm giúp đường huyết sau ăn tăng chậm hơn.`,
+        };
+  }
+
+  if (activeProfile === 'mo-mau') {
+    const fatHits = findMatchedTerms(combinedText, [
+      'chiên',
+      'rán',
+      'ba chỉ',
+      'ba rọi',
+      'giò heo',
+      'mỡ',
+      'cốt dừa',
+    ]);
+    return fatHits.length > 0 || totalFat > 22
+      ? {
+          status: 'WARN',
+          title: 'Mỡ máu & Tim mạch: Cần giảm dầu mỡ bão hòa',
+          message: `Ước tính chất béo ~${Math.round(totalFat)}g/phần${fatHits.length > 0 ? ` (${fatHits.join(', ')})` : ''}. Nên đổi sang cá hấp, thịt nạc luộc hoặc lọc bỏ phần mỡ/da.`,
+        }
+      : {
+          status: 'PASS',
+          title: 'Mỡ máu & Tim mạch: Đạt chuẩn nhẹ béo',
+          message: `Tổng chất béo ước tính chỉ ~${Math.round(totalFat)}g/phần ăn, ít chiên rán — phù hợp kiểm soát cholesterol.`,
+        };
+  }
+
+  if (activeProfile === 'nguoi-lon-tuoi') {
+    const saltyHits = findMatchedTerms(combinedText, ['dưa muối', 'cà pháo', 'mắm ruốc', 'kho mặn']);
+    return totalSodium > 850 || saltyHits.length > 0
+      ? {
+          status: 'WARN',
+          title: 'Người lớn tuổi & Huyết áp: Lưu ý lượng Muối/Natri',
+          message: `Natri ước tính ~${Math.round(totalSodium)}mg/phần. Nên pha loãng nước chấm, vớt ráo thịt/cá và hạn chế chan nhiều nước kho mặn.`,
+        }
+      : {
+          status: 'PASS',
+          title: 'Người lớn tuổi: Đạt chuẩn dịu mặn & dễ tiêu',
+          message: 'Mức Natri ước tính trong ngưỡng kiểm soát, món ăn thanh nhẹ phù hợp người lớn tuổi.',
+        };
+  }
+
+  if (activeProfile === 'cho-be') {
+    const spicyHits = findMatchedTerms(combinedText, ['ớt', 'sa tế', 'cay', 'tiêu xanh']);
+    return spicyHits.length > 0
+      ? {
+          status: 'WARN',
+          title: 'Thực đơn Cho bé: Nhắc giảm vị cay nồng',
+          message: `Phát hiện gia vị cay (${spicyHits.join(', ')}). Nên tách riêng phần cho bé trước khi cho ớt/tiêu hoặc đổi nước chấm dịu ngọt.`,
+        }
+      : {
+          status: 'PASS',
+          title: 'Thực đơn Cho bé: Thân thiện vị giác trẻ nhỏ',
+          message: 'Không có thành phần cay nồng, dễ kết hợp cơm mềm và canh ngọt tự nhiên giúp bé ăn ngon miệng.',
+        };
+  }
+
+  if (activeProfile === 'me-bau') {
+    const rawHits = findMatchedTerms(combinedText, ['tái', 'sống', 'gỏi sống', 'tiết canh']);
+    if (rawHits.length > 0) {
+      return {
+        status: 'WARN',
+        title: 'Mẹ bầu & Sau sinh: Cần nấu chín kỹ hoàn toàn',
+        message: `Phát hiện từ khóa món sống/tái (${rawHits.join(', ')}). Mẹ bầu cần đảm bảo thực phẩm được nấu chín kỹ 100%.`,
+      };
+    }
+    return {
+      status: 'PASS',
+      title: `Mẹ bầu & Sau sinh: Cung cấp ~${Math.round(totalProtein)}g Đạm/phần`,
+      message:
+        totalProtein >= 25
+          ? 'Nguồn đạm tự nhiên dồi dào, cân bằng dinh dưỡng tốt cho mẹ bầu và giai đoạn lợi sữa sau sinh.'
+          : 'Mâm cơm thanh lành; mẹ bầu có thể thêm 1 quả trứng luộc hoặc ly sữa hạt để đạt ≥25g đạm/bữa.',
+    };
+  }
+
+  if (activeProfile === 'eat-clean') {
+    const riceKcal = riceBowls * (riceType === 'brown' ? 110 : 130);
+    const estMealKcal = Math.round(totalDishKcal + riceKcal);
+    return estMealKcal > 520
+      ? {
+          status: 'WARN',
+          title: `Eat Clean: Mâm hiện tại khoảng ~${estMealKcal} kcal/phần`,
+          message: 'Vượt nhẹ ngưỡng 480–520 kcal/bữa Eat Clean. Hãy giảm ½ chén cơm hoặc đổi món mặn sang dạng luộc/hấp.',
+        }
+      : {
+          status: 'PASS',
+          title: `Eat Clean: Đạt chuẩn ~${estMealKcal} kcal/phần`,
+          message: 'Mức năng lượng gọn gàng giúp tạo thâm hụt calo tự nhiên mà không bị đói.',
+        };
+  }
+
+  return {
+    status: 'INFO',
+    title: `Mâm cơm Tiết kiệm cho ${servings} người`,
+    message: 'Ưu tiên nguyên liệu bình dân sẵn chợ (trứng, đậu hũ, thịt băm, rau theo mùa). Bấm xem bảng giá tham chiếu Bách Hóa Xanh tại Giỏ đi chợ.',
+    showShoppingLink: true,
+  };
+}
 
 interface MealViewProps {
   initialSelection: MealSelection;
@@ -614,6 +797,57 @@ export function MealView({
             );
           })}
         </div>
+
+        {/* Banner Chấm Điểm An Toàn Thể Trạng / Bệnh Lý / Tiết Kiệm */}
+        {(() => {
+          const guardrail = evaluateMealHealthGuardrails(
+            activeProfile,
+            [main, soup, side, sauce],
+            riceBowls,
+            riceType,
+            servings
+          );
+          if (!guardrail) return null;
+          return (
+            <div
+              className={`mt-1 p-3.5 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs ${
+                guardrail.status === 'PASS'
+                  ? 'bg-emerald-50 border-emerald-200 text-emerald-950'
+                  : guardrail.status === 'WARN'
+                  ? 'bg-amber-50 border-amber-300 text-amber-950'
+                  : 'bg-sky-50 border-sky-200 text-sky-950'
+              }`}
+            >
+              <div className="flex items-start gap-2.5">
+                {guardrail.status === 'PASS' ? (
+                  <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0 mt-0.5" />
+                ) : (
+                  <AlertCircle className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+                )}
+                <div>
+                  <strong className="block font-extrabold">🩺 {guardrail.title}</strong>
+                  <span className="text-[11px] sm:text-xs leading-relaxed">
+                    {guardrail.message}
+                  </span>
+                </div>
+              </div>
+              {guardrail.showShoppingLink && (
+                <Link
+                  href={`/shopping?${buildMealQuery({
+                    mainSlug: main?.slug,
+                    soupSlug: soup?.slug,
+                    sideSlug: side?.slug,
+                    sauceSlug: sauce?.slug,
+                    servings,
+                  })}`}
+                  className="shrink-0 px-3 py-1.5 rounded-xl bg-[var(--color-brand-primary)] text-white text-xs font-bold hover:opacity-95"
+                >
+                  Xem dự toán tiền chợ →
+                </Link>
+              )}
+            </div>
+          );
+        })()}
       </section>
 
       {/* 4 Slots Grid: Món Mặn + Món Canh + Món Rau + Nước Chấm */}

@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import Link from 'next/link';
-import { UtensilsCrossed, Flame, Dumbbell, Sparkles } from 'lucide-react';
+import { UtensilsCrossed, Flame, Dumbbell, Sparkles, Clock, ShieldCheck } from 'lucide-react';
 import { searchPublishedRecipes, getSearchFilterMeta } from '@/lib/recipes/searchQueries';
 import { ROLE_LABELS } from '@/lib/recipes/labels';
 import { RecipeCard } from '@/components/recipe/RecipeCard';
@@ -112,13 +112,34 @@ export default function SearchPage({ searchParams }: SearchPageProps) {
               <Dumbbell className="w-3.5 h-3.5 text-blue-600 shrink-0" />
               <span className="truncate">💪 Tập Gym · Giàu Đạm</span>
             </Link>
-            <div className="grid grid-cols-2 sm:flex items-center gap-2">
+            <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2">
               <Link
                 href="/mon-an?maxCalories=300&sort=calories_asc"
                 className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-2xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 text-xs font-semibold transition-all"
               >
                 <Sparkles className="w-3.5 h-3.5 text-amber-600 shrink-0" />
                 <span className="truncate">≤ 300 kcal/phần</span>
+              </Link>
+              <Link
+                href="/mon-an?maxCalories=250&sort=calories_asc"
+                className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-2xl bg-teal-50 hover:bg-teal-100 text-teal-900 border border-teal-200 text-xs font-semibold transition-all"
+              >
+                <ShieldCheck className="w-3.5 h-3.5 text-teal-600 shrink-0" />
+                <span className="truncate">🩺 Thanh đạm (≤ 250 kcal)</span>
+              </Link>
+              <Link
+                href="/mon-an?maxTime=20&sort=quickest"
+                className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-2xl bg-orange-50 hover:bg-orange-100 text-orange-900 border border-orange-200 text-xs font-semibold transition-all"
+              >
+                <Clock className="w-3.5 h-3.5 text-orange-600 shrink-0" />
+                <span className="truncate">⚡ Nấu nhanh ≤ 20 phút</span>
+              </Link>
+              <Link
+                href="/mon-an?nutrition=true"
+                className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-2xl bg-indigo-50 hover:bg-indigo-100 text-indigo-900 border border-indigo-200 text-xs font-semibold transition-all"
+              >
+                <ShieldCheck className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                <span className="truncate">✅ Có bảng Dinh dưỡng</span>
               </Link>
               <Link
                 href="/mon-an"
